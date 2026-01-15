@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import type { LaunchAction } from '@shared/types/actions';
 
 export interface LaunchActionFormProps {
@@ -8,10 +8,17 @@ export interface LaunchActionFormProps {
   onChange: (config: Partial<LaunchAction>) => void;
 }
 
+/** Error display for file dialog failures */
+interface BrowseError {
+  message: string;
+}
+
 export const LaunchActionForm: React.FC<LaunchActionFormProps> = ({
   config,
   onChange,
 }) => {
+  const [browseError, setBrowseError] = useState<BrowseError | null>(null);
+
   // Handle path change
   const handlePathChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +56,7 @@ export const LaunchActionForm: React.FC<LaunchActionFormProps> = ({
 
   // Handle browse button
   const handleBrowse = useCallback(async () => {
+    setBrowseError(null);
     try {
       // Use Electron's dialog via IPC if available
       // Note: openFileDialog is not yet implemented in the IPC handlers
@@ -64,8 +72,12 @@ export const LaunchActionForm: React.FC<LaunchActionFormProps> = ({
         if (result && result.length > 0) {
           onChange({ ...config, path: result[0] });
         }
+      } else {
+        setBrowseError({ message: 'File dialog not available' });
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to open file dialog';
+      setBrowseError({ message: errorMessage });
       console.error('Failed to open file dialog:', error);
     }
   }, [config, onChange]);
@@ -96,6 +108,11 @@ export const LaunchActionForm: React.FC<LaunchActionFormProps> = ({
         <span className="action-form__hint">
           Path to executable, file, or URL to open
         </span>
+        {browseError && (
+          <span className="action-form__error" data-testid="launch-browse-error">
+            {browseError.message}
+          </span>
+        )}
       </div>
 
       {/* Arguments */}

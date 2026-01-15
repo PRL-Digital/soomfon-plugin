@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import type { ScriptAction, ScriptType } from '@shared/types/actions';
 
 /** Available script types */
@@ -36,6 +36,8 @@ export const ScriptActionForm: React.FC<ScriptActionFormProps> = ({
   config,
   onChange,
 }) => {
+  const [browseError, setBrowseError] = useState<string | null>(null);
+
   // Handle script type change
   const handleScriptTypeChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -76,6 +78,7 @@ export const ScriptActionForm: React.FC<ScriptActionFormProps> = ({
 
   // Handle browse for script file
   const handleBrowse = useCallback(async () => {
+    setBrowseError(null);
     try {
       // Note: openFileDialog is not yet implemented in the IPC handlers
       const api = window.electronAPI as { openFileDialog?: (options: unknown) => Promise<string[]> };
@@ -97,8 +100,12 @@ export const ScriptActionForm: React.FC<ScriptActionFormProps> = ({
         if (result && result.length > 0) {
           onChange({ ...config, scriptPath: result[0], script: undefined });
         }
+      } else {
+        setBrowseError('File dialog not available');
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to open file dialog';
+      setBrowseError(errorMessage);
       console.error('Failed to open file dialog:', error);
     }
   }, [config, onChange]);
@@ -217,6 +224,11 @@ export const ScriptActionForm: React.FC<ScriptActionFormProps> = ({
               Browse
             </button>
           </div>
+          {browseError && (
+            <span className="action-form__error" data-testid="script-browse-error">
+              {browseError}
+            </span>
+          )}
         </div>
       )}
 

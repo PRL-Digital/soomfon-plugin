@@ -24,7 +24,8 @@ const DeviceTab: React.FC<{
   onActionClear: () => void;
   onEncoderSave: (config: EncoderConfig) => void;
   onEncoderClear: () => void;
-}> = ({ device, profiles, selection, onSelectionChange, onActionSave, onActionClear, onEncoderSave, onEncoderClear }) => {
+  isSaving?: boolean;
+}> = ({ device, profiles, selection, onSelectionChange, onActionSave, onActionClear, onEncoderSave, onEncoderClear, isSaving }) => {
   // Determine if we should show the encoder editor
   const isEncoderSelected = selection?.type === 'encoder';
 
@@ -57,6 +58,7 @@ const DeviceTab: React.FC<{
             selection={selection}
             onSave={onActionSave}
             onClear={onActionClear}
+            isSaving={isSaving}
           />
         )}
       </div>
@@ -326,6 +328,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('device');
   const [selection, setSelection] = useState<Selection | null>(null);
   const [showProfileManager, setShowProfileManager] = useState(false);
+  const [isActionSaving, setIsActionSaving] = useState(false);
 
   // Toast notifications
   const toast = useToast();
@@ -387,6 +390,7 @@ const App: React.FC = () => {
 
     if (buttonIndex < 0) return; // Not a button
 
+    setIsActionSaving(true);
     try {
       // Clone the buttons array
       const updatedButtons = [...profiles.activeProfile.buttons];
@@ -426,6 +430,8 @@ const App: React.FC = () => {
     } catch (err) {
       console.error('Failed to save action:', err);
       toast.error('Failed to save action');
+    } finally {
+      setIsActionSaving(false);
     }
   }, [selection, profiles, toast]);
 
@@ -697,6 +703,7 @@ const App: React.FC = () => {
             onActionClear={handleActionClear}
             onEncoderSave={handleEncoderSave}
             onEncoderClear={handleEncoderClear}
+            isSaving={isActionSaving}
           />
         )}
         {activeTab === 'settings' && (

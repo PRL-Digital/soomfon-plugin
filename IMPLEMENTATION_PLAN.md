@@ -284,10 +284,11 @@ These don't block MVP but are significant gaps.
 
 ### PRIORITY 4: Polish & Distribution
 
-#### P4.1: Error Handling - PARTIAL
+#### P4.1: Error Handling - SUBSTANTIALLY COMPLETE
 - [x] Add toast notifications for user-facing errors
 - [x] Add React error boundaries for component crashes
-- [ ] Replace console.error calls with proper error UI
+- [x] Add inline error display in action form components (LaunchAction, ScriptAction, ProfileAction)
+- [ ] Replace console.error calls with proper error UI (some remaining in main process - these are appropriate for backend logging)
 
 **Implementation (2026-01-15):**
 - Toast notification system implemented in `src/renderer/components/common/Toast/`
@@ -297,20 +298,30 @@ These don't block MVP but are significant gaps.
   - Encoder save/clear operations
   - Brightness changes
   - Profile import
+- Inline error display added to action form components:
+  - LaunchAction.tsx - displays file dialog errors inline
+  - ScriptAction.tsx - displays file dialog errors inline
+  - ProfileAction.tsx - displays profile loading errors inline
+- Added `.action-form__error` CSS class for consistent error styling across forms
 - 19 unit tests added (11 for Toast, 8 for ErrorBoundary)
+- **Note:** Main process console.error calls (src/main/*.ts) are appropriate for backend logging and don't require UI conversion
 
-#### P4.2: Loading States - PARTIAL
+#### P4.2: Loading States - COMPLETE
 - [x] Spinner component created in `src/renderer/components/common/Spinner/`
 - [x] ProfileList updated to use Spinner for loading state
 - [x] App.tsx Profile Status Panel updated to use Spinner
 - [x] 8 unit tests added for Spinner component
-- [ ] Add progress indicator for image upload
+- [x] Add progress indicator for action save/image upload (Spinner shown on Save button, buttons disabled during save)
 
 **Implementation (2026-01-15):**
 - Spinner component implemented in `src/renderer/components/common/Spinner/`
 - ProfileList component updated to show Spinner during profile loading
 - App.tsx Profile Status Panel updated to use Spinner for loading states
 - 8 unit tests added (Spinner.test.tsx)
+- ActionEditor component updated with `isSaving` prop that:
+  - Shows Spinner and "Saving..." text on Save button during save operations
+  - Disables all buttons (Clear, Cancel, Save) during save operations
+- App.tsx tracks `isActionSaving` state and passes it through DeviceTab to ActionEditor
 
 #### P4.3: Windows Installer
 - [ ] Configure electron-builder for NSIS installer (config exists)

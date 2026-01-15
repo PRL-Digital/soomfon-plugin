@@ -12,6 +12,7 @@ import { HomeAssistantActionForm } from './HomeAssistantAction';
 import { ProfileActionForm } from './ProfileAction';
 import { TextActionForm } from './TextAction';
 import { NodeRedActionForm } from './NodeRedAction';
+import { Spinner } from '../common';
 import type {
   Action,
   ActionType,
@@ -89,6 +90,8 @@ export interface ActionEditorProps {
   onClear?: () => void;
   /** Callback when editing is cancelled */
   onCancel?: () => void;
+  /** Whether a save operation is in progress (includes image upload) */
+  isSaving?: boolean;
 }
 
 export const ActionEditor: React.FC<ActionEditorProps> = ({
@@ -98,6 +101,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   onSave,
   onClear,
   onCancel,
+  isSaving = false,
 }) => {
   // State for the current action being edited
   const [actionType, setActionType] = useState<ActionTypeOption | null>(null);
@@ -294,6 +298,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
         <button
           className="btn btn-secondary btn-sm"
           onClick={handleClear}
+          disabled={isSaving}
           data-testid="action-editor-clear"
         >
           Clear
@@ -302,7 +307,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
           <button
             className="btn btn-secondary btn-sm"
             onClick={handleCancel}
-            disabled={!hasChanges}
+            disabled={!hasChanges || isSaving}
             data-testid="action-editor-cancel"
           >
             Cancel
@@ -310,10 +315,17 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
           <button
             className="btn btn-primary btn-sm"
             onClick={handleSave}
-            disabled={!hasChanges || !actionType}
+            disabled={!hasChanges || !actionType || isSaving}
             data-testid="action-editor-save"
           >
-            Save
+            {isSaving ? (
+              <>
+                <Spinner size="sm" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              'Save'
+            )}
           </button>
         </div>
       </div>

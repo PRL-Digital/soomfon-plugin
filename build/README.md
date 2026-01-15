@@ -1,0 +1,1 @@
+# Build Assets\n\nThis directory should contain:\n- icon.ico - Windows application icon (256x256 recommended)\n- icon.png - PNG version for other platforms\n\nUse your favorite icon editor to create these files.

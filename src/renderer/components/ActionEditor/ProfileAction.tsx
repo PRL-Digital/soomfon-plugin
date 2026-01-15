@@ -6,6 +6,11 @@ interface ProfileInfo {
   name: string;
 }
 
+/** Error state for profile loading failures */
+interface ProfileLoadError {
+  message: string;
+}
+
 export interface ProfileActionFormProps {
   /** Current configuration */
   config: Partial<ProfileAction>;
@@ -19,18 +24,24 @@ export const ProfileActionForm: React.FC<ProfileActionFormProps> = ({
 }) => {
   const [profiles, setProfiles] = useState<ProfileInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<ProfileLoadError | null>(null);
 
   // Load available profiles
   useEffect(() => {
     const loadProfiles = async () => {
+      setLoadError(null);
       try {
         // Access the electronAPI through window
         const api = (window as unknown as { electronAPI?: { profiles?: { list: () => Promise<ProfileInfo[]> } } }).electronAPI;
         if (api?.profiles?.list) {
           const profileList = await api.profiles.list();
           setProfiles(profileList);
+        } else {
+          setLoadError({ message: 'Profile API not available' });
         }
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load profiles';
+        setLoadError({ message: errorMessage });
         console.error('Failed to load profiles:', error);
       } finally {
         setLoading(false);
@@ -54,6 +65,10 @@ export const ProfileActionForm: React.FC<ProfileActionFormProps> = ({
         <label className="action-form__label">Target Profile</label>
         {loading ? (
           <span className="action-form__loading">Loading profiles...</span>
+        ) : loadError ? (
+          <span className="action-form__error" data-testid="profile-load-error">
+            {loadError.message}
+          </span>
         ) : (
           <select
             className="action-form__select"
