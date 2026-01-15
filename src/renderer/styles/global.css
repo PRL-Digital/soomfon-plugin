@@ -2589,3 +2589,205 @@
 .text-success {
   color: var(--color-success);
 }
+
+/* ============================================================================
+   Toast Notification Styles
+   ============================================================================ */
+
+.toast-container {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 400px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  animation: toastSlideIn var(--transition-normal) ease;
+  max-width: 100%;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.toast__message {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.toast__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.toast__close:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* Toast variants */
+.toast--success {
+  border-left: 3px solid var(--color-success);
+}
+
+.toast--success .toast__icon {
+  background-color: var(--color-success);
+  color: white;
+}
+
+.toast--error {
+  border-left: 3px solid var(--color-error);
+}
+
+.toast--error .toast__icon {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.toast--warning {
+  border-left: 3px solid var(--color-warning);
+}
+
+.toast--warning .toast__icon {
+  background-color: var(--color-warning);
+  color: white;
+}
+
+.toast--info {
+  border-left: 3px solid var(--color-accent);
+}
+
+.toast--info .toast__icon {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+/* ============================================================================
+   Error Boundary Styles
+   ============================================================================ */
+
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg-primary);
+}
+
+.error-boundary__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 500px;
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.error-boundary__icon {
+  font-size: 48px;
+  color: var(--color-warning);
+  margin-bottom: var(--spacing-md);
+}
+
+.error-boundary__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.error-boundary__message {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--spacing-lg) 0;
+  line-height: 1.5;
+}
+
+.error-boundary__details {
+  width: 100%;
+  margin-bottom: var(--spacing-lg);
+  text-align: left;
+}
+
+.error-boundary__summary {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.error-boundary__summary:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.error-boundary__stack {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+}
+
+.error-boundary__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}

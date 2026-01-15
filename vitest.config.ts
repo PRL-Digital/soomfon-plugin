@@ -3,11 +3,11 @@ import path from 'path';
 
 export default defineConfig({
   test: {
-    // Test environment
+    // Test environment (default - can be overridden per-file with @vitest-environment)
     environment: 'node',
 
-    // Include test files
-    include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+    // Include test files (both .ts and .tsx)
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/*.spec.ts', 'src/**/*.spec.tsx'],
 
     // Exclude node_modules and dist
     exclude: ['node_modules', 'dist'],

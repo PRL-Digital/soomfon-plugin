@@ -7,6 +7,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { ToastProvider, ToastContainer, ErrorBoundary } from './components/common';
 import './styles/global.css';
 
 // Get root element
@@ -20,6 +21,11 @@ if (!container) {
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <ToastProvider>
+        <App />
+        <ToastContainer />
+      </ToastProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

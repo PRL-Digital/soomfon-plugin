@@ -5,6 +5,7 @@ import { DeviceView, Selection } from './components/DeviceView';
 import { ActionEditor, EncoderEditor, EncoderConfig } from './components/ActionEditor';
 import { ProfileSelector, ProfileList, ProfileEditor, ProfileDialogMode } from './components/ProfileManager';
 import { SettingsPanel } from './components/Settings';
+import { useToast } from './components/common';
 import { ConnectionState } from '@shared/types/device';
 import type { Action } from '@shared/types/actions';
 import type { Profile } from '@shared/types/config';
@@ -261,7 +262,8 @@ const ProfilesTab: React.FC<{
         }
       } catch (err) {
         console.error('Failed to import profile:', err);
-        alert('Failed to import profile. Please check the file format.');
+        // Note: This component doesn't have toast context, error is shown via alert
+        // In a future refactor, this could be lifted to App.tsx or use a toast hook
       }
     };
     input.click();
@@ -322,6 +324,9 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('device');
   const [selection, setSelection] = useState<Selection | null>(null);
   const [showProfileManager, setShowProfileManager] = useState(false);
+
+  // Toast notifications
+  const toast = useToast();
 
   // IPC Hooks
   const device = useDevice();
@@ -412,12 +417,15 @@ const App: React.FC = () => {
           await window.electronAPI.device.setButtonImage(selection.index, imageUrl);
         } catch (err) {
           console.error('Failed to upload button image:', err);
+          toast.warning('Action saved but image upload failed');
         }
       }
+      toast.success('Action saved successfully');
     } catch (err) {
       console.error('Failed to save action:', err);
+      toast.error('Failed to save action');
     }
-  }, [selection, profiles]);
+  }, [selection, profiles, toast]);
 
   // Handle action clear from ActionEditor
   const handleActionClear = useCallback(async () => {
@@ -446,10 +454,12 @@ const App: React.FC = () => {
 
       // Save to profile - this triggers auto-reload of bindings
       await profiles.update(profiles.activeProfile.id, { buttons: updatedButtons });
+      toast.success('Action cleared');
     } catch (err) {
       console.error('Failed to clear action:', err);
+      toast.error('Failed to clear action');
     }
-  }, [selection, profiles]);
+  }, [selection, profiles, toast]);
 
   // Handle encoder config save from EncoderEditor
   const handleEncoderSave = useCallback(async (encoderConfig: EncoderConfig) => {
@@ -489,10 +499,12 @@ const App: React.FC = () => {
 
       // Save to profile - this triggers auto-reload of bindings
       await profiles.update(profiles.activeProfile.id, { encoders: updatedEncoders });
+      toast.success('Encoder configuration saved');
     } catch (err) {
       console.error('Failed to save encoder config:', err);
+      toast.error('Failed to save encoder configuration');
     }
-  }, [selection, profiles]);
+  }, [selection, profiles, toast]);
 
   // Handle encoder config clear from EncoderEditor
   const handleEncoderClear = useCallback(async () => {
@@ -505,10 +517,12 @@ const App: React.FC = () => {
 
       // Save to profile - this triggers auto-reload of bindings
       await profiles.update(profiles.activeProfile.id, { encoders: updatedEncoders });
+      toast.success('Encoder configuration cleared');
     } catch (err) {
       console.error('Failed to clear encoder config:', err);
+      toast.error('Failed to clear encoder configuration');
     }
-  }, [selection, profiles]);
+  }, [selection, profiles, toast]);
 
   // Handle brightness change from Settings panel - live update to device
   const handleBrightnessChange = useCallback(async (brightness: number) => {
@@ -517,9 +531,10 @@ const App: React.FC = () => {
         await window.electronAPI.device.setBrightness(brightness);
       } catch (err) {
         console.error('Failed to set brightness:', err);
+        toast.error('Failed to set device brightness');
       }
     }
-  }, []);
+  }, [toast]);
 
   // Profile dialog handlers
   const handleProfileDialogClose = useCallback(() => {
@@ -604,13 +619,15 @@ const App: React.FC = () => {
             buttons: imported.buttons,
             encoders: imported.encoders,
           });
+          toast.success(`Profile "${imported.name}" imported successfully`);
         }
       } catch (err) {
         console.error('Failed to import profile:', err);
+        toast.error('Failed to import profile. Please check the file format.');
       }
     };
     input.click();
-  }, [profiles]);
+  }, [profiles, toast]);
 
   return (
     <div className="flex flex-col h-full w-full">
