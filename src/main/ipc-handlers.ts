@@ -24,7 +24,7 @@ import type {
 } from '../shared/types/ipc';
 import type { Action, ActionExecutionResult } from '../shared/types/actions';
 import type { AppConfig, DeviceSettings, AppSettings, IntegrationSettings, Profile } from '../shared/types/config';
-import { ConnectionState } from '../shared/types/device';
+import { ConnectionState, ButtonEventType, EncoderEventType } from '../shared/types/device';
 
 // Import core modules
 import { HIDManager } from '../core/device/hid-manager';
@@ -579,8 +579,13 @@ export function wireEventPipeline(): void {
   // Wire parser button events to event binder
   parser.on('button', async (event) => {
     try {
-      // Forward to renderer for UI feedback
-      sendToRenderer(DeviceChannels.BUTTON_PRESS, event);
+      // Forward to renderer for UI feedback based on event type
+      if (event.type === ButtonEventType.RELEASE) {
+        sendToRenderer(DeviceChannels.BUTTON_RELEASE, event);
+      } else {
+        // PRESS and LONG_PRESS go to BUTTON_PRESS channel
+        sendToRenderer(DeviceChannels.BUTTON_PRESS, event);
+      }
 
       // Execute action via event binder
       await binder.handleButtonEvent(event);
@@ -592,8 +597,13 @@ export function wireEventPipeline(): void {
   // Wire parser encoder events to event binder
   parser.on('encoder', async (event) => {
     try {
-      // Forward to renderer for UI feedback
-      sendToRenderer(DeviceChannels.ENCODER_ROTATE, event);
+      // Forward to renderer for UI feedback based on event type
+      if (event.type === EncoderEventType.PRESS || event.type === EncoderEventType.RELEASE) {
+        sendToRenderer(DeviceChannels.ENCODER_PRESS, event);
+      } else {
+        // ROTATE_CW and ROTATE_CCW go to ENCODER_ROTATE channel
+        sendToRenderer(DeviceChannels.ENCODER_ROTATE, event);
+      }
 
       // Execute action via event binder
       await binder.handleEncoderEvent(event);

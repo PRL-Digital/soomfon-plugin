@@ -1,8 +1,8 @@
 # SOOMFON CN002-4B27 Implementation Plan
 
-**Last Updated:** 2026-01-15 (Priority 1 & 2 tasks completed - persistence layer implemented, test framework added)
+**Last Updated:** 2026-01-15 (Priority 1, 2 & 3 complete - event forwarding to UI implemented)
 **Project:** Custom Windows driver for SOOMFON CN002-4B27 stream deck
-**Status:** MVP Complete - Event pipeline wired, handlers registered, IPC complete, persistence working
+**Status:** MVP Complete - Event pipeline wired, handlers registered, IPC complete, persistence working, UI event forwarding complete
 
 ---
 
@@ -36,9 +36,9 @@
 | 4 | Configuration System | COMPLETE | 100% | Fully working |
 | 5 | Electron GUI | COMPLETE | 100% | UI done, save/clear implemented |
 | 6 | Integrations (HA/Node-RED) | PARTIAL | 15% | Settings UI done, no backend |
-| 7 | Polish & Distribution | PENDING | 25% | Build config ready, test framework added |
+| 7 | Polish & Distribution | PENDING | 30% | Build config ready, test framework added, event forwarding complete |
 
-**Overall Progress:** ~88% (MVP complete - persistence working, test framework complete)
+**Overall Progress:** ~90% (MVP complete - persistence working, test framework complete, UI event forwarding complete)
 
 ---
 
@@ -207,37 +207,27 @@ All Priority 2 tasks have been completed. User configurations now persist across
 
 ---
 
-### PRIORITY 3: Device Event Forwarding to UI (Optional for MVP)
+### PRIORITY 3: Device Event Forwarding to UI (Optional for MVP) - COMPLETE
 
-These tasks enable the UI to react to device events.
+All Priority 3 tasks have been completed. Device events now forward to the UI.
 
-#### P3.1: Forward Button Events to Renderer
+#### P3.1: Forward Button Events to Renderer - COMPLETE
 - **Files:** `src/main/ipc-handlers.ts`
-- **Status:** NOT IMPLEMENTED (VERIFIED)
-- **Issue:** Preload exposes listeners but main process never sends events
-
-**Verification Evidence:**
-- Preload defines `onButtonPress` and `onButtonRelease` listeners (preload/index.ts:119-124)
-- No code in main process calls `sendToRenderer(DeviceChannels.BUTTON_PRESS, ...)`
-
-**Missing Emissions:**
-- [ ] `DeviceChannels.BUTTON_PRESS` - preload ready, no emission
-- [ ] `DeviceChannels.BUTTON_RELEASE` - preload ready, no emission
-
-**Required Changes:**
-- [ ] In event pipeline, after parser emits button event, forward to renderer
-- [ ] Call `mainWindow.webContents.send(DeviceChannels.BUTTON_PRESS, event)`
+- **Status:** COMPLETE (2026-01-15)
+- **Implementation:**
+  - Button press and long_press events forwarded via `DeviceChannels.BUTTON_PRESS`
+  - Button release events forwarded via `DeviceChannels.BUTTON_RELEASE`
+  - Event routing based on `ButtonEventType` in `wireEventPipeline()` (lines 579-595)
 
 ---
 
-#### P3.2: Forward Encoder Events to Renderer
+#### P3.2: Forward Encoder Events to Renderer - COMPLETE
 - **Files:** `src/main/ipc-handlers.ts`
-- **Status:** NOT IMPLEMENTED (VERIFIED)
-- **Issue:** Same as above for encoder events
-
-**Missing Emissions:**
-- [ ] `DeviceChannels.ENCODER_ROTATE` - preload ready, no emission
-- [ ] `DeviceChannels.ENCODER_PRESS` - preload ready, no emission
+- **Status:** COMPLETE (2026-01-15)
+- **Implementation:**
+  - Encoder rotation events (CW/CCW) forwarded via `DeviceChannels.ENCODER_ROTATE`
+  - Encoder press/release events forwarded via `DeviceChannels.ENCODER_PRESS`
+  - Event routing based on `EncoderEventType` in `wireEventPipeline()` (lines 597-613)
 
 ---
 
