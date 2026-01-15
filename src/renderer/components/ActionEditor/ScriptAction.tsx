@@ -77,7 +77,9 @@ export const ScriptActionForm: React.FC<ScriptActionFormProps> = ({
   // Handle browse for script file
   const handleBrowse = useCallback(async () => {
     try {
-      if (window.electronAPI?.openFileDialog) {
+      // Note: openFileDialog is not yet implemented in the IPC handlers
+      const api = window.electronAPI as { openFileDialog?: (options: unknown) => Promise<string[]> };
+      if (api?.openFileDialog) {
         const scriptType = config.scriptType || 'powershell';
         const extensions: Record<ScriptType, string[]> = {
           powershell: ['ps1'],
@@ -85,7 +87,7 @@ export const ScriptActionForm: React.FC<ScriptActionFormProps> = ({
           bash: ['sh'],
         };
 
-        const result = await window.electronAPI.openFileDialog({
+        const result = await api.openFileDialog({
           properties: ['openFile'],
           filters: [
             { name: 'Script Files', extensions: extensions[scriptType] },

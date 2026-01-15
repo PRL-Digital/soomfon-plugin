@@ -9,6 +9,7 @@ import * as path from 'path';
 import {
   registerIpcHandlers,
   cleanupIpcHandlers,
+  wireEventPipeline,
   getHidManager,
   getProfileManager,
   getConfigManager,
@@ -95,6 +96,9 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Register all IPC handlers before creating the window
   registerIpcHandlers();
+
+  // Wire up the event processing pipeline (HIDManager -> EventParser -> EventBinder -> ActionEngine)
+  wireEventPipeline();
 
   createWindow();
 

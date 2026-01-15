@@ -117,7 +117,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
 
   // Handle action config changes
   const handleConfigChange = useCallback((config: Partial<Action>) => {
-    setActionConfig((prev) => ({ ...prev, ...config }));
+    setActionConfig((prev) => ({ ...prev, ...config } as Partial<Action>));
     setHasChanges(true);
   }, []);
 

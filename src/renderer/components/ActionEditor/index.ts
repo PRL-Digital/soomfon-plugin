@@ -3,6 +3,7 @@
  * Export all action editor components for configuration UI
  */
 
+// Named exports
 export { ActionEditor, type ActionEditorProps } from './ActionEditor';
 export {
   EncoderEditor,
@@ -20,4 +21,5 @@ export { MediaActionForm, type MediaActionFormProps } from './MediaAction';
 export { SystemActionForm, type SystemActionFormProps } from './SystemAction';
 export { ImagePicker, type ImagePickerProps } from './ImagePicker';
 
-export default ActionEditor;
+// Default export - re-export ActionEditor as default
+export { ActionEditor as default } from './ActionEditor';

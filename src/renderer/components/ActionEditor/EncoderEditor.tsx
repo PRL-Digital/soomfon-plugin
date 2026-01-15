@@ -140,7 +140,7 @@ const ActionSection: React.FC<{
   }, [config, onChange]);
 
   const handleConfigChange = useCallback((action: Partial<Action>) => {
-    onChange({ ...config, action: { ...config.action, ...action } });
+    onChange({ ...config, action: { ...config.action, ...action } as Partial<Action> });
   }, [config, onChange]);
 
   const handleClear = useCallback(() => {
