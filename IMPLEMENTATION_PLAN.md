@@ -1,6 +1,6 @@
 # SOOMFON CN002-4B27 Implementation Plan
 
-**Last Updated:** 2026-01-15 (Priority 1, 2, 3, P5.1, P5.2, P4.1 & P4.2 partial complete - all core action handlers)
+**Last Updated:** 2026-01-15 (Priority 1, 2, 3, P5.1, P5.2, P5.3, P4.1 & P4.2 partial complete - all core action handlers)
 **Project:** Custom Windows driver for SOOMFON CN002-4B27 stream deck
 **Status:** MVP Complete - 8 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete
 
@@ -35,10 +35,10 @@
 | 3 | Action System | COMPLETE | 100% | All handlers registered and wired |
 | 4 | Configuration System | COMPLETE | 100% | Fully working |
 | 5 | Electron GUI | COMPLETE | 100% | UI done, save/clear implemented |
-| 6 | Integrations (HA/Node-RED) | PARTIAL | 15% | Settings UI done, no backend |
+| 6 | Integrations (HA/Node-RED) | PARTIAL | 50% | Settings UI + HA backend complete, Node-RED missing |
 | 7 | Polish & Distribution | PENDING | 40% | Build config ready, test framework added, event forwarding complete, error handling partial |
 
-**Overall Progress:** ~94% (MVP complete - all 8 core handlers, persistence working, 183 tests, UI event forwarding complete)
+**Overall Progress:** ~95% (MVP complete - all 9 core handlers, persistence working, 199 tests, UI event forwarding complete)
 
 ---
 
@@ -353,21 +353,22 @@ These don't block MVP but are significant gaps.
 
 ---
 
-#### P5.3: Home Assistant Integration (Phase 6)
-- **Status:** PARTIAL (Settings UI done, backend missing)
+#### P5.3: Home Assistant Integration (Phase 6) - COMPLETE
+- **Status:** COMPLETE (2026-01-15)
 - **Plans:** `plans/06-integrations/01-home-assistant-client.md`
+
+**Implementation:**
+- HomeAssistantClient implemented in `src/core/integrations/home-assistant.ts` (412 lines)
+- HomeAssistantHandler implemented in `src/core/actions/handlers/home-assistant-handler.ts` (190 lines)
+- Handler registered in ActionEngine (9 handlers total now)
+- `homeAssistantActionSchema` added to `src/core/actions/schemas.ts`
+- 16 unit tests added (`home-assistant-handler.test.ts`)
 
 **What Exists (VERIFIED):**
 - Settings UI complete in `src/renderer/components/Settings/IntegrationSettings.tsx` (386 lines)
 - URL/token inputs, enable toggle, test connection button
 - `HomeAssistantSettings` type in `src/shared/types/config.ts`
 - Default settings defined, ConfigManager handles persistence
-
-**What's Missing:**
-- [ ] `src/core/integrations/home-assistant.ts` - REST API client
-- [ ] `src/core/actions/handlers/home-assistant-handler.ts` - Action handler
-- [ ] `src/renderer/components/ActionEditor/HomeAssistantAction.tsx` - Action form
-- [ ] Add `'home_assistant'` to action type enum in schemas.ts
 
 ---
 
@@ -394,7 +395,7 @@ These don't block MVP but are significant gaps.
 | HIDManager | ✅ DONE | ✅ DONE | Emits events, connected to tray |
 | DeviceEventParser | ✅ DONE | ✅ DONE | Instantiated, wired to HIDManager |
 | EventBinder | ✅ DONE | ✅ DONE | Instantiated, receives parsed events |
-| ActionEngine | ✅ DONE | ✅ DONE | All 8 handlers registered |
+| ActionEngine | ✅ DONE | ✅ DONE | All 9 handlers registered |
 | KeyboardHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | LaunchHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | ScriptHandler | ✅ DONE | ✅ DONE | Registered and operational |
@@ -409,13 +410,13 @@ These don't block MVP but are significant gaps.
 | ConfigManager | ✅ DONE | ✅ DONE | Fully working |
 | All UI Components | ✅ DONE | ✅ DONE | Fully working |
 | IPC Handlers | ✅ DONE | ✅ DONE | Brightness and image handlers complete |
-| Test Framework | ✅ DONE | ✅ DONE | 10 test files with 183 tests |
+| Test Framework | ✅ DONE | ✅ DONE | 11 test files with 199 tests |
 | Toast Notifications | ✅ DONE | ✅ DONE | 11 tests in Toast.test.tsx |
 | ErrorBoundary | ✅ DONE | ✅ DONE | 8 tests in ErrorBoundary.test.tsx |
 | Spinner | ✅ DONE | ✅ DONE | 8 tests in Spinner.test.tsx |
 | Build Icon | ❌ NOT DONE | ❌ NOT DONE | build/icon.ico missing |
 | HA Settings UI | ✅ DONE | ✅ DONE | In IntegrationSettings.tsx |
-| HA Backend | ❌ NOT DONE | ❌ NOT DONE | Client + handler missing |
+| HA Backend | ✅ DONE | ✅ DONE | Client + handler complete |
 | NR Settings UI | ✅ DONE | ✅ DONE | In IntegrationSettings.tsx |
 | NR Backend | ❌ NOT DONE | ❌ NOT DONE | Client + handler missing |
 
@@ -433,7 +434,7 @@ These don't block MVP but are significant gaps.
 | system | ✅ | ✅ | ✅ | Fully operational |
 | profile | ✅ | ✅ | ✅ | Fully operational |
 | text | ✅ | ✅ | ✅ | Fully operational |
-| home_assistant | ❌ | ❌ | ❌ | Phase 6 |
+| home_assistant | ✅ | ✅ | ✅ | Fully operational |
 | node_red | ❌ | ❌ | ❌ | Phase 6 |
 
 ---
@@ -449,8 +450,8 @@ These don't block MVP but are significant gaps.
 | `src/core/device/image-processor.ts` | Image conversion | DONE - used by SET_BUTTON_IMAGE |
 | `src/core/device/device-events.ts` | Event parser | DONE - wired to HIDManager |
 | `src/core/actions/event-binder.ts` | Event-action mapper | DONE - receives parsed events |
-| `src/core/actions/action-engine.ts` | Action executor | DONE - 8 handlers registered |
-| `src/core/actions/handlers/*.ts` | 8 action handlers | DONE - all registered and operational |
+| `src/core/actions/action-engine.ts` | Action executor | DONE - 9 handlers registered |
+| `src/core/actions/handlers/*.ts` | 9 action handlers | DONE - all registered and operational |
 | `src/preload/index.ts` | IPC bridge | DONE |
 | `src/shared/types/ipc.ts` | IPC type definitions | 3 channels defined but unused |
 | `src/shared/types/config.ts` | Profile/Button/Encoder types | DONE - reference for binding structure |
@@ -556,6 +557,6 @@ npm run dev            # App starts with device
 npm run dist           # Creates installer (needs build/icon.ico)
 
 # Test verification (P0.1 COMPLETE)
-npm run test           # Unit tests pass ✓ (183 tests)
+npm run test           # Unit tests pass ✓ (199 tests)
 npm run test:coverage  # Coverage report generated
 ```

@@ -140,7 +140,7 @@ export class HomeAssistantHandler implements ActionHandler<HomeAssistantAction> 
 
     // Try to get config from ConfigManager
     if (this.configManager) {
-      const integrations = this.configManager.getIntegrationSettings();
+      const integrations = this.configManager.getIntegrations();
       const haSettings = integrations.homeAssistant;
 
       if (!haSettings.enabled) {

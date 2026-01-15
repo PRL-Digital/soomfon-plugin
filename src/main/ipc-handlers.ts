@@ -48,6 +48,7 @@ import { MediaHandler } from '../core/actions/handlers/media-handler';
 import { SystemHandler } from '../core/actions/handlers/system-handler';
 import { ProfileHandler } from '../core/actions/handlers/profile-handler';
 import { TextHandler } from '../core/actions/handlers/text-handler';
+import { HomeAssistantHandler } from '../core/actions/handlers/home-assistant-handler';
 
 // Services singleton instances
 let hidManager: HIDManager | null = null;
@@ -158,6 +159,10 @@ function initActionEngine(): ActionEngine {
 
     // TextHandler for text typing macros
     actionEngine.registerHandler(new TextHandler());
+
+    // HomeAssistantHandler for smart home integration
+    const cm = initConfigManager();
+    actionEngine.registerHandler(new HomeAssistantHandler(cm));
 
     console.log('ActionEngine initialized with handlers:', actionEngine.getRegisteredTypes());
   }

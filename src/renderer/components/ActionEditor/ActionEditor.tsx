@@ -8,6 +8,9 @@ import { HttpActionForm } from './HttpAction';
 import { MediaActionForm } from './MediaAction';
 import { SystemActionForm } from './SystemAction';
 import { ImagePicker } from './ImagePicker';
+import { HomeAssistantActionForm } from './HomeAssistantAction';
+import { ProfileActionForm } from './ProfileAction';
+import { TextActionForm } from './TextAction';
 import type {
   Action,
   ActionType,
@@ -17,6 +20,9 @@ import type {
   HttpAction,
   MediaAction,
   SystemAction,
+  ProfileAction,
+  TextAction,
+  HomeAssistantAction,
 } from '@shared/types/actions';
 
 /** Get display name for selection type */
@@ -55,6 +61,12 @@ const createDefaultAction = (type: ActionType): Partial<Action> => {
       return { ...base, type: 'media', action: 'play_pause' } as Partial<MediaAction>;
     case 'system':
       return { ...base, type: 'system', action: 'show_desktop' } as Partial<SystemAction>;
+    case 'profile':
+      return { ...base, type: 'profile', profileId: '' } as Partial<ProfileAction>;
+    case 'text':
+      return { ...base, type: 'text', text: '', typeDelay: 0 } as Partial<TextAction>;
+    case 'home_assistant':
+      return { ...base, type: 'home_assistant', operation: 'toggle', entityId: '' } as Partial<HomeAssistantAction>;
     default:
       return base;
   }
@@ -242,6 +254,24 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
             {actionType === 'system' && (
               <SystemActionForm
                 config={actionConfig as Partial<SystemAction>}
+                onChange={handleConfigChange}
+              />
+            )}
+            {actionType === 'profile' && (
+              <ProfileActionForm
+                config={actionConfig as Partial<ProfileAction>}
+                onChange={handleConfigChange}
+              />
+            )}
+            {actionType === 'text' && (
+              <TextActionForm
+                config={actionConfig as Partial<TextAction>}
+                onChange={handleConfigChange}
+              />
+            )}
+            {actionType === 'home_assistant' && (
+              <HomeAssistantActionForm
+                config={actionConfig as Partial<HomeAssistantAction>}
                 onChange={handleConfigChange}
               />
             )}

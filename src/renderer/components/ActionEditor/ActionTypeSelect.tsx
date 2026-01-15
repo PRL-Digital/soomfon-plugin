@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /** Available action types for selection */
-export type ActionTypeOption = 'keyboard' | 'launch' | 'script' | 'http' | 'media' | 'system';
+export type ActionTypeOption = 'keyboard' | 'launch' | 'script' | 'http' | 'media' | 'system' | 'profile' | 'text' | 'home_assistant';
 
 /** Action type metadata */
 interface ActionTypeInfo {
@@ -48,6 +48,24 @@ const ACTION_TYPES: ActionTypeInfo[] = [
     label: 'System',
     icon: '💻',
     description: 'System commands',
+  },
+  {
+    value: 'profile',
+    label: 'Profile',
+    icon: '📋',
+    description: 'Switch to another profile',
+  },
+  {
+    value: 'text',
+    label: 'Text',
+    icon: '📝',
+    description: 'Type text macros',
+  },
+  {
+    value: 'home_assistant',
+    label: 'Home Assistant',
+    icon: '🏠',
+    description: 'Control Home Assistant',
   },
 ];
 

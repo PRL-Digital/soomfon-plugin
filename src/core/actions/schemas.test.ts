@@ -21,6 +21,7 @@ import {
   httpActionSchema,
   mediaActionSchema,
   systemActionSchema,
+  homeAssistantActionSchema,
   validateAction,
   safeValidateAction,
 } from './schemas';
@@ -514,6 +515,175 @@ describe('Action Schemas', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error).toBeDefined();
+      }
+    });
+  });
+
+  describe('homeAssistantActionSchema', () => {
+    it('should validate a valid home assistant action with toggle operation', () => {
+      const action = {
+        id: 'test-1',
+        type: 'home_assistant',
+        name: 'Toggle Light',
+        operation: 'toggle',
+        entityId: 'light.living_room',
+        enabled: true,
+      };
+
+      const result = homeAssistantActionSchema.safeParse(action);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate all home assistant operation types', () => {
+      const operations = [
+        'toggle',
+        'turn_on',
+        'turn_off',
+        'set_brightness',
+        'run_script',
+        'trigger_automation',
+        'custom',
+      ];
+
+      for (const operation of operations) {
+        const action = {
+          id: 'test-1',
+          type: 'home_assistant',
+          name: 'HA Action',
+          operation,
+          entityId: 'light.test',
+          enabled: true,
+        };
+
+        const result = homeAssistantActionSchema.safeParse(action);
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it('should accept optional brightness for set_brightness operation', () => {
+      const action = {
+        id: 'test-1',
+        type: 'home_assistant',
+        name: 'Set Brightness',
+        operation: 'set_brightness',
+        entityId: 'light.bedroom',
+        brightness: 128,
+        enabled: true,
+      };
+
+      const result = homeAssistantActionSchema.safeParse(action);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.brightness).toBe(128);
+      }
+    });
+
+    it('should reject brightness outside valid range (0-255)', () => {
+      const actionOver = {
+        id: 'test-1',
+        type: 'home_assistant',
+        name: 'Invalid Brightness',
+        operation: 'set_brightness',
+        entityId: 'light.test',
+        brightness: 300,
+        enabled: true,
+      };
+
+      const actionUnder = {
+        id: 'test-2',
+        type: 'home_assistant',
+        name: 'Invalid Brightness',
+        operation: 'set_brightness',
+        entityId: 'light.test',
+        brightness: -10,
+        enabled: true,
+      };
+
+      expect(homeAssistantActionSchema.safeParse(actionOver).success).toBe(false);
+      expect(homeAssistantActionSchema.safeParse(actionUnder).success).toBe(false);
+    });
+
+    it('should accept optional customService for custom operation', () => {
+      const action = {
+        id: 'test-1',
+        type: 'home_assistant',
+        name: 'Custom Service',
+        operation: 'custom',
+        entityId: 'light.strip',
+        customService: {
+          domain: 'light',
+          service: 'turn_on',
+          data: { brightness: 200, transition: 2 },
+        },
+        enabled: true,
+      };
+
+      const result = homeAssistantActionSchema.safeParse(action);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.customService).toEqual({
+          domain: 'light',
+          service: 'turn_on',
+          data: { brightness: 200, transition: 2 },
+        });
+      }
+    });
+
+    it('should require entityId field', () => {
+      const action = {
+        id: 'test-1',
+        type: 'home_assistant',
+        name: 'Missing Entity',
+        operation: 'toggle',
+        enabled: true,
+      };
+
+      const result = homeAssistantActionSchema.safeParse(action);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty entityId', () => {
+      const action = {
+        id: 'test-1',
+        type: 'home_assistant',
+        name: 'Empty Entity',
+        operation: 'toggle',
+        entityId: '',
+        enabled: true,
+      };
+
+      const result = homeAssistantActionSchema.safeParse(action);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid operation type', () => {
+      const action = {
+        id: 'test-1',
+        type: 'home_assistant',
+        name: 'Invalid Op',
+        operation: 'invalid_operation',
+        entityId: 'light.test',
+        enabled: true,
+      };
+
+      const result = homeAssistantActionSchema.safeParse(action);
+      expect(result.success).toBe(false);
+    });
+
+    it('should validate through actionSchema discriminated union', () => {
+      const action = {
+        id: 'test-1',
+        type: 'home_assistant',
+        name: 'HA via Union',
+        operation: 'toggle',
+        entityId: 'switch.fan',
+        enabled: true,
+      };
+
+      const result = actionSchema.safeParse(action);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.type).toBe('home_assistant');
       }
     });
   });
