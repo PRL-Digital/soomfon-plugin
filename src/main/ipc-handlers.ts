@@ -46,6 +46,7 @@ import { ScriptHandler } from '../core/actions/handlers/script-handler';
 import { HttpHandler } from '../core/actions/handlers/http-handler';
 import { MediaHandler } from '../core/actions/handlers/media-handler';
 import { SystemHandler } from '../core/actions/handlers/system-handler';
+import { ProfileHandler } from '../core/actions/handlers/profile-handler';
 
 // Services singleton instances
 let hidManager: HIDManager | null = null;
@@ -149,6 +150,10 @@ function initActionEngine(): ActionEngine {
     actionEngine.registerHandler(new HttpHandler());
     actionEngine.registerHandler(new MediaHandler());
     actionEngine.registerHandler(new SystemHandler());
+
+    // ProfileHandler needs ProfileManager for profile switching
+    const pm = initProfileManager();
+    actionEngine.registerHandler(new ProfileHandler(pm));
 
     console.log('ActionEngine initialized with handlers:', actionEngine.getRegisteredTypes());
   }

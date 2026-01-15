@@ -1,8 +1,8 @@
 # SOOMFON CN002-4B27 Implementation Plan
 
-**Last Updated:** 2026-01-15 (Priority 1, 2 & 3 complete - event forwarding to UI implemented)
+**Last Updated:** 2026-01-15 (Priority 1, 2, 3 & P5.1 complete - ProfileHandler implemented)
 **Project:** Custom Windows driver for SOOMFON CN002-4B27 stream deck
-**Status:** MVP Complete - Event pipeline wired, handlers registered, IPC complete, persistence working, UI event forwarding complete
+**Status:** MVP Complete - 7 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete
 
 ---
 
@@ -307,14 +307,17 @@ These don't block MVP but are significant gaps.
 
 ### PRIORITY 5: Post-MVP (Optional)
 
-#### P5.1: ProfileHandler Action
-- **Files:** `src/core/actions/handlers/` (new file)
-- **Status:** Schema exists, handler NOT IMPLEMENTED (VERIFIED)
+#### P5.1: ProfileHandler Action - COMPLETE
+- **Files:** `src/core/actions/handlers/profile-handler.ts`
+- **Status:** COMPLETE (2026-01-15)
 - **Purpose:** Switch profiles via button press
 
-**Notes:**
-- Schema defined in `src/core/actions/schemas.ts:121-124`
-- GUI already has profile switching - this is convenience feature
+**Implementation:**
+- Handler validates target profile exists before switching
+- Returns success with data about previous/new profile names
+- Skips switch if already on target profile (success with alreadyActive flag)
+- Registered in ActionEngine during initialization
+- 12 unit tests added (`profile-handler.test.ts`)
 
 ---
 
@@ -370,14 +373,14 @@ These don't block MVP but are significant gaps.
 | HIDManager | ✅ DONE | ✅ DONE | Emits events, connected to tray |
 | DeviceEventParser | ✅ DONE | ✅ DONE | Instantiated, wired to HIDManager |
 | EventBinder | ✅ DONE | ✅ DONE | Instantiated, receives parsed events |
-| ActionEngine | ✅ DONE | ✅ DONE | All 6 handlers registered |
+| ActionEngine | ✅ DONE | ✅ DONE | All 7 handlers registered |
 | KeyboardHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | LaunchHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | ScriptHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | HttpHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | MediaHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | SystemHandler | ✅ DONE | ✅ DONE | Registered and operational |
-| ProfileHandler | ❌ NOT DONE | ❌ NOT DONE | Schema only, Post-MVP |
+| ProfileHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | TextHandler | ❌ NOT DONE | ❌ NOT DONE | Schema only, Post-MVP |
 | SoomfonProtocol | ✅ DONE | ✅ DONE | Used by IPC handlers |
 | ImageProcessor | ✅ DONE | ✅ DONE | Used by SET_BUTTON_IMAGE handler |
@@ -385,7 +388,7 @@ These don't block MVP but are significant gaps.
 | ConfigManager | ✅ DONE | ✅ DONE | Fully working |
 | All UI Components | ✅ DONE | ✅ DONE | Fully working |
 | IPC Handlers | ✅ DONE | ✅ DONE | Brightness and image handlers complete |
-| Test Framework | ✅ DONE | ✅ DONE | 5 test files with 130 tests |
+| Test Framework | ✅ DONE | ✅ DONE | 6 test files with 142 tests |
 | Build Icon | ❌ NOT DONE | ❌ NOT DONE | build/icon.ico missing |
 | HA Settings UI | ✅ DONE | ✅ DONE | In IntegrationSettings.tsx |
 | HA Backend | ❌ NOT DONE | ❌ NOT DONE | Client + handler missing |
@@ -404,7 +407,7 @@ These don't block MVP but are significant gaps.
 | http | ✅ | ✅ | ✅ | Fully operational |
 | media | ✅ | ✅ | ✅ | Fully operational |
 | system | ✅ | ✅ | ✅ | Fully operational |
-| profile | ✅ | ❌ | ❌ | Post-MVP |
+| profile | ✅ | ✅ | ✅ | Fully operational |
 | text | ✅ | ❌ | ❌ | Post-MVP |
 | home_assistant | ❌ | ❌ | ❌ | Phase 6 |
 | node_red | ❌ | ❌ | ❌ | Phase 6 |
@@ -422,8 +425,8 @@ These don't block MVP but are significant gaps.
 | `src/core/device/image-processor.ts` | Image conversion | DONE - used by SET_BUTTON_IMAGE |
 | `src/core/device/device-events.ts` | Event parser | DONE - wired to HIDManager |
 | `src/core/actions/event-binder.ts` | Event-action mapper | DONE - receives parsed events |
-| `src/core/actions/action-engine.ts` | Action executor | DONE - 6 handlers registered |
-| `src/core/actions/handlers/*.ts` | 6 action handlers | DONE - all registered and operational |
+| `src/core/actions/action-engine.ts` | Action executor | DONE - 7 handlers registered |
+| `src/core/actions/handlers/*.ts` | 7 action handlers | DONE - all registered and operational |
 | `src/preload/index.ts` | IPC bridge | DONE |
 | `src/shared/types/ipc.ts` | IPC type definitions | 3 channels defined but unused |
 | `src/shared/types/config.ts` | Profile/Button/Encoder types | DONE - reference for binding structure |
