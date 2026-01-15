@@ -1,0 +1,1 @@
+Temporary storage for HID Manager implementation - to be written to src/core/device/hid-manager.ts

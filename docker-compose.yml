@@ -1,0 +1,16 @@
+services:
+  dev:
+    build: .
+    devices:
+      - /dev/hidraw0:/dev/hidraw0
+      - /dev/hidraw1:/dev/hidraw1
+    volumes:
+      - .:/workspace
+      - /mnt/c/Users/rober/.claude:/home/dev/.claude    # WSL path to Windows
+      - /mnt/c/Users/rober/.ssh:/home/dev/.ssh:ro       # WSL path to Windows
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    environment:
+      - GIT_USER_NAME=Your Name      # TODO: Set your git name
+      - GIT_USER_EMAIL=you@email.com # TODO: Set your git email

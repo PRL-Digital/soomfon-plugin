@@ -1,0 +1,1 @@
+claude "create a .test.md file with the words `file made` in ir" --dangerously-skip-permissions

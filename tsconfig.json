@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["src/core/**/*", "src/shared/**/*", "src/index.ts"],
+  "exclude": ["node_modules", "dist", "scripts", "src/main", "src/preload", "src/renderer"]
+}
