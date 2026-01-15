@@ -28,3 +28,5 @@ npm-debug.log*
 # Wireshark captures (large binary files)
 *.pcapng
 *.pcap
+
+release

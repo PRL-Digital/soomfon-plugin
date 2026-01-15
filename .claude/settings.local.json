@@ -68,7 +68,9 @@
       "WebFetch(domain:den.dev)",
       "WebFetch(domain:sdk.key123.vip)",
       "Skill(ralph-loop:ralph-loop)",
-      "Bash(.claude/scripts/ralph-loop.sh --help)"
+      "Bash(.claude/scripts/ralph-loop.sh --help)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run dist:win:*)"
     ],
     "deny": [],
     "ask": []

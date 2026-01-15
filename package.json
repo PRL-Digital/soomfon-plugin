@@ -2,7 +2,7 @@
   "name": "soomfon-controller",
   "version": "0.1.0",
   "description": "Stream Deck-style controller for SOOMFON CN002-4B27 HID device",
-  "main": "dist/main/index.js",
+  "main": "dist/main/main/index.js",
   "scripts": {
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
@@ -44,6 +44,8 @@
     "autoprefixer": "^10.4.23",
     "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.4.0",
     "happy-dom": "^20.3.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
@@ -56,8 +58,6 @@
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
     "axios": "^1.13.2",
-    "electron": "^39.2.7",
-    "electron-builder": "^26.4.0",
     "electron-store": "^8.2.0",
     "node-hid": "^3.2.0",
     "react": "^19.2.3",

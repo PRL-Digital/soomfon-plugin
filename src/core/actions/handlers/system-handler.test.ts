@@ -143,7 +143,7 @@ describe('SystemHandler', () => {
   describe('executeShortcut', () => {
     it('should execute shortcut with modifiers', async () => {
       const shortcut = {
-        modifiers: [Key.LeftWin, Key.LeftControl] as unknown as typeof Key[],
+        modifiers: [Key.LeftWin, Key.LeftControl] as Key[],
         key: Key.Left,
       };
 
@@ -162,7 +162,7 @@ describe('SystemHandler', () => {
 
     it('should execute shortcut without modifiers', async () => {
       const shortcut = {
-        modifiers: [] as unknown as typeof Key[],
+        modifiers: [] as Key[],
         key: Key.LeftWin,
       };
 
@@ -266,7 +266,7 @@ describe('SystemHandler', () => {
 
     it('should handle keyboard.releaseKey errors', async () => {
       // First call succeeds, second (release) fails
-      vi.mocked(keyboard.pressKey).mockResolvedValue(undefined);
+      vi.mocked(keyboard.pressKey).mockResolvedValue(undefined as never);
       vi.mocked(keyboard.releaseKey).mockRejectedValueOnce(new Error('Release error'));
       const action = createMockSystemAction();
 
