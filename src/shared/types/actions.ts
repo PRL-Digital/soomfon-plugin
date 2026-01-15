@@ -12,7 +12,8 @@ export type ActionType =
   | 'media'
   | 'system'
   | 'profile'
-  | 'text';
+  | 'text'
+  | 'home_assistant';
 
 /** Base action interface - all actions extend this */
 export interface BaseAction {
@@ -143,6 +144,39 @@ export interface TextAction extends BaseAction {
   typeDelay?: number;
 }
 
+/** Home Assistant operation types */
+export type HomeAssistantOperationType =
+  | 'toggle'
+  | 'turn_on'
+  | 'turn_off'
+  | 'set_brightness'
+  | 'run_script'
+  | 'trigger_automation'
+  | 'custom';
+
+/** Custom service call definition */
+export interface HomeAssistantCustomService {
+  /** Service domain (e.g., 'light', 'switch') */
+  domain: string;
+  /** Service name (e.g., 'turn_on', 'toggle') */
+  service: string;
+  /** Additional service data as JSON */
+  data?: Record<string, unknown>;
+}
+
+/** Home Assistant action - controls Home Assistant entities */
+export interface HomeAssistantAction extends BaseAction {
+  type: 'home_assistant';
+  /** Operation to perform */
+  operation: HomeAssistantOperationType;
+  /** Target entity ID (e.g., 'light.living_room') */
+  entityId: string;
+  /** Brightness value for set_brightness operation (0-255) */
+  brightness?: number;
+  /** Custom service definition for custom operation */
+  customService?: HomeAssistantCustomService;
+}
+
 /** Union type of all action types */
 export type Action =
   | KeyboardAction
@@ -152,7 +186,8 @@ export type Action =
   | MediaAction
   | SystemAction
   | ProfileAction
-  | TextAction;
+  | TextAction
+  | HomeAssistantAction;
 
 /** Execution result status */
 export type ExecutionStatus = 'success' | 'failure' | 'cancelled';

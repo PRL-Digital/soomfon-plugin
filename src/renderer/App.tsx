@@ -5,7 +5,7 @@ import { DeviceView, Selection } from './components/DeviceView';
 import { ActionEditor, EncoderEditor, EncoderConfig } from './components/ActionEditor';
 import { ProfileSelector, ProfileList, ProfileEditor, ProfileDialogMode } from './components/ProfileManager';
 import { SettingsPanel } from './components/Settings';
-import { useToast } from './components/common';
+import { useToast, Spinner } from './components/common';
 import { ConnectionState } from '@shared/types/device';
 import type { Action } from '@shared/types/actions';
 import type { Profile } from '@shared/types/config';
@@ -141,7 +141,9 @@ const DeviceTab: React.FC<{
         <h2 className="panel-header">Active Profile</h2>
         <div className="panel-content">
           {profiles.isLoading ? (
-            <p className="text-text-muted italic">Loading profiles...</p>
+            <div className="flex items-center justify-center py-4">
+              <Spinner size="sm" text="Loading..." />
+            </div>
           ) : (
             <>
               <div className="flex items-center justify-between py-2 border-b border-bg-tertiary">

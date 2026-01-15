@@ -5,6 +5,7 @@
 
 import React from 'react';
 import type { Profile } from '@shared/types/config';
+import { Spinner } from '../common';
 
 export interface ProfileListProps {
   profiles: Profile[];
@@ -91,7 +92,9 @@ const ProfileList: React.FC<ProfileListProps> = ({
       {/* Profile list */}
       <div className="profile-list__content">
         {isLoading ? (
-          <div className="profile-list__loading">Loading profiles...</div>
+          <div className="profile-list__loading">
+            <Spinner size="md" text="Loading profiles..." />
+          </div>
         ) : profiles.length === 0 ? (
           <div className="profile-list__empty">
             <div className="profile-list__empty-icon">

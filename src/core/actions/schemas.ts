@@ -15,6 +15,7 @@ export const actionTypeSchema = z.enum([
   'system',
   'profile',
   'text',
+  'home_assistant',
 ]);
 
 /** Base action schema - fields common to all actions */
@@ -130,6 +131,33 @@ export const textActionSchema = baseActionSchema.extend({
   typeDelay: z.number().nonnegative().optional(),
 });
 
+/** Home Assistant operation type schema */
+export const homeAssistantOperationTypeSchema = z.enum([
+  'toggle',
+  'turn_on',
+  'turn_off',
+  'set_brightness',
+  'run_script',
+  'trigger_automation',
+  'custom',
+]);
+
+/** Home Assistant custom service schema */
+export const homeAssistantCustomServiceSchema = z.object({
+  domain: z.string().min(1),
+  service: z.string().min(1),
+  data: z.record(z.unknown()).optional(),
+});
+
+/** Home Assistant action schema */
+export const homeAssistantActionSchema = baseActionSchema.extend({
+  type: z.literal('home_assistant'),
+  operation: homeAssistantOperationTypeSchema,
+  entityId: z.string().min(1),
+  brightness: z.number().int().min(0).max(255).optional(),
+  customService: homeAssistantCustomServiceSchema.optional(),
+});
+
 /** Union schema for all action types - uses discriminated union */
 export const actionSchema = z.discriminatedUnion('type', [
   keyboardActionSchema,
@@ -140,6 +168,7 @@ export const actionSchema = z.discriminatedUnion('type', [
   systemActionSchema,
   profileActionSchema,
   textActionSchema,
+  homeAssistantActionSchema,
 ]);
 
 /** Execution status schema */
@@ -186,6 +215,7 @@ export type MediaActionInput = z.input<typeof mediaActionSchema>;
 export type SystemActionInput = z.input<typeof systemActionSchema>;
 export type ProfileActionInput = z.input<typeof profileActionSchema>;
 export type TextActionInput = z.input<typeof textActionSchema>;
+export type HomeAssistantActionInput = z.input<typeof homeAssistantActionSchema>;
 export type ActionInput = z.input<typeof actionSchema>;
 export type ActionBindingInput = z.input<typeof actionBindingSchema>;
 
@@ -198,6 +228,7 @@ export type ValidatedMediaAction = z.output<typeof mediaActionSchema>;
 export type ValidatedSystemAction = z.output<typeof systemActionSchema>;
 export type ValidatedProfileAction = z.output<typeof profileActionSchema>;
 export type ValidatedTextAction = z.output<typeof textActionSchema>;
+export type ValidatedHomeAssistantAction = z.output<typeof homeAssistantActionSchema>;
 export type ValidatedAction = z.output<typeof actionSchema>;
 export type ValidatedActionBinding = z.output<typeof actionBindingSchema>;
 

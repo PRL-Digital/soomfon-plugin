@@ -1,6 +1,6 @@
 # SOOMFON CN002-4B27 Implementation Plan
 
-**Last Updated:** 2026-01-15 (Priority 1, 2, 3, P5.1, P5.2 & P4.1 partial complete - all core action handlers)
+**Last Updated:** 2026-01-15 (Priority 1, 2, 3, P5.1, P5.2, P4.1 & P4.2 partial complete - all core action handlers)
 **Project:** Custom Windows driver for SOOMFON CN002-4B27 stream deck
 **Status:** MVP Complete - 8 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete
 
@@ -38,7 +38,7 @@
 | 6 | Integrations (HA/Node-RED) | PARTIAL | 15% | Settings UI done, no backend |
 | 7 | Polish & Distribution | PENDING | 40% | Build config ready, test framework added, event forwarding complete, error handling partial |
 
-**Overall Progress:** ~93% (MVP complete - all 8 core handlers, persistence working, 175 tests, UI event forwarding complete)
+**Overall Progress:** ~94% (MVP complete - all 8 core handlers, persistence working, 183 tests, UI event forwarding complete)
 
 ---
 
@@ -299,10 +299,18 @@ These don't block MVP but are significant gaps.
   - Profile import
 - 19 unit tests added (11 for Toast, 8 for ErrorBoundary)
 
-#### P4.2: Loading States
-- [ ] Add loading spinners during device connection
-- [ ] Add skeleton loaders for profile list
+#### P4.2: Loading States - PARTIAL
+- [x] Spinner component created in `src/renderer/components/common/Spinner/`
+- [x] ProfileList updated to use Spinner for loading state
+- [x] App.tsx Profile Status Panel updated to use Spinner
+- [x] 8 unit tests added for Spinner component
 - [ ] Add progress indicator for image upload
+
+**Implementation (2026-01-15):**
+- Spinner component implemented in `src/renderer/components/common/Spinner/`
+- ProfileList component updated to show Spinner during profile loading
+- App.tsx Profile Status Panel updated to use Spinner for loading states
+- 8 unit tests added (Spinner.test.tsx)
 
 #### P4.3: Windows Installer
 - [ ] Configure electron-builder for NSIS installer (config exists)
@@ -401,9 +409,10 @@ These don't block MVP but are significant gaps.
 | ConfigManager | ✅ DONE | ✅ DONE | Fully working |
 | All UI Components | ✅ DONE | ✅ DONE | Fully working |
 | IPC Handlers | ✅ DONE | ✅ DONE | Brightness and image handlers complete |
-| Test Framework | ✅ DONE | ✅ DONE | 9 test files with 175 tests |
+| Test Framework | ✅ DONE | ✅ DONE | 10 test files with 183 tests |
 | Toast Notifications | ✅ DONE | ✅ DONE | 11 tests in Toast.test.tsx |
 | ErrorBoundary | ✅ DONE | ✅ DONE | 8 tests in ErrorBoundary.test.tsx |
+| Spinner | ✅ DONE | ✅ DONE | 8 tests in Spinner.test.tsx |
 | Build Icon | ❌ NOT DONE | ❌ NOT DONE | build/icon.ico missing |
 | HA Settings UI | ✅ DONE | ✅ DONE | In IntegrationSettings.tsx |
 | HA Backend | ❌ NOT DONE | ❌ NOT DONE | Client + handler missing |
@@ -547,6 +556,6 @@ npm run dev            # App starts with device
 npm run dist           # Creates installer (needs build/icon.ico)
 
 # Test verification (P0.1 COMPLETE)
-npm run test           # Unit tests pass ✓ (175 tests)
+npm run test           # Unit tests pass ✓ (183 tests)
 npm run test:coverage  # Coverage report generated
 ```
