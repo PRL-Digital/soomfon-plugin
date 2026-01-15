@@ -1,8 +1,8 @@
 # SOOMFON CN002-4B27 Implementation Plan
 
-**Last Updated:** 2026-01-15 (Priority 1, 2, 3 & P5.1 complete - ProfileHandler implemented)
+**Last Updated:** 2026-01-15 (Priority 1, 2, 3, P5.1 & P5.2 complete - all core action handlers)
 **Project:** Custom Windows driver for SOOMFON CN002-4B27 stream deck
-**Status:** MVP Complete - 7 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete
+**Status:** MVP Complete - 8 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete
 
 ---
 
@@ -38,7 +38,7 @@
 | 6 | Integrations (HA/Node-RED) | PARTIAL | 15% | Settings UI done, no backend |
 | 7 | Polish & Distribution | PENDING | 30% | Build config ready, test framework added, event forwarding complete |
 
-**Overall Progress:** ~90% (MVP complete - persistence working, test framework complete, UI event forwarding complete)
+**Overall Progress:** ~92% (MVP complete - all 8 core handlers, persistence working, 156 tests, UI event forwarding complete)
 
 ---
 
@@ -321,14 +321,17 @@ These don't block MVP but are significant gaps.
 
 ---
 
-#### P5.2: TextHandler Action
-- **Files:** `src/core/actions/handlers/` (new file)
-- **Status:** Schema exists, handler NOT IMPLEMENTED (VERIFIED)
+#### P5.2: TextHandler Action - COMPLETE
+- **Files:** `src/core/actions/handlers/text-handler.ts`
+- **Status:** COMPLETE (2026-01-15)
 - **Purpose:** Type text macros via button press
 
-**Notes:**
-- Schema defined in `src/core/actions/schemas.ts:127-131`
-- KeyboardHandler can cover most use cases
+**Implementation:**
+- Uses nut-js keyboard.type() for text input
+- Supports configurable typeDelay between characters
+- Validates action is enabled and text is not empty
+- Registered in ActionEngine during initialization
+- 14 unit tests added (`text-handler.test.ts`)
 
 ---
 
@@ -373,7 +376,7 @@ These don't block MVP but are significant gaps.
 | HIDManager | ✅ DONE | ✅ DONE | Emits events, connected to tray |
 | DeviceEventParser | ✅ DONE | ✅ DONE | Instantiated, wired to HIDManager |
 | EventBinder | ✅ DONE | ✅ DONE | Instantiated, receives parsed events |
-| ActionEngine | ✅ DONE | ✅ DONE | All 7 handlers registered |
+| ActionEngine | ✅ DONE | ✅ DONE | All 8 handlers registered |
 | KeyboardHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | LaunchHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | ScriptHandler | ✅ DONE | ✅ DONE | Registered and operational |
@@ -381,14 +384,14 @@ These don't block MVP but are significant gaps.
 | MediaHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | SystemHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | ProfileHandler | ✅ DONE | ✅ DONE | Registered and operational |
-| TextHandler | ❌ NOT DONE | ❌ NOT DONE | Schema only, Post-MVP |
+| TextHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | SoomfonProtocol | ✅ DONE | ✅ DONE | Used by IPC handlers |
 | ImageProcessor | ✅ DONE | ✅ DONE | Used by SET_BUTTON_IMAGE handler |
 | ProfileManager | ✅ DONE | ✅ DONE | Fully working |
 | ConfigManager | ✅ DONE | ✅ DONE | Fully working |
 | All UI Components | ✅ DONE | ✅ DONE | Fully working |
 | IPC Handlers | ✅ DONE | ✅ DONE | Brightness and image handlers complete |
-| Test Framework | ✅ DONE | ✅ DONE | 6 test files with 142 tests |
+| Test Framework | ✅ DONE | ✅ DONE | 7 test files with 156 tests |
 | Build Icon | ❌ NOT DONE | ❌ NOT DONE | build/icon.ico missing |
 | HA Settings UI | ✅ DONE | ✅ DONE | In IntegrationSettings.tsx |
 | HA Backend | ❌ NOT DONE | ❌ NOT DONE | Client + handler missing |
@@ -408,7 +411,7 @@ These don't block MVP but are significant gaps.
 | media | ✅ | ✅ | ✅ | Fully operational |
 | system | ✅ | ✅ | ✅ | Fully operational |
 | profile | ✅ | ✅ | ✅ | Fully operational |
-| text | ✅ | ❌ | ❌ | Post-MVP |
+| text | ✅ | ✅ | ✅ | Fully operational |
 | home_assistant | ❌ | ❌ | ❌ | Phase 6 |
 | node_red | ❌ | ❌ | ❌ | Phase 6 |
 
@@ -425,8 +428,8 @@ These don't block MVP but are significant gaps.
 | `src/core/device/image-processor.ts` | Image conversion | DONE - used by SET_BUTTON_IMAGE |
 | `src/core/device/device-events.ts` | Event parser | DONE - wired to HIDManager |
 | `src/core/actions/event-binder.ts` | Event-action mapper | DONE - receives parsed events |
-| `src/core/actions/action-engine.ts` | Action executor | DONE - 7 handlers registered |
-| `src/core/actions/handlers/*.ts` | 7 action handlers | DONE - all registered and operational |
+| `src/core/actions/action-engine.ts` | Action executor | DONE - 8 handlers registered |
+| `src/core/actions/handlers/*.ts` | 8 action handlers | DONE - all registered and operational |
 | `src/preload/index.ts` | IPC bridge | DONE |
 | `src/shared/types/ipc.ts` | IPC type definitions | 3 channels defined but unused |
 | `src/shared/types/config.ts` | Profile/Button/Encoder types | DONE - reference for binding structure |
