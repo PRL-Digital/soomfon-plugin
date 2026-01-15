@@ -38,7 +38,7 @@
 | 6 | Integrations (HA/Node-RED) | PARTIAL | 50% | Settings UI + HA backend complete, Node-RED missing |
 | 7 | Polish & Distribution | PENDING | 40% | Build config ready, test framework added, event forwarding complete, error handling partial |
 
-**Overall Progress:** ~95% (MVP complete - all 9 core handlers, persistence working, 199 tests, UI event forwarding complete)
+**Overall Progress:** ~95% (MVP complete - all 9 core handlers, persistence working, 213 tests, UI event forwarding complete)
 
 ---
 
@@ -410,7 +410,7 @@ These don't block MVP but are significant gaps.
 | ConfigManager | ✅ DONE | ✅ DONE | Fully working |
 | All UI Components | ✅ DONE | ✅ DONE | Fully working |
 | IPC Handlers | ✅ DONE | ✅ DONE | Brightness and image handlers complete |
-| Test Framework | ✅ DONE | ✅ DONE | 11 test files with 199 tests |
+| Test Framework | ✅ DONE | ✅ DONE | 11 test files with 213 tests |
 | Toast Notifications | ✅ DONE | ✅ DONE | 11 tests in Toast.test.tsx |
 | ErrorBoundary | ✅ DONE | ✅ DONE | 8 tests in ErrorBoundary.test.tsx |
 | Spinner | ✅ DONE | ✅ DONE | 8 tests in Spinner.test.tsx |
@@ -557,6 +557,6 @@ npm run dev            # App starts with device
 npm run dist           # Creates installer (needs build/icon.ico)
 
 # Test verification (P0.1 COMPLETE)
-npm run test           # Unit tests pass ✓ (199 tests)
+npm run test           # Unit tests pass ✓ (213 tests)
 npm run test:coverage  # Coverage report generated
 ```
