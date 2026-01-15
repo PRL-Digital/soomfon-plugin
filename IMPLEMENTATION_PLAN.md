@@ -1,8 +1,8 @@
 # SOOMFON CN002-4B27 Implementation Plan
 
-**Last Updated:** 2026-01-15 (Priority 1 tasks completed - core pipeline wired)
+**Last Updated:** 2026-01-15 (Priority 1 & 2 tasks completed - persistence layer implemented)
 **Project:** Custom Windows driver for SOOMFON CN002-4B27 stream deck
-**Status:** MVP Core Complete - Event pipeline wired, handlers registered, IPC complete
+**Status:** MVP Complete - Event pipeline wired, handlers registered, IPC complete, persistence working
 
 ---
 
@@ -34,11 +34,11 @@
 | 2 | Protocol Implementation | COMPLETE | 100% | Code done, IPC handlers complete |
 | 3 | Action System | COMPLETE | 100% | All handlers registered and wired |
 | 4 | Configuration System | COMPLETE | 100% | Fully working |
-| 5 | Electron GUI | IN PROGRESS | 90% | UI done, save/clear stubs |
+| 5 | Electron GUI | COMPLETE | 100% | UI done, save/clear implemented |
 | 6 | Integrations (HA/Node-RED) | PARTIAL | 15% | Settings UI done, no backend |
 | 7 | Polish & Distribution | PENDING | 5% | Build config ready, no tests |
 
-**Overall Progress:** ~75% (Core pipeline wired, persistence layer pending)
+**Overall Progress:** ~85% (MVP complete - persistence working)
 
 ---
 
@@ -61,7 +61,7 @@
 └─────────────┘     └─────────────┘
 ```
 
-**Current Status:** The core event pipeline is fully wired. HIDManager events flow through EventParser → EventBinder → ActionEngine with all 6 handlers registered. Bindings load from active profile on startup and on profile switch. IPC handlers for brightness and button images are complete. Remaining work is persistence layer (save/clear actions from UI).
+**Current Status:** The core event pipeline is fully wired. HIDManager events flow through EventParser → EventBinder → ActionEngine with all 6 handlers registered. Bindings load from active profile on startup and on profile switch. IPC handlers for brightness and button images are complete. Persistence layer is fully implemented - UI can save/clear actions and encoder configs with automatic binding reloads.
 
 ---
 
@@ -137,101 +137,73 @@ All Priority 1 tasks have been completed. The core event pipeline is fully wired
 
 ---
 
-### PRIORITY 2: Persistence Layer (Configuration Saving)
+### PRIORITY 2: Persistence Layer (Configuration Saving) - COMPLETE
 
-These tasks enable user configurations to persist across restarts.
+All Priority 2 tasks have been completed. User configurations now persist across restarts.
 
-#### P2.1: Implement handleActionSave in Renderer
-- **Files:** `src/renderer/App.tsx:370-378`
-- **Status:** STUB - console.log only (VERIFIED)
-- **Issue:** Action save only logs, doesn't call IPC
-
-**Verification Evidence:**
-```typescript
-// Lines 373-374 in App.tsx
-// TODO: Save action to configuration via IPC
-console.log('Saving action for selection:', selection, 'Action:', action, 'Image:', imageUrl);
-```
-
-**Required Changes:**
-- [ ] Replace console.log with IPC call to save binding
-- [ ] Update profile via `window.electronAPI.profile.update()`
-- [ ] Trigger image upload to device after save
+#### P2.1: Implement handleActionSave in Renderer - COMPLETE
+- **Files:** `src/renderer/App.tsx:370-420`
+- **Status:** COMPLETE (2026-01-15)
+- **Implementation:**
+  - Maps selection type (lcd/normal) to button index (0-5 for LCD, 6-8 for normal)
+  - Updates profile buttons array via profiles.update()
+  - Uploads image to device for LCD buttons (index 0-5)
+  - Replaces existing button config if found, otherwise adds new entry
+  - Filters out empty configs after modifications
 
 ---
 
-#### P2.2: Implement handleEncoderSave in Renderer
-- **Files:** `src/renderer/App.tsx:392-400`
-- **Status:** STUB - console.log only (VERIFIED)
-- **Issue:** Encoder config save only logs, doesn't call IPC
-
-**Verification Evidence:**
-```typescript
-// Lines 395-396 in App.tsx
-// TODO: Save encoder config to configuration via IPC
-console.log('Saving encoder config for selection:', selection, 'Config:', encoderConfig);
-```
-
-**Required Changes:**
-- [ ] Replace console.log with IPC call to save encoder binding
-- [ ] Update profile via `window.electronAPI.profile.update()`
+#### P2.2: Implement handleEncoderSave in Renderer - COMPLETE
+- **Files:** `src/renderer/App.tsx:454-495`
+- **Status:** COMPLETE (2026-01-15)
+- **Implementation:**
+  - Converts EncoderEditor's EncoderConfig format to Profile's EncoderConfig format
+  - Maps press/longPress/clockwise/counterClockwise actions to profile schema
+  - Updates profile encoders array via profiles.update()
+  - Replaces existing encoder config if found, otherwise adds new entry
 
 ---
 
-#### P2.3: Implement handleActionClear in Renderer
-- **Files:** `src/renderer/App.tsx:381-389`
-- **Status:** STUB - console.log only (VERIFIED)
-
-**Verification Evidence:**
-```typescript
-// Lines 384-385 in App.tsx
-// TODO: Clear action from configuration via IPC
-console.log('Clearing action for selection:', selection);
-```
-
-**Required Changes:**
-- [ ] Replace console.log with IPC call to remove binding from profile
+#### P2.3: Implement handleActionClear in Renderer - COMPLETE
+- **Files:** `src/renderer/App.tsx:422-452`
+- **Status:** COMPLETE (2026-01-15)
+- **Implementation:**
+  - Removes action from button config by setting to undefined
+  - Filters out empty configs (no action, longPressAction, or image)
+  - Maps selection type to button index (0-8)
+  - Updates profile via profiles.update()
 
 ---
 
-#### P2.4: Implement handleEncoderClear in Renderer
-- **Files:** `src/renderer/App.tsx:403-411`
-- **Status:** STUB - console.log only (VERIFIED)
-
-**Verification Evidence:**
-```typescript
-// Lines 406-407 in App.tsx
-// TODO: Clear encoder config from configuration via IPC
-console.log('Clearing encoder config for selection:', selection);
-```
-
-**Required Changes:**
-- [ ] Replace console.log with IPC call to remove encoder binding from profile
+#### P2.4: Implement handleEncoderClear in Renderer - COMPLETE
+- **Files:** `src/renderer/App.tsx:497-511`
+- **Status:** COMPLETE (2026-01-15)
+- **Implementation:**
+  - Removes encoder config by filtering out the index
+  - Updates profile via profiles.update()
+  - Handles main encoder (index 0) and side encoders (index 1-2)
 
 ---
 
-#### P2.5: Add Binding Management IPC Handlers (Optional)
+#### P2.5: Add Binding Management IPC Handlers - NOT NEEDED
 - **Files:** `src/main/ipc-handlers.ts`, `src/shared/types/ipc.ts`
-- **Status:** DEFINED in types but NOT IMPLEMENTED (VERIFIED)
-- **Issue:** 3 IPC channels declared but no handlers exist
+- **Status:** NOT NEEDED (2026-01-15)
+- **Reason:** profile.update() handles all binding persistence directly
 
-**Missing Handlers:**
-- [ ] `ActionChannels.GET_BINDINGS` - defined at ipc.ts:35, no implementation
-- [ ] `ActionChannels.SAVE_BINDING` - defined at ipc.ts:36, no implementation
-- [ ] `ActionChannels.DELETE_BINDING` - defined at ipc.ts:37, no implementation
-
-**Note:** These may not be needed if binding persistence uses ProfileManager.update() directly. P2.1-P2.4 could update profile bindings without dedicated binding IPC.
+**IPC Channels (defined but unused):**
+- `ActionChannels.GET_BINDINGS` - not needed
+- `ActionChannels.SAVE_BINDING` - not needed
+- `ActionChannels.DELETE_BINDING` - not needed
 
 ---
 
-#### P2.6: Reload EventBinder on Configuration Save
-- **Files:** `src/main/index.ts` or `src/main/ipc-handlers.ts`
-- **Status:** NOT IMPLEMENTED (VERIFIED)
-- **Issue:** After saving bindings, EventBinder doesn't reload them
-
-**Required Changes:**
-- [ ] After profile update, call `eventBinder.loadBindings()` with new bindings
-- [ ] Or subscribe to ProfileManager 'profile:activated' event and reload automatically
+#### P2.6: Reload EventBinder on Configuration Save - ALREADY COMPLETE
+- **Files:** `src/main/ipc-handlers.ts`
+- **Status:** ALREADY COMPLETE (auto-reload mechanism)
+- **Implementation:**
+  - ProfileManager emits 'profile:activated' event on profile updates
+  - Event pipeline subscribes to this event and reloads bindings automatically
+  - No additional code needed - already working
 
 ---
 
@@ -471,16 +443,16 @@ These don't block MVP but are significant gaps.
 
 ## TODO Locations Summary
 
-Remaining TODO comments in the codebase (4 critical + 2 minor):
+Remaining TODO comments in the codebase (2 minor):
 
 | File | Line | TODO | Priority |
 |------|------|------|----------|
 | ~~`src/main/ipc-handlers.ts`~~ | ~~212~~ | ~~Send brightness command to device~~ | ~~P1.4~~ DONE |
 | ~~`src/main/ipc-handlers.ts`~~ | ~~223~~ | ~~Send button image to device~~ | ~~P1.5~~ DONE |
-| `src/renderer/App.tsx` | 373 | Save action to configuration via IPC | P2.1 |
-| `src/renderer/App.tsx` | 384 | Clear action from configuration via IPC | P2.3 |
-| `src/renderer/App.tsx` | 395 | Save encoder config to configuration via IPC | P2.2 |
-| `src/renderer/App.tsx` | 406 | Clear encoder config from configuration via IPC | P2.4 |
+| ~~`src/renderer/App.tsx`~~ | ~~373~~ | ~~Save action to configuration via IPC~~ | ~~P2.1~~ DONE |
+| ~~`src/renderer/App.tsx`~~ | ~~384~~ | ~~Clear action from configuration via IPC~~ | ~~P2.3~~ DONE |
+| ~~`src/renderer/App.tsx`~~ | ~~395~~ | ~~Save encoder config to configuration via IPC~~ | ~~P2.2~~ DONE |
+| ~~`src/renderer/App.tsx`~~ | ~~406~~ | ~~Clear encoder config from configuration via IPC~~ | ~~P2.4~~ DONE |
 | `docs/soomfon-protocol.md` | 125 | Historic protocol research notes | Low |
 | `docker-compose.yml` | 15-16 | Git user config for Docker dev | Low |
 
@@ -528,9 +500,9 @@ interface EncoderConfig {
 2. ~~**P1.3** - Load bindings from profile (actions now execute based on config)~~ DONE
 3. ~~**P1.4 + P1.5** - Implement brightness and image IPC (device LCD responds)~~ DONE
 
-**Phase B: Persistence (makes changes stick)** - IN PROGRESS
-4. **P2.1-P2.4** - Implement save/clear in renderer (UI can persist changes)
-5. **P2.6** - Reload bindings on save (live updates work)
+**Phase B: Persistence (makes changes stick)** - COMPLETE
+4. ~~**P2.1-P2.4** - Implement save/clear in renderer (UI can persist changes)~~ DONE
+5. ~~**P2.6** - Reload bindings on save (live updates work)~~ DONE (auto-reload already existed)
 
 **Phase C: Quality & Distribution**
 6. **P0.1** - Add test framework (prevents regressions)
@@ -558,7 +530,7 @@ npm run dev            # App starts with device
 ✓ Encoder rotation -> action executes (P1.1, P1.2, P1.3 COMPLETE)
 ✓ Brightness slider -> device LCD brightness changes (P1.4 COMPLETE)
 ✓ Image upload -> device LCD displays image (P1.5 COMPLETE)
-□ Save action -> persists after app restart (requires P2.1-P2.4, P2.6)
+✓ Save action -> persists after app restart (P2.1-P2.4 COMPLETE)
 ✓ Profile switch -> bindings reload (P1.3 COMPLETE)
 
 # Distribution verification

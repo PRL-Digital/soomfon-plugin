@@ -367,48 +367,148 @@ const App: React.FC = () => {
   }, []);
 
   // Handle action save from ActionEditor
-  const handleActionSave = useCallback((action: Partial<Action>, imageUrl?: string) => {
-    if (!selection) return;
+  const handleActionSave = useCallback(async (action: Partial<Action>, imageUrl?: string) => {
+    if (!selection || !profiles.activeProfile) return;
 
-    // TODO: Save action to configuration via IPC
-    console.log('Saving action for selection:', selection, 'Action:', action, 'Image:', imageUrl);
+    // Map selection to button index in profile
+    // LCD buttons: index 0-5, Normal buttons: index 6-8
+    const buttonIndex = selection.type === 'lcd'
+      ? selection.index
+      : selection.type === 'normal'
+        ? 6 + selection.index
+        : -1;
 
-    // In the future, this will call config IPC to save the action binding
-    // window.electronAPI?.config?.setButtonAction?.(selection, action, imageUrl);
-  }, [selection]);
+    if (buttonIndex < 0) return; // Not a button
+
+    try {
+      // Clone the buttons array
+      const updatedButtons = [...profiles.activeProfile.buttons];
+
+      // Find existing button config or create new one
+      let buttonConfigIndex = updatedButtons.findIndex(b => b.index === buttonIndex);
+
+      if (buttonConfigIndex === -1) {
+        // Create new button config
+        updatedButtons.push({
+          index: buttonIndex,
+          action: action as Action,
+          image: imageUrl,
+        });
+      } else {
+        // Update existing config
+        updatedButtons[buttonConfigIndex] = {
+          ...updatedButtons[buttonConfigIndex],
+          action: action as Action,
+          ...(imageUrl !== undefined && { image: imageUrl }),
+        };
+      }
+
+      // Save to profile - this triggers auto-reload of bindings
+      await profiles.update(profiles.activeProfile.id, { buttons: updatedButtons });
+
+      // For LCD buttons (0-5), upload image to device if provided
+      if (selection.type === 'lcd' && imageUrl && window.electronAPI?.device?.setButtonImage) {
+        try {
+          await window.electronAPI.device.setButtonImage(selection.index, imageUrl);
+        } catch (err) {
+          console.error('Failed to upload button image:', err);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save action:', err);
+    }
+  }, [selection, profiles]);
 
   // Handle action clear from ActionEditor
-  const handleActionClear = useCallback(() => {
-    if (!selection) return;
+  const handleActionClear = useCallback(async () => {
+    if (!selection || !profiles.activeProfile) return;
 
-    // TODO: Clear action from configuration via IPC
-    console.log('Clearing action for selection:', selection);
+    // Map selection to button index in profile
+    const buttonIndex = selection.type === 'lcd'
+      ? selection.index
+      : selection.type === 'normal'
+        ? 6 + selection.index
+        : -1;
 
-    // In the future, this will call config IPC to clear the action binding
-    // window.electronAPI?.config?.clearButtonAction?.(selection);
-  }, [selection]);
+    if (buttonIndex < 0) return; // Not a button
+
+    try {
+      // Clone the buttons array and remove/clear the config for this button
+      const updatedButtons = profiles.activeProfile.buttons
+        .map(b => {
+          if (b.index === buttonIndex) {
+            // Remove action and image but keep the index
+            return { index: b.index };
+          }
+          return b;
+        })
+        .filter(b => b.action || b.longPressAction || b.image || b.label);
+
+      // Save to profile - this triggers auto-reload of bindings
+      await profiles.update(profiles.activeProfile.id, { buttons: updatedButtons });
+    } catch (err) {
+      console.error('Failed to clear action:', err);
+    }
+  }, [selection, profiles]);
 
   // Handle encoder config save from EncoderEditor
-  const handleEncoderSave = useCallback((encoderConfig: EncoderConfig) => {
-    if (!selection || selection.type !== 'encoder') return;
+  const handleEncoderSave = useCallback(async (encoderConfig: EncoderConfig) => {
+    if (!selection || selection.type !== 'encoder' || !profiles.activeProfile) return;
 
-    // TODO: Save encoder config to configuration via IPC
-    console.log('Saving encoder config for selection:', selection, 'Config:', encoderConfig);
+    try {
+      // Convert EncoderEditor's EncoderConfig to Profile's EncoderConfig format
+      // EncoderEditor has: { press, longPress, rotateClockwise, rotateCounterClockwise }
+      // Profile has: { index, pressAction, longPressAction, clockwiseAction, counterClockwiseAction }
+      const profileEncoderConfig: import('@shared/types/config').EncoderConfig = {
+        index: selection.index,
+        pressAction: encoderConfig.press.enabled && encoderConfig.press.actionType
+          ? encoderConfig.press.action as Action
+          : undefined,
+        longPressAction: encoderConfig.longPress.enabled && encoderConfig.longPress.actionType
+          ? encoderConfig.longPress.action as Action
+          : undefined,
+        clockwiseAction: encoderConfig.rotateClockwise.enabled && encoderConfig.rotateClockwise.actionType
+          ? encoderConfig.rotateClockwise.action as Action
+          : undefined,
+        counterClockwiseAction: encoderConfig.rotateCounterClockwise.enabled && encoderConfig.rotateCounterClockwise.actionType
+          ? encoderConfig.rotateCounterClockwise.action as Action
+          : undefined,
+      };
 
-    // In the future, this will call config IPC to save the encoder binding
-    // window.electronAPI?.config?.setEncoderConfig?.(selection.index, encoderConfig);
-  }, [selection]);
+      // Clone the encoders array
+      const updatedEncoders = [...profiles.activeProfile.encoders];
+
+      // Find existing encoder config or add new one
+      const existingIndex = updatedEncoders.findIndex(e => e.index === selection.index);
+
+      if (existingIndex === -1) {
+        updatedEncoders.push(profileEncoderConfig);
+      } else {
+        updatedEncoders[existingIndex] = profileEncoderConfig;
+      }
+
+      // Save to profile - this triggers auto-reload of bindings
+      await profiles.update(profiles.activeProfile.id, { encoders: updatedEncoders });
+    } catch (err) {
+      console.error('Failed to save encoder config:', err);
+    }
+  }, [selection, profiles]);
 
   // Handle encoder config clear from EncoderEditor
-  const handleEncoderClear = useCallback(() => {
-    if (!selection || selection.type !== 'encoder') return;
+  const handleEncoderClear = useCallback(async () => {
+    if (!selection || selection.type !== 'encoder' || !profiles.activeProfile) return;
 
-    // TODO: Clear encoder config from configuration via IPC
-    console.log('Clearing encoder config for selection:', selection);
+    try {
+      // Filter out the encoder config for this index, or keep only those with at least one action
+      const updatedEncoders = profiles.activeProfile.encoders
+        .filter(e => e.index !== selection.index);
 
-    // In the future, this will call config IPC to clear the encoder binding
-    // window.electronAPI?.config?.clearEncoderConfig?.(selection.index);
-  }, [selection]);
+      // Save to profile - this triggers auto-reload of bindings
+      await profiles.update(profiles.activeProfile.id, { encoders: updatedEncoders });
+    } catch (err) {
+      console.error('Failed to clear encoder config:', err);
+    }
+  }, [selection, profiles]);
 
   // Handle brightness change from Settings panel - live update to device
   const handleBrightnessChange = useCallback(async (brightness: number) => {
