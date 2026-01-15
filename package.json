@@ -16,7 +16,10 @@
     "dist:win": "npm run build && electron-builder --win",
     "detect": "npx ts-node scripts/detect-device.ts",
     "capture": "npx ts-node scripts/capture-input.ts",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.preload.json --noEmit && tsc -p tsconfig.renderer.json --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.preload.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "soomfon",
@@ -35,6 +38,7 @@
     "@types/sharp": "^0.31.1",
     "@types/uuid": "^9.0.8",
     "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/coverage-v8": "^4.0.17",
     "autoprefixer": "^10.4.23",
     "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
@@ -43,6 +47,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "vite": "^7.3.1",
+    "vitest": "^4.0.17",
     "wait-on": "^9.0.3"
   },
   "dependencies": {
