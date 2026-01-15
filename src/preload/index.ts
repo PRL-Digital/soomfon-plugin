@@ -13,12 +13,16 @@ import type {
   ConfigAPI,
   ActionAPI,
   AutoLaunchAPI,
+  DialogAPI,
   DeviceStatus,
   ProfileChangeEvent,
   ConfigChangeEvent,
   AutoLaunchStatusResponse,
   InvokeChannel,
   ListenChannel,
+  SaveBindingRequest,
+  DeleteBindingRequest,
+  OpenFileDialogOptions,
 } from '../shared/types/ipc';
 import {
   DeviceChannels,
@@ -26,11 +30,12 @@ import {
   ConfigChannels,
   ActionChannels,
   AppChannels,
+  DialogChannels,
   INVOKE_CHANNELS,
   LISTEN_CHANNELS,
 } from '../shared/types/ipc';
 import type { ButtonEvent, EncoderEvent } from '../shared/types/device';
-import type { Action, ActionExecutionResult } from '../shared/types/actions';
+import type { Action, ActionExecutionResult, ActionBinding } from '../shared/types/actions';
 import type { AppConfig, Profile, DeviceSettings, AppSettings, IntegrationSettings } from '../shared/types/config';
 
 // Type for wrapped IPC listener
@@ -228,6 +233,18 @@ const actionAPI: ActionAPI = {
   execute: (action: Action): Promise<ActionExecutionResult> => {
     return ipcRenderer.invoke(ActionChannels.EXECUTE, action);
   },
+
+  getBindings: (profileId?: string): Promise<ActionBinding[]> => {
+    return ipcRenderer.invoke(ActionChannels.GET_BINDINGS, profileId ? { profileId } : undefined);
+  },
+
+  saveBinding: (request: SaveBindingRequest): Promise<void> => {
+    return ipcRenderer.invoke(ActionChannels.SAVE_BINDING, request);
+  },
+
+  deleteBinding: (request: DeleteBindingRequest): Promise<void> => {
+    return ipcRenderer.invoke(ActionChannels.DELETE_BINDING, request);
+  },
 };
 
 // ============================================================================
@@ -241,6 +258,16 @@ const autoLaunchAPI: AutoLaunchAPI = {
 
   setEnabled: (enabled: boolean, startMinimized?: boolean): Promise<void> => {
     return ipcRenderer.invoke(AppChannels.SET_AUTO_LAUNCH, { enabled, startMinimized });
+  },
+};
+
+// ============================================================================
+// Dialog API
+// ============================================================================
+
+const dialogAPI: DialogAPI = {
+  openFile: (options?: OpenFileDialogOptions): Promise<string[]> => {
+    return ipcRenderer.invoke(DialogChannels.OPEN_FILE, options);
   },
 };
 
@@ -259,6 +286,12 @@ const electronAPI: ElectronAPI = {
   config: configAPI,
   action: actionAPI,
   autoLaunch: autoLaunchAPI,
+  dialog: dialogAPI,
+
+  // Legacy openFileDialog for backwards compatibility with existing components
+  openFileDialog: (options?: OpenFileDialogOptions): Promise<string[]> => {
+    return ipcRenderer.invoke(DialogChannels.OPEN_FILE, options);
+  },
 
   // Generic IPC invoke with channel validation
   invoke: async <T>(channel: InvokeChannel, ...args: unknown[]): Promise<T> => {

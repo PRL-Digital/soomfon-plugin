@@ -3,13 +3,14 @@
  * Main process IPC handlers for device, profile, config, and action operations
  */
 
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, dialog } from 'electron';
 import {
   DeviceChannels,
   ProfileChannels,
   ConfigChannels,
   ActionChannels,
   AppChannels,
+  DialogChannels,
 } from '../shared/types/ipc';
 import type {
   DeviceStatus,
@@ -21,6 +22,10 @@ import type {
   ConfigChangeEvent,
   AutoLaunchStatusResponse,
   SetAutoLaunchRequest,
+  GetBindingsRequest,
+  SaveBindingRequest,
+  DeleteBindingRequest,
+  OpenFileDialogOptions,
 } from '../shared/types/ipc';
 import type { Action, ActionExecutionResult } from '../shared/types/actions';
 import type { AppConfig, DeviceSettings, AppSettings, IntegrationSettings, Profile } from '../shared/types/config';
@@ -542,6 +547,180 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(ActionChannels.EXECUTE, async (_event, action: Action): Promise<ActionExecutionResult> => {
     const engine = initActionEngine();
     return engine.execute(action);
+  });
+
+  ipcMain.handle(ActionChannels.GET_BINDINGS, (_event, request?: GetBindingsRequest): ActionBinding[] => {
+    const pm = initProfileManager();
+
+    // Get the target profile
+    const profile = request?.profileId
+      ? pm.getById(request.profileId)
+      : pm.getActive();
+
+    if (!profile) {
+      throw new Error(`Profile not found: ${request?.profileId || 'active'}`);
+    }
+
+    const bindings: ActionBinding[] = [];
+
+    // Convert button configs to bindings
+    for (const button of profile.buttons) {
+      bindings.push(...buttonConfigToBindings(button));
+    }
+
+    // Convert encoder configs to bindings
+    for (const encoder of profile.encoders) {
+      bindings.push(...encoderConfigToBindings(encoder));
+    }
+
+    return bindings;
+  });
+
+  ipcMain.handle(ActionChannels.SAVE_BINDING, (_event, request: SaveBindingRequest): void => {
+    const pm = initProfileManager();
+
+    // Get the target profile
+    const profileId = request.profileId || pm.getActiveId();
+    const profile = pm.getById(profileId);
+
+    if (!profile) {
+      throw new Error(`Profile not found: ${profileId}`);
+    }
+
+    const { target, action } = request;
+
+    // Determine the actual button/encoder index based on element type
+    if (target.elementType === 'lcdButton' || target.elementType === 'normalButton') {
+      // Calculate actual button index: LCD buttons are 0-5, normal buttons are 6-8
+      const buttonIndex = target.elementType === 'lcdButton'
+        ? target.elementIndex
+        : target.elementIndex + 6;
+
+      // Find or create the button config
+      let buttonConfig = profile.buttons.find(b => b.index === buttonIndex);
+      if (!buttonConfig) {
+        buttonConfig = { index: buttonIndex };
+        profile.buttons.push(buttonConfig);
+      }
+
+      // Set the action based on trigger
+      if (target.trigger === 'press') {
+        buttonConfig.action = action;
+      } else if (target.trigger === 'longPress') {
+        buttonConfig.longPressAction = action;
+      } else {
+        throw new Error(`Invalid trigger for button: ${target.trigger}`);
+      }
+    } else if (target.elementType === 'encoder') {
+      // Find or create the encoder config
+      let encoderConfig = profile.encoders.find(e => e.index === target.elementIndex);
+      if (!encoderConfig) {
+        encoderConfig = { index: target.elementIndex };
+        profile.encoders.push(encoderConfig);
+      }
+
+      // Set the action based on trigger
+      switch (target.trigger) {
+        case 'press':
+          encoderConfig.pressAction = action;
+          break;
+        case 'longPress':
+          encoderConfig.longPressAction = action;
+          break;
+        case 'clockwise':
+          encoderConfig.clockwiseAction = action;
+          break;
+        case 'counterClockwise':
+          encoderConfig.counterClockwiseAction = action;
+          break;
+        default:
+          throw new Error(`Invalid trigger for encoder: ${target.trigger}`);
+      }
+    } else {
+      throw new Error(`Invalid element type: ${target.elementType}`);
+    }
+
+    // Update the profile
+    pm.update(profileId, { buttons: profile.buttons, encoders: profile.encoders });
+  });
+
+  ipcMain.handle(ActionChannels.DELETE_BINDING, (_event, request: DeleteBindingRequest): void => {
+    const pm = initProfileManager();
+
+    // Get the target profile
+    const profileId = request.profileId || pm.getActiveId();
+    const profile = pm.getById(profileId);
+
+    if (!profile) {
+      throw new Error(`Profile not found: ${profileId}`);
+    }
+
+    const { target } = request;
+
+    if (target.elementType === 'lcdButton' || target.elementType === 'normalButton') {
+      // Calculate actual button index: LCD buttons are 0-5, normal buttons are 6-8
+      const buttonIndex = target.elementType === 'lcdButton'
+        ? target.elementIndex
+        : target.elementIndex + 6;
+
+      const buttonConfig = profile.buttons.find(b => b.index === buttonIndex);
+      if (buttonConfig) {
+        if (target.trigger === 'press') {
+          buttonConfig.action = undefined;
+        } else if (target.trigger === 'longPress') {
+          buttonConfig.longPressAction = undefined;
+        }
+      }
+    } else if (target.elementType === 'encoder') {
+      const encoderConfig = profile.encoders.find(e => e.index === target.elementIndex);
+      if (encoderConfig) {
+        switch (target.trigger) {
+          case 'press':
+            encoderConfig.pressAction = undefined;
+            break;
+          case 'longPress':
+            encoderConfig.longPressAction = undefined;
+            break;
+          case 'clockwise':
+            encoderConfig.clockwiseAction = undefined;
+            break;
+          case 'counterClockwise':
+            encoderConfig.counterClockwiseAction = undefined;
+            break;
+        }
+      }
+    }
+
+    // Update the profile
+    pm.update(profileId, { buttons: profile.buttons, encoders: profile.encoders });
+  });
+
+  // ============================================================================
+  // Dialog Handlers
+  // ============================================================================
+
+  ipcMain.handle(DialogChannels.OPEN_FILE, async (_event, options?: OpenFileDialogOptions): Promise<string[]> => {
+    const mainWindow = getMainWindow();
+
+    const dialogOptions: Electron.OpenDialogOptions = {
+      title: options?.title,
+      defaultPath: options?.defaultPath,
+      filters: options?.filters,
+      properties: options?.properties || ['openFile'],
+    };
+
+    let result: Electron.OpenDialogReturnValue;
+    if (mainWindow) {
+      result = await dialog.showOpenDialog(mainWindow, dialogOptions);
+    } else {
+      result = await dialog.showOpenDialog(dialogOptions);
+    }
+
+    if (result.canceled) {
+      return [];
+    }
+
+    return result.filePaths;
   });
 }
 

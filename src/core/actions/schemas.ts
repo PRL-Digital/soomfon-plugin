@@ -175,7 +175,7 @@ export const nodeRedActionSchema = baseActionSchema.extend({
   payload: z.record(z.unknown()).optional(),
 });
 
-/** Union schema for all action types - uses discriminated union */
+/** Union schema for all action types - uses discriminated union with cross-field validation */
 export const actionSchema = z.discriminatedUnion('type', [
   keyboardActionSchema,
   launchActionSchema,
@@ -187,7 +187,48 @@ export const actionSchema = z.discriminatedUnion('type', [
   textActionSchema,
   homeAssistantActionSchema,
   nodeRedActionSchema,
-]);
+]).superRefine((data, ctx) => {
+  // Script action validation: require either script or scriptPath
+  if (data.type === 'script') {
+    if (data.script === undefined && data.scriptPath === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Either script or scriptPath must be provided',
+        path: ['script'],
+      });
+    }
+  }
+
+  // Home Assistant action validation: require brightness for set_brightness operation
+  if (data.type === 'home_assistant') {
+    if (data.operation === 'set_brightness' && data.brightness === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Brightness is required for set_brightness operation',
+        path: ['brightness'],
+      });
+    }
+    // Require customService for custom operation
+    if (data.operation === 'custom' && data.customService === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'customService is required for custom operation',
+        path: ['customService'],
+      });
+    }
+  }
+
+  // Node-RED action validation: require eventName for send_event operation
+  if (data.type === 'node_red') {
+    if (data.operation === 'send_event' && (!data.eventName || data.eventName.trim() === '')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'eventName is required for send_event operation',
+        path: ['eventName'],
+      });
+    }
+  }
+});
 
 /** Execution status schema */
 export const executionStatusSchema = z.enum(['success', 'failure', 'cancelled']);

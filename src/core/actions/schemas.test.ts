@@ -416,6 +416,163 @@ describe('Action Schemas', () => {
       const result = actionSchema.safeParse(action);
       expect(result.success).toBe(false);
     });
+
+    // Cross-field validation tests
+    describe('cross-field validation', () => {
+      it('should reject script action without script or scriptPath', () => {
+        const action = {
+          id: 'test-1',
+          type: 'script',
+          name: 'Missing Script',
+          scriptType: 'bash',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.issues.some(i => i.message.includes('script or scriptPath'))).toBe(true);
+        }
+      });
+
+      it('should accept script action with inline script', () => {
+        const action = {
+          id: 'test-1',
+          type: 'script',
+          name: 'With Script',
+          scriptType: 'bash',
+          script: 'echo hello',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(true);
+      });
+
+      it('should accept script action with scriptPath', () => {
+        const action = {
+          id: 'test-1',
+          type: 'script',
+          name: 'With Path',
+          scriptType: 'bash',
+          scriptPath: '/path/to/script.sh',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(true);
+      });
+
+      it('should reject home_assistant set_brightness without brightness', () => {
+        const action = {
+          id: 'test-1',
+          type: 'home_assistant',
+          name: 'Missing Brightness',
+          operation: 'set_brightness',
+          entityId: 'light.test',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.issues.some(i => i.message.includes('Brightness is required'))).toBe(true);
+        }
+      });
+
+      it('should accept home_assistant set_brightness with brightness', () => {
+        const action = {
+          id: 'test-1',
+          type: 'home_assistant',
+          name: 'With Brightness',
+          operation: 'set_brightness',
+          entityId: 'light.test',
+          brightness: 128,
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(true);
+      });
+
+      it('should reject home_assistant custom operation without customService', () => {
+        const action = {
+          id: 'test-1',
+          type: 'home_assistant',
+          name: 'Missing CustomService',
+          operation: 'custom',
+          entityId: 'light.test',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.issues.some(i => i.message.includes('customService is required'))).toBe(true);
+        }
+      });
+
+      it('should reject node_red send_event without eventName', () => {
+        const action = {
+          id: 'test-1',
+          type: 'node_red',
+          name: 'Missing Event Name',
+          operation: 'send_event',
+          endpoint: '/events',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.issues.some(i => i.message.includes('eventName is required'))).toBe(true);
+        }
+      });
+
+      it('should reject node_red send_event with empty eventName', () => {
+        const action = {
+          id: 'test-1',
+          type: 'node_red',
+          name: 'Empty Event Name',
+          operation: 'send_event',
+          endpoint: '/events',
+          eventName: '   ',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(false);
+      });
+
+      it('should accept node_red send_event with eventName', () => {
+        const action = {
+          id: 'test-1',
+          type: 'node_red',
+          name: 'With Event Name',
+          operation: 'send_event',
+          endpoint: '/events',
+          eventName: 'button_pressed',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(true);
+      });
+
+      it('should not require eventName for trigger_flow operation', () => {
+        const action = {
+          id: 'test-1',
+          type: 'node_red',
+          name: 'Trigger Flow',
+          operation: 'trigger_flow',
+          endpoint: '/flow',
+          enabled: true,
+        };
+
+        const result = actionSchema.safeParse(action);
+        expect(result.success).toBe(true);
+      });
+    });
   });
 
   describe('Base Action Fields', () => {

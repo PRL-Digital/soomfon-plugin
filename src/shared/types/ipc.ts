@@ -3,7 +3,7 @@
  * Type-safe IPC channel names and payload types for Electron main-to-renderer communication
  */
 
-import type { Action, ActionExecutionResult } from './actions';
+import type { Action, ActionExecutionResult, ActionBinding } from './actions';
 import type { AppConfig, Profile, DeviceSettings, AppSettings, IntegrationSettings } from './config';
 import type { ConnectionState, DeviceInfo, ButtonEvent, EncoderEvent } from './device';
 
@@ -35,6 +35,11 @@ export const ActionChannels = {
   GET_BINDINGS: 'action:getBindings',
   SAVE_BINDING: 'action:saveBinding',
   DELETE_BINDING: 'action:deleteBinding',
+} as const;
+
+/** Dialog-related IPC channels */
+export const DialogChannels = {
+  OPEN_FILE: 'dialog:openFile',
 } as const;
 
 /** Profile-related IPC channels */
@@ -116,6 +121,8 @@ export const INVOKE_CHANNELS = [
   ConfigChannels.GET_INTEGRATIONS,
   ConfigChannels.SET_INTEGRATIONS,
   ConfigChannels.RESET,
+  // Dialog
+  DialogChannels.OPEN_FILE,
 ] as const;
 
 /** All listen channels that the renderer can subscribe to */
@@ -194,6 +201,55 @@ export interface SetAutoLaunchRequest {
   startMinimized?: boolean;
 }
 
+/** Element binding target - identifies where an action should be saved */
+export interface BindingTarget {
+  /** Type of element */
+  elementType: 'lcdButton' | 'normalButton' | 'encoder';
+  /** Index of the element (0-5 for LCD buttons, 0-2 for normal buttons, 0-2 for encoders) */
+  elementIndex: number;
+  /** Trigger type for the binding */
+  trigger: 'press' | 'longPress' | 'clockwise' | 'counterClockwise';
+}
+
+/** Save binding request */
+export interface SaveBindingRequest {
+  /** Optional profile ID. If not provided, uses active profile */
+  profileId?: string;
+  /** Target element and trigger */
+  target: BindingTarget;
+  /** Action to bind */
+  action: Action;
+}
+
+/** Delete binding request */
+export interface DeleteBindingRequest {
+  /** Optional profile ID. If not provided, uses active profile */
+  profileId?: string;
+  /** Target element and trigger */
+  target: BindingTarget;
+}
+
+/** Get bindings request */
+export interface GetBindingsRequest {
+  /** Optional profile ID. If not provided, uses active profile */
+  profileId?: string;
+}
+
+/** File dialog options */
+export interface OpenFileDialogOptions {
+  /** Dialog title */
+  title?: string;
+  /** Default path to open */
+  defaultPath?: string;
+  /** File filters */
+  filters?: Array<{
+    name: string;
+    extensions: string[];
+  }>;
+  /** Dialog properties */
+  properties?: Array<'openFile' | 'openDirectory' | 'multiSelections'>;
+}
+
 // ============================================================================
 // IPC Handler Types (for main process)
 // ============================================================================
@@ -210,6 +266,14 @@ export interface DeviceIpcHandlers {
 /** Action IPC handlers */
 export interface ActionIpcHandlers {
   [ActionChannels.EXECUTE]: (action: Action) => Promise<ActionExecutionResult>;
+  [ActionChannels.GET_BINDINGS]: (request?: GetBindingsRequest) => Promise<ActionBinding[]>;
+  [ActionChannels.SAVE_BINDING]: (request: SaveBindingRequest) => Promise<void>;
+  [ActionChannels.DELETE_BINDING]: (request: DeleteBindingRequest) => Promise<void>;
+}
+
+/** Dialog IPC handlers */
+export interface DialogIpcHandlers {
+  [DialogChannels.OPEN_FILE]: (options?: OpenFileDialogOptions) => Promise<string[]>;
 }
 
 /** Profile IPC handlers */
@@ -288,6 +352,14 @@ export interface ConfigAPI {
 /** Action API exposed to renderer */
 export interface ActionAPI {
   execute: (action: Action) => Promise<ActionExecutionResult>;
+  getBindings: (profileId?: string) => Promise<ActionBinding[]>;
+  saveBinding: (request: SaveBindingRequest) => Promise<void>;
+  deleteBinding: (request: DeleteBindingRequest) => Promise<void>;
+}
+
+/** Dialog API exposed to renderer */
+export interface DialogAPI {
+  openFile: (options?: OpenFileDialogOptions) => Promise<string[]>;
 }
 
 /** Auto-launch API exposed to renderer */
@@ -307,6 +379,9 @@ export interface ElectronAPI {
   config: ConfigAPI;
   action: ActionAPI;
   autoLaunch: AutoLaunchAPI;
+  dialog: DialogAPI;
+  // Legacy openFileDialog for backwards compatibility
+  openFileDialog?: (options?: OpenFileDialogOptions) => Promise<string[]>;
   // Generic IPC (for advanced usage)
   invoke: <T>(channel: InvokeChannel, ...args: unknown[]) => Promise<T>;
   on: (channel: ListenChannel, callback: (...args: unknown[]) => void) => void;
