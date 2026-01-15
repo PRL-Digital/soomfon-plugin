@@ -1,8 +1,8 @@
 # SOOMFON CN002-4B27 Implementation Plan
 
-**Last Updated:** 2026-01-15 (Priority 1, 2, 3, P5.1, P5.2, P5.3, P4.1 & P4.2 partial complete - all core action handlers)
+**Last Updated:** 2026-01-15 (Home Assistant integration complete - P5.3 DONE with client, handler, schema, forms, and 30 tests)
 **Project:** Custom Windows driver for SOOMFON CN002-4B27 stream deck
-**Status:** MVP Complete - 8 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete
+**Status:** MVP Complete - 9 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete
 
 ---
 
@@ -35,7 +35,7 @@
 | 3 | Action System | COMPLETE | 100% | All handlers registered and wired |
 | 4 | Configuration System | COMPLETE | 100% | Fully working |
 | 5 | Electron GUI | COMPLETE | 100% | UI done, save/clear implemented |
-| 6 | Integrations (HA/Node-RED) | PARTIAL | 50% | Settings UI + HA backend complete, Node-RED missing |
+| 6 | Integrations (HA/Node-RED) | PARTIAL | 50% | HA backend complete, NR backend missing |
 | 7 | Polish & Distribution | PENDING | 40% | Build config ready, test framework added, event forwarding complete, error handling partial |
 
 **Overall Progress:** ~95% (MVP complete - all 9 core handlers, persistence working, 213 tests, UI event forwarding complete)
@@ -358,11 +358,14 @@ These don't block MVP but are significant gaps.
 - **Plans:** `plans/06-integrations/01-home-assistant-client.md`
 
 **Implementation:**
-- HomeAssistantClient implemented in `src/core/integrations/home-assistant.ts` (412 lines)
-- HomeAssistantHandler implemented in `src/core/actions/handlers/home-assistant-handler.ts` (190 lines)
-- Handler registered in ActionEngine (9 handlers total now)
+- HomeAssistantClient (`src/core/integrations/home-assistant.ts`) - REST API client working
+- HomeAssistantAction type added to `src/shared/types/actions.ts`
 - `homeAssistantActionSchema` added to `src/core/actions/schemas.ts`
-- 16 unit tests added (`home-assistant-handler.test.ts`)
+- HomeAssistantHandler (`src/core/actions/handlers/home-assistant-handler.ts`) - Registered and operational
+- HomeAssistantActionForm (`src/renderer/components/ActionEditor/HomeAssistantAction.tsx`)
+- ProfileActionForm and TextActionForm also added (`src/renderer/components/ActionEditor/`)
+- 21 unit tests for HomeAssistantHandler
+- 9 unit tests for homeAssistantActionSchema
 
 **What Exists (VERIFIED):**
 - Settings UI complete in `src/renderer/components/Settings/IntegrationSettings.tsx` (386 lines)
@@ -404,6 +407,8 @@ These don't block MVP but are significant gaps.
 | SystemHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | ProfileHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | TextHandler | ✅ DONE | ✅ DONE | Registered and operational |
+| HomeAssistantClient | ✅ DONE | ✅ DONE | REST API client working |
+| HomeAssistantHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | SoomfonProtocol | ✅ DONE | ✅ DONE | Used by IPC handlers |
 | ImageProcessor | ✅ DONE | ✅ DONE | Used by SET_BUTTON_IMAGE handler |
 | ProfileManager | ✅ DONE | ✅ DONE | Fully working |
