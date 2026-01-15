@@ -23,6 +23,7 @@ export { ImagePicker, type ImagePickerProps } from './ImagePicker';
 export { HomeAssistantActionForm, type HomeAssistantActionFormProps } from './HomeAssistantAction';
 export { ProfileActionForm, type ProfileActionFormProps } from './ProfileAction';
 export { TextActionForm, type TextActionFormProps } from './TextAction';
+export { NodeRedActionForm, type NodeRedActionFormProps } from './NodeRedAction';
 
 // Default export - re-export ActionEditor as default
 export { ActionEditor as default } from './ActionEditor';

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /** Available action types for selection */
-export type ActionTypeOption = 'keyboard' | 'launch' | 'script' | 'http' | 'media' | 'system' | 'profile' | 'text' | 'home_assistant';
+export type ActionTypeOption = 'keyboard' | 'launch' | 'script' | 'http' | 'media' | 'system' | 'profile' | 'text' | 'home_assistant' | 'node_red';
 
 /** Action type metadata */
 interface ActionTypeInfo {
@@ -66,6 +66,12 @@ const ACTION_TYPES: ActionTypeInfo[] = [
     label: 'Home Assistant',
     icon: '🏠',
     description: 'Control Home Assistant',
+  },
+  {
+    value: 'node_red',
+    label: 'Node-RED',
+    icon: '🔗',
+    description: 'Trigger Node-RED flows',
   },
 ];
 

@@ -49,6 +49,7 @@ import { SystemHandler } from '../core/actions/handlers/system-handler';
 import { ProfileHandler } from '../core/actions/handlers/profile-handler';
 import { TextHandler } from '../core/actions/handlers/text-handler';
 import { HomeAssistantHandler } from '../core/actions/handlers/home-assistant-handler';
+import { NodeRedHandler } from '../core/actions/handlers/node-red-handler';
 
 // Services singleton instances
 let hidManager: HIDManager | null = null;
@@ -163,6 +164,9 @@ function initActionEngine(): ActionEngine {
     // HomeAssistantHandler for smart home integration
     const cm = initConfigManager();
     actionEngine.registerHandler(new HomeAssistantHandler(cm));
+
+    // NodeRedHandler for Node-RED webhook integration
+    actionEngine.registerHandler(new NodeRedHandler(cm));
 
     console.log('ActionEngine initialized with handlers:', actionEngine.getRegisteredTypes());
   }

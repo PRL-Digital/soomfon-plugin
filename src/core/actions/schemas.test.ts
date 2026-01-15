@@ -22,6 +22,7 @@ import {
   mediaActionSchema,
   systemActionSchema,
   homeAssistantActionSchema,
+  nodeRedActionSchema,
   validateAction,
   safeValidateAction,
 } from './schemas';
@@ -684,6 +685,134 @@ describe('Action Schemas', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.type).toBe('home_assistant');
+      }
+    });
+  });
+
+  describe('nodeRedActionSchema', () => {
+    it('should validate a valid Node-RED action with trigger_flow operation', () => {
+      const action = {
+        id: 'test-1',
+        type: 'node_red',
+        name: 'Trigger Flow',
+        operation: 'trigger_flow',
+        endpoint: '/my-flow',
+        enabled: true,
+      };
+
+      const result = nodeRedActionSchema.safeParse(action);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate all Node-RED operation types', () => {
+      const operations = ['trigger_flow', 'send_event', 'custom'];
+
+      for (const operation of operations) {
+        const action = {
+          id: 'test-1',
+          type: 'node_red',
+          name: 'NR Action',
+          operation,
+          endpoint: '/test',
+          enabled: true,
+        };
+
+        const result = nodeRedActionSchema.safeParse(action);
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it('should accept optional eventName for send_event operation', () => {
+      const action = {
+        id: 'test-1',
+        type: 'node_red',
+        name: 'Send Event',
+        operation: 'send_event',
+        endpoint: '/events',
+        eventName: 'button_pressed',
+        enabled: true,
+      };
+
+      const result = nodeRedActionSchema.safeParse(action);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.eventName).toBe('button_pressed');
+      }
+    });
+
+    it('should accept optional payload', () => {
+      const action = {
+        id: 'test-1',
+        type: 'node_red',
+        name: 'With Payload',
+        operation: 'trigger_flow',
+        endpoint: '/my-flow',
+        payload: { key: 'value', count: 42 },
+        enabled: true,
+      };
+
+      const result = nodeRedActionSchema.safeParse(action);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.payload).toEqual({ key: 'value', count: 42 });
+      }
+    });
+
+    it('should require endpoint field', () => {
+      const action = {
+        id: 'test-1',
+        type: 'node_red',
+        name: 'Missing Endpoint',
+        operation: 'trigger_flow',
+        enabled: true,
+      };
+
+      const result = nodeRedActionSchema.safeParse(action);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty endpoint', () => {
+      const action = {
+        id: 'test-1',
+        type: 'node_red',
+        name: 'Empty Endpoint',
+        operation: 'trigger_flow',
+        endpoint: '',
+        enabled: true,
+      };
+
+      const result = nodeRedActionSchema.safeParse(action);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid operation type', () => {
+      const action = {
+        id: 'test-1',
+        type: 'node_red',
+        name: 'Invalid Op',
+        operation: 'invalid_operation',
+        endpoint: '/test',
+        enabled: true,
+      };
+
+      const result = nodeRedActionSchema.safeParse(action);
+      expect(result.success).toBe(false);
+    });
+
+    it('should validate through actionSchema discriminated union', () => {
+      const action = {
+        id: 'test-1',
+        type: 'node_red',
+        name: 'NR via Union',
+        operation: 'trigger_flow',
+        endpoint: '/flow',
+        enabled: true,
+      };
+
+      const result = actionSchema.safeParse(action);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.type).toBe('node_red');
       }
     });
   });

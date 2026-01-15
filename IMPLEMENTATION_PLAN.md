@@ -1,8 +1,8 @@
 # SOOMFON CN002-4B27 Implementation Plan
 
-**Last Updated:** 2026-01-15 (Home Assistant integration complete - P5.3 DONE with client, handler, schema, forms, and 30 tests)
+**Last Updated:** 2026-01-15 (Node-RED integration complete - P5.4 DONE with client, handler, schema, forms, and 29 new tests)
 **Project:** Custom Windows driver for SOOMFON CN002-4B27 stream deck
-**Status:** MVP Complete - 9 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete
+**Status:** MVP Complete - 10 action handlers, event pipeline wired, IPC complete, persistence working, UI event forwarding complete, all integrations done
 
 ---
 
@@ -35,10 +35,10 @@
 | 3 | Action System | COMPLETE | 100% | All handlers registered and wired |
 | 4 | Configuration System | COMPLETE | 100% | Fully working |
 | 5 | Electron GUI | COMPLETE | 100% | UI done, save/clear implemented |
-| 6 | Integrations (HA/Node-RED) | PARTIAL | 50% | HA backend complete, NR backend missing |
+| 6 | Integrations (HA/Node-RED) | COMPLETE | 100% | HA and Node-RED both complete |
 | 7 | Polish & Distribution | PENDING | 40% | Build config ready, test framework added, event forwarding complete, error handling partial |
 
-**Overall Progress:** ~95% (MVP complete - all 9 core handlers, persistence working, 213 tests, UI event forwarding complete)
+**Overall Progress:** ~98% (MVP complete - all 10 handlers, persistence working, 242 tests, UI event forwarding complete, all integrations done)
 
 ---
 
@@ -375,19 +375,25 @@ These don't block MVP but are significant gaps.
 
 ---
 
-#### P5.4: Node-RED Integration (Phase 6)
-- **Status:** PARTIAL (Settings UI done, backend missing)
+#### P5.4: Node-RED Integration (Phase 6) - COMPLETE
+- **Status:** COMPLETE (2026-01-15)
 - **Plans:** `plans/06-integrations/04-node-red-webhook-client.md`
+
+**Implementation:**
+- NodeRedClient (`src/core/integrations/node-red.ts`) - Webhook client working
+- NodeRedAction type added to `src/shared/types/actions.ts`
+- `nodeRedActionSchema` added to `src/core/actions/schemas.ts`
+- NodeRedHandler (`src/core/actions/handlers/node-red-handler.ts`) - Registered and operational
+- NodeRedActionForm (`src/renderer/components/ActionEditor/NodeRedAction.tsx`)
+- ActionTypeSelect and ActionEditor updated to include node_red
+- 21 unit tests for NodeRedHandler
+- 8 unit tests for nodeRedActionSchema
 
 **What Exists (VERIFIED):**
 - Settings UI complete in `src/renderer/components/Settings/IntegrationSettings.tsx`
 - Webhook URL input, enable toggle, test button
 - `NodeRedSettings` type in `src/shared/types/config.ts`
-
-**What's Missing:**
-- [ ] `src/core/integrations/node-red.ts` - Webhook client
-- [ ] `src/core/actions/handlers/node-red-handler.ts` - Action handler
-- [ ] Add `'node_red'` to action type enum in schemas.ts
+- Default settings defined, ConfigManager handles persistence
 
 ---
 
@@ -398,7 +404,7 @@ These don't block MVP but are significant gaps.
 | HIDManager | ✅ DONE | ✅ DONE | Emits events, connected to tray |
 | DeviceEventParser | ✅ DONE | ✅ DONE | Instantiated, wired to HIDManager |
 | EventBinder | ✅ DONE | ✅ DONE | Instantiated, receives parsed events |
-| ActionEngine | ✅ DONE | ✅ DONE | All 9 handlers registered |
+| ActionEngine | ✅ DONE | ✅ DONE | All 10 handlers registered |
 | KeyboardHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | LaunchHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | ScriptHandler | ✅ DONE | ✅ DONE | Registered and operational |
@@ -409,13 +415,15 @@ These don't block MVP but are significant gaps.
 | TextHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | HomeAssistantClient | ✅ DONE | ✅ DONE | REST API client working |
 | HomeAssistantHandler | ✅ DONE | ✅ DONE | Registered and operational |
+| NodeRedClient | ✅ DONE | ✅ DONE | Webhook client working |
+| NodeRedHandler | ✅ DONE | ✅ DONE | Registered and operational |
 | SoomfonProtocol | ✅ DONE | ✅ DONE | Used by IPC handlers |
 | ImageProcessor | ✅ DONE | ✅ DONE | Used by SET_BUTTON_IMAGE handler |
 | ProfileManager | ✅ DONE | ✅ DONE | Fully working |
 | ConfigManager | ✅ DONE | ✅ DONE | Fully working |
 | All UI Components | ✅ DONE | ✅ DONE | Fully working |
 | IPC Handlers | ✅ DONE | ✅ DONE | Brightness and image handlers complete |
-| Test Framework | ✅ DONE | ✅ DONE | 11 test files with 213 tests |
+| Test Framework | ✅ DONE | ✅ DONE | 12 test files with 242 tests |
 | Toast Notifications | ✅ DONE | ✅ DONE | 11 tests in Toast.test.tsx |
 | ErrorBoundary | ✅ DONE | ✅ DONE | 8 tests in ErrorBoundary.test.tsx |
 | Spinner | ✅ DONE | ✅ DONE | 8 tests in Spinner.test.tsx |
@@ -423,7 +431,7 @@ These don't block MVP but are significant gaps.
 | HA Settings UI | ✅ DONE | ✅ DONE | In IntegrationSettings.tsx |
 | HA Backend | ✅ DONE | ✅ DONE | Client + handler complete |
 | NR Settings UI | ✅ DONE | ✅ DONE | In IntegrationSettings.tsx |
-| NR Backend | ❌ NOT DONE | ❌ NOT DONE | Client + handler missing |
+| NR Backend | ✅ DONE | ✅ DONE | Client + handler complete |
 
 ---
 
@@ -440,7 +448,7 @@ These don't block MVP but are significant gaps.
 | profile | ✅ | ✅ | ✅ | Fully operational |
 | text | ✅ | ✅ | ✅ | Fully operational |
 | home_assistant | ✅ | ✅ | ✅ | Fully operational |
-| node_red | ❌ | ❌ | ❌ | Phase 6 |
+| node_red | ✅ | ✅ | ✅ | Fully operational |
 
 ---
 
@@ -455,8 +463,8 @@ These don't block MVP but are significant gaps.
 | `src/core/device/image-processor.ts` | Image conversion | DONE - used by SET_BUTTON_IMAGE |
 | `src/core/device/device-events.ts` | Event parser | DONE - wired to HIDManager |
 | `src/core/actions/event-binder.ts` | Event-action mapper | DONE - receives parsed events |
-| `src/core/actions/action-engine.ts` | Action executor | DONE - 9 handlers registered |
-| `src/core/actions/handlers/*.ts` | 9 action handlers | DONE - all registered and operational |
+| `src/core/actions/action-engine.ts` | Action executor | DONE - 10 handlers registered |
+| `src/core/actions/handlers/*.ts` | 10 action handlers | DONE - all registered and operational |
 | `src/preload/index.ts` | IPC bridge | DONE |
 | `src/shared/types/ipc.ts` | IPC type definitions | 3 channels defined but unused |
 | `src/shared/types/config.ts` | Profile/Button/Encoder types | DONE - reference for binding structure |
@@ -562,6 +570,6 @@ npm run dev            # App starts with device
 npm run dist           # Creates installer (needs build/icon.ico)
 
 # Test verification (P0.1 COMPLETE)
-npm run test           # Unit tests pass ✓ (213 tests)
+npm run test           # Unit tests pass ✓ (242 tests)
 npm run test:coverage  # Coverage report generated
 ```

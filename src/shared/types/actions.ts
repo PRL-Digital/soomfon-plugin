@@ -13,7 +13,8 @@ export type ActionType =
   | 'system'
   | 'profile'
   | 'text'
-  | 'home_assistant';
+  | 'home_assistant'
+  | 'node_red';
 
 /** Base action interface - all actions extend this */
 export interface BaseAction {
@@ -177,6 +178,25 @@ export interface HomeAssistantAction extends BaseAction {
   customService?: HomeAssistantCustomService;
 }
 
+/** Node-RED operation types */
+export type NodeRedOperationType =
+  | 'trigger_flow'
+  | 'send_event'
+  | 'custom';
+
+/** Node-RED action - triggers Node-RED flows via webhooks */
+export interface NodeRedAction extends BaseAction {
+  type: 'node_red';
+  /** Operation to perform */
+  operation: NodeRedOperationType;
+  /** Webhook endpoint path (e.g., '/button-press' or 'my-flow') */
+  endpoint: string;
+  /** Event name for send_event operation */
+  eventName?: string;
+  /** Custom payload data as JSON */
+  payload?: Record<string, unknown>;
+}
+
 /** Union type of all action types */
 export type Action =
   | KeyboardAction
@@ -187,7 +207,8 @@ export type Action =
   | SystemAction
   | ProfileAction
   | TextAction
-  | HomeAssistantAction;
+  | HomeAssistantAction
+  | NodeRedAction;
 
 /** Execution result status */
 export type ExecutionStatus = 'success' | 'failure' | 'cancelled';

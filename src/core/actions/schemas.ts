@@ -16,6 +16,7 @@ export const actionTypeSchema = z.enum([
   'profile',
   'text',
   'home_assistant',
+  'node_red',
 ]);
 
 /** Base action schema - fields common to all actions */
@@ -158,6 +159,22 @@ export const homeAssistantActionSchema = baseActionSchema.extend({
   customService: homeAssistantCustomServiceSchema.optional(),
 });
 
+/** Node-RED operation type schema */
+export const nodeRedOperationTypeSchema = z.enum([
+  'trigger_flow',
+  'send_event',
+  'custom',
+]);
+
+/** Node-RED action schema */
+export const nodeRedActionSchema = baseActionSchema.extend({
+  type: z.literal('node_red'),
+  operation: nodeRedOperationTypeSchema,
+  endpoint: z.string().min(1),
+  eventName: z.string().optional(),
+  payload: z.record(z.unknown()).optional(),
+});
+
 /** Union schema for all action types - uses discriminated union */
 export const actionSchema = z.discriminatedUnion('type', [
   keyboardActionSchema,
@@ -169,6 +186,7 @@ export const actionSchema = z.discriminatedUnion('type', [
   profileActionSchema,
   textActionSchema,
   homeAssistantActionSchema,
+  nodeRedActionSchema,
 ]);
 
 /** Execution status schema */
@@ -216,6 +234,7 @@ export type SystemActionInput = z.input<typeof systemActionSchema>;
 export type ProfileActionInput = z.input<typeof profileActionSchema>;
 export type TextActionInput = z.input<typeof textActionSchema>;
 export type HomeAssistantActionInput = z.input<typeof homeAssistantActionSchema>;
+export type NodeRedActionInput = z.input<typeof nodeRedActionSchema>;
 export type ActionInput = z.input<typeof actionSchema>;
 export type ActionBindingInput = z.input<typeof actionBindingSchema>;
 
@@ -229,6 +248,7 @@ export type ValidatedSystemAction = z.output<typeof systemActionSchema>;
 export type ValidatedProfileAction = z.output<typeof profileActionSchema>;
 export type ValidatedTextAction = z.output<typeof textActionSchema>;
 export type ValidatedHomeAssistantAction = z.output<typeof homeAssistantActionSchema>;
+export type ValidatedNodeRedAction = z.output<typeof nodeRedActionSchema>;
 export type ValidatedAction = z.output<typeof actionSchema>;
 export type ValidatedActionBinding = z.output<typeof actionBindingSchema>;
 

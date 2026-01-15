@@ -11,6 +11,7 @@ import { ImagePicker } from './ImagePicker';
 import { HomeAssistantActionForm } from './HomeAssistantAction';
 import { ProfileActionForm } from './ProfileAction';
 import { TextActionForm } from './TextAction';
+import { NodeRedActionForm } from './NodeRedAction';
 import type {
   Action,
   ActionType,
@@ -23,6 +24,7 @@ import type {
   ProfileAction,
   TextAction,
   HomeAssistantAction,
+  NodeRedAction,
 } from '@shared/types/actions';
 
 /** Get display name for selection type */
@@ -67,6 +69,8 @@ const createDefaultAction = (type: ActionType): Partial<Action> => {
       return { ...base, type: 'text', text: '', typeDelay: 0 } as Partial<TextAction>;
     case 'home_assistant':
       return { ...base, type: 'home_assistant', operation: 'toggle', entityId: '' } as Partial<HomeAssistantAction>;
+    case 'node_red':
+      return { ...base, type: 'node_red', operation: 'trigger_flow', endpoint: '' } as Partial<NodeRedAction>;
     default:
       return base;
   }
@@ -272,6 +276,12 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
             {actionType === 'home_assistant' && (
               <HomeAssistantActionForm
                 config={actionConfig as Partial<HomeAssistantAction>}
+                onChange={handleConfigChange}
+              />
+            )}
+            {actionType === 'node_red' && (
+              <NodeRedActionForm
+                config={actionConfig as Partial<NodeRedAction>}
                 onChange={handleConfigChange}
               />
             )}
