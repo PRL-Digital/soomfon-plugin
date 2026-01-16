@@ -1,0 +1,13 @@
+/workspace/src-tauri/target/debug/deps/quote-7860a37abf360d79.d: /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/lib.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/ext.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/format.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/ident_fragment.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/to_tokens.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/runtime.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/spanned.rs
+
+/workspace/src-tauri/target/debug/deps/libquote-7860a37abf360d79.rlib: /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/lib.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/ext.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/format.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/ident_fragment.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/to_tokens.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/runtime.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/spanned.rs
+
+/workspace/src-tauri/target/debug/deps/libquote-7860a37abf360d79.rmeta: /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/lib.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/ext.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/format.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/ident_fragment.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/to_tokens.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/runtime.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/spanned.rs
+
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/lib.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/ext.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/format.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/ident_fragment.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/to_tokens.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/runtime.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.43/src/spanned.rs:

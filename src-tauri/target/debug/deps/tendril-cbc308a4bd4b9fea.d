@@ -1,0 +1,13 @@
+/workspace/src-tauri/target/debug/deps/tendril-cbc308a4bd4b9fea.d: /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/lib.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/fmt.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/stream.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/buf32.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/tendril.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/utf8_decode.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/util.rs
+
+/workspace/src-tauri/target/debug/deps/libtendril-cbc308a4bd4b9fea.rlib: /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/lib.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/fmt.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/stream.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/buf32.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/tendril.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/utf8_decode.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/util.rs
+
+/workspace/src-tauri/target/debug/deps/libtendril-cbc308a4bd4b9fea.rmeta: /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/lib.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/fmt.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/stream.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/buf32.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/tendril.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/utf8_decode.rs /home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/util.rs
+
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/lib.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/fmt.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/stream.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/buf32.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/tendril.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/utf8_decode.rs:
+/home/dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tendril-0.4.3/src/util.rs:
