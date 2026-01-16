@@ -15,14 +15,14 @@
 | Phase 2 | COMPLETED | HID communication layer fully implemented |
 | Phase 3 | COMPLETED | Image processing fully implemented |
 | Phase 4 | COMPLETED | Configuration system fully implemented |
-| Phase 5 | MOSTLY COMPLETE | 8 fully implemented, 2 partial (system, home_assistant) |
+| Phase 5 | COMPLETED | All 10 handlers fully implemented |
 | Phase 6 | PARTIALLY COMPLETE | Tray and auto-launch exist, dialog plugin needed |
 | Phase 7 | NOT STARTED | Frontend migration pending |
 | Phase 8 | NOT STARTED | Device testing pending |
 
 **Rust Code Status:**
 - Compiles: YES
-- Tests: 16 passing
+- Tests: 21 passing
 - TypeScript Tests: 835 passing
 
 Breaking changes are allowed, as long as the implemention_plan.md file is updated with the potential outcomes and changes needed. 
@@ -454,14 +454,14 @@ The Rust code structure is verified and follows the planned architecture.
 
 ---
 
-## Phase 5: Action System - MOSTLY COMPLETE
+## Phase 5: Action System - COMPLETED
 
 **Electron Reference:** `src/core/actions/action-engine.ts`, `src/core/actions/event-binder.ts`, `src/core/actions/handlers/*.ts`
 
-**Status:** 8 handlers fully implemented, 2 partial (system, home_assistant). Handler implementation summary:
-- **Fully Implemented (8):** keyboard, media, text, profile, launch, script, http, node_red
-- **Partial (2):** system (lock/sleep/hibernate work, screenshot not implemented), home_assistant (Toggle/TurnOn/TurnOff/CallService work, FireEvent not implemented)
-- **Stubs (0):** None remaining
+**Status:** All 10 handlers fully implemented.
+- **Fully Implemented (10):** keyboard, media, text, profile, launch, script, http, node_red, system, home_assistant
+- System handler uses Windows keyboard shortcuts via SendInput (Win+L for lock, Win+Shift+S for screenshot, etc.)
+- Home Assistant handler includes FireEvent endpoint
 
 ### Task 5.1: Define Action Types - COMPLETED
 - [x] Create `src-tauri/src/actions/mod.rs`
@@ -515,13 +515,19 @@ The Rust code structure is verified and follows the planned architecture.
   - JSON body support
 - [x] **Electron has:** Full implementation with 27 tests
 
-### Task 5.7: Port System Handler - PARTIAL IMPLEMENTATION
+### Task 5.7: Port System Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/system.rs`
-- [x] Implemented:
-  - Lock screen (working)
-  - Sleep/hibernate (working)
-- [ ] Not implemented:
-  - Screenshot (not implemented)
+- [x] Full implementation using Windows keyboard shortcuts via SendInput:
+  - switch_desktop_left (Win+Ctrl+Left)
+  - switch_desktop_right (Win+Ctrl+Right)
+  - show_desktop (Win+D)
+  - lock_screen (Win+L)
+  - screenshot (Win+Shift+S - Snipping Tool)
+  - start_menu (Win key)
+  - task_view (Win+Tab)
+  - sleep (system command)
+  - hibernate (system command)
+- [x] **Rust Tests:** 2 tests for serialization/deserialization
 - [x] **Electron has:** Implementation with 25 tests
 
 ### Task 5.8: Port Text Handler - COMPLETED
@@ -542,14 +548,14 @@ The Rust code structure is verified and follows the planned architecture.
   - Process cancellation
 - [x] **Electron has:** Implementation with 29 tests (after fix)
 
-### Task 5.10: Port Home Assistant Handler - PARTIAL IMPLEMENTATION
+### Task 5.10: Port Home Assistant Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/home_assistant.rs`
-- [x] Implemented:
+- [x] Full implementation:
   - Toggle entity
   - TurnOn/TurnOff entity
-  - Call service
-- [ ] Not implemented:
-  - Fire event
+  - CallService (generic service call with domain.service format)
+  - FireEvent (POST to /api/events/{event_type})
+- [x] **Rust Tests:** 3 tests for serialization and FireEvent
 - [x] **Electron has:** Full implementation with 21 tests
 
 ### Task 5.11: Port Node-RED Handler - COMPLETED
@@ -935,7 +941,7 @@ strip = true
 - [x] Phase 2: HID Communication (Tasks 2.1-2.6) - **COMPLETED** (Task 2.7 device testing pending)
 - [x] Phase 3: Image Processing (Tasks 3.1-3.2) - **COMPLETED**
 - [x] Phase 4: Configuration (Tasks 4.1-4.4) - **COMPLETED**
-- [~] Phase 5: Action System (Tasks 5.1-5.13) - **MOSTLY COMPLETE** (8 fully implemented, 2 partial)
+- [x] Phase 5: Action System (Tasks 5.1-5.13) - **COMPLETED** (all 10 handlers fully implemented)
 - [~] Phase 6: System Integration (Tasks 6.1-6.3) - **PARTIALLY COMPLETE** (tray/auto-launch done, dialog pending)
 - [ ] Phase 7: Frontend Migration (Tasks 7.1-7.5) - **NOT STARTED**
 - [ ] Phase 8: Testing & Polish (Tasks 8.1-8.5) - **NOT STARTED**
@@ -955,10 +961,10 @@ strip = true
    - [x] Add tests for critical modules (Task 0.5) - **COMPLETED** (6/7 modules, 835 tests)
 3. [x] Run `npm test` - verify 835 tests pass (100%) - **COMPLETED**
 4. [x] Initialize Tauri project (Phase 1) - **COMPLETED**
-5. [x] Port HID manager (Phase 2) - **COMPLETED** (16 Rust tests passing)
+5. [x] Port HID manager (Phase 2) - **COMPLETED** (21 Rust tests passing)
 6. [x] Port image processor (Phase 3) - **COMPLETED**
 7. [x] Port configuration system (Phase 4) - **COMPLETED**
-8. [~] Port action handlers (Phase 5) - **MOSTLY COMPLETE** (8 fully implemented, 2 partial: system, home_assistant)
+8. [x] Port action handlers (Phase 5) - **COMPLETED** (all 10 handlers fully implemented)
 9. [~] Port system integration (Phase 6) - **IN PROGRESS** (tray/auto-launch done)
 10. [ ] Migrate frontend (Phase 7) - mostly copy-paste with IPC changes
 11. [ ] Build and measure - verify < 10 MB installer, < 25 MB RAM
@@ -992,6 +998,17 @@ These fixes were applied to get the Rust code compiling:
 6. **Created RGBA icon files**
    - Files: `src-tauri/icons/*.png`, `src-tauri/icons/icon.ico`, `src-tauri/icons/icon.icns`
    - Created proper RGBA format icons required by Tauri
+
+7. **Completed system.rs handler with all actions (2026-01-16)**
+   - File: `src-tauri/src/actions/handlers/system.rs`
+   - Added missing actions: switch_desktop_left/right, show_desktop, screenshot, start_menu, task_view
+   - Uses Windows keyboard shortcuts via SendInput (matching Electron implementation)
+   - Updated SystemActionType enum with all action types
+
+8. **Completed home_assistant.rs handler with FireEvent (2026-01-16)**
+   - File: `src-tauri/src/actions/handlers/home_assistant.rs`
+   - Implemented FireEvent endpoint (POST to /api/events/{event_type})
+   - Added unit tests for all Home Assistant action types
 
 ---
 

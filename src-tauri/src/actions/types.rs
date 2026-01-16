@@ -122,14 +122,32 @@ pub struct SystemAction {
     pub action: SystemActionType,
 }
 
+/// System action types matching the Electron implementation
+/// Uses Windows keyboard shortcuts for consistent behavior:
+/// - switch_desktop_left: Win+Ctrl+Left
+/// - switch_desktop_right: Win+Ctrl+Right
+/// - show_desktop: Win+D
+/// - lock_screen: Win+L
+/// - screenshot: Win+Shift+S (Snipping Tool)
+/// - start_menu: Win key
+/// - task_view: Win+Tab
+/// - sleep: System sleep
+/// - hibernate: System hibernate
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub enum SystemActionType {
-    Lock,
+    SwitchDesktopLeft,
+    SwitchDesktopRight,
+    ShowDesktop,
+    #[serde(alias = "lock")]
+    LockScreen,
+    Screenshot,
+    StartMenu,
+    TaskView,
     Sleep,
     Hibernate,
-    Screenshot,
-    OpenUrl,
+    #[serde(skip)]
+    OpenUrl, // Deprecated: use Launch action instead
 }
 
 /// Text action configuration
