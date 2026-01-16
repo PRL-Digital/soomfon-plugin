@@ -18,11 +18,11 @@
 | Phase 5 | COMPLETED | All 10 handlers fully implemented |
 | Phase 6 | COMPLETED | Tray, auto-launch, and file dialog all implemented |
 | Phase 7 | COMPLETED | All tasks complete - Electron dependencies removed, Tauri-only workflow |
-| Phase 8 | NOT STARTED | Device testing pending |
+| Phase 8 | IN PROGRESS | Rust test coverage expanded, device testing pending |
 
 **Rust Code Status:**
 - Compiles: YES
-- Tests: 21 passing
+- Tests: 130 passing (was 21)
 - TypeScript Tests: 835 passing
 
 Breaking changes are allowed, as long as the implemention_plan.md file is updated with the potential outcomes and changes needed. 
@@ -687,6 +687,14 @@ The Rust code structure is verified and follows the planned architecture.
 
 ## Phase 8: Testing & Polish
 
+### Task 8.0: Expand Rust Test Coverage - COMPLETED
+**Status:** Added 109 new Rust unit tests for core modules
+
+- [x] Event Binder: 23 tests - Profile binding/unbinding, button/encoder event routing for all trigger types
+- [x] Action Engine: 26 tests - History management, action type naming, execution state tracking
+- [x] Config Manager: 22 tests - Settings persistence, brightness clamping, profile ID management
+- [x] Profile Manager: 38 tests - CRUD operations, import/export, JSON persistence
+
 ### Task 8.1: Test Device Communication
 - [ ] Connect to SOOMFON device
 - [ ] Test all button press/release events
@@ -739,13 +747,13 @@ This section documents the complete Electron implementation that can be used as 
 | Packet Builder | `device/packet-builder.ts` | Complete | 68 | All HID packet formats |
 | SOOMFON Protocol | `device/soomfon-protocol.ts` | Complete | 0 | High-level device API |
 | Image Processor | `device/image-processor.ts` | Complete | 35 | RGB565, 72x72 LCD |
-| Config Manager | `config/config-manager.ts` | Complete | 59 | electron-store wrapper |
-| Profile Manager | `config/profile-manager.ts` | Complete | 58 | CRUD + import/export |
+| Config Manager | `config/config-manager.ts` | Complete | 59 | electron-store wrapper (Rust: 22 tests) |
+| Profile Manager | `config/profile-manager.ts` | Complete | 58 | CRUD + import/export (Rust: 38 tests) |
 | Import/Export | `config/import-export.ts` | Complete | 50 | Profile import/export |
 | Validation | `config/validation.ts` | Complete | 33 | Zod schemas |
 | Migrations | `config/migrations.ts` | Complete | 72 | Config versioning |
-| Action Engine | `actions/action-engine.ts` | Complete | 20 | Handler registry, timeout |
-| Event Binder | `actions/event-binder.ts` | Complete | 26 | Event->Action routing |
+| Action Engine | `actions/action-engine.ts` | Complete | 20 | Handler registry, timeout (Rust: 26 tests) |
+| Event Binder | `actions/event-binder.ts` | Complete | 26 | Event->Action routing (Rust: 23 tests) |
 
 ### Action Handlers (src/core/actions/handlers/) - ALL COMPLETE (249 tests)
 
@@ -962,7 +970,7 @@ strip = true
 - [x] Phase 5: Action System (Tasks 5.1-5.13) - **COMPLETED** (all 10 handlers fully implemented)
 - [x] Phase 6: System Integration (Tasks 6.1-6.4) - **COMPLETED**
 - [x] Phase 7: Frontend Migration (Tasks 7.1-7.6) - **COMPLETED** (Electron dependencies removed, Tauri-only workflow)
-- [ ] Phase 8: Testing & Polish (Tasks 8.1-8.5) - **NOT STARTED**
+- [ ] Phase 8: Testing & Polish (Tasks 8.0-8.5) - **IN PROGRESS** (Task 8.0 Rust test coverage completed)
 
 ---
 
@@ -1060,6 +1068,12 @@ These fixes were applied to get the Rust code compiling:
     - Removed tsconfig.main.json, tsconfig.preload.json, electron-builder.json
     - Updated package.json scripts for Tauri-only workflow
     - Fixed type errors in tauri-api.ts to match Profile type (buttons/encoders arrays)
+
+14. **Added comprehensive Rust unit tests for core modules (2026-01-16)**
+    - Event Binder (23 tests): Profile binding/unbinding, button/encoder event routing for all trigger types
+    - Action Engine (26 tests): History management, action type naming, execution state tracking
+    - Config Manager (22 tests): Settings persistence, brightness clamping, profile ID management
+    - Profile Manager (38 tests): CRUD operations, import/export, JSON persistence
 
 ---
 
