@@ -10,7 +10,7 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0 | COMPLETED | Pre-migration cleanup, 872 TypeScript tests passing |
+| Phase 0 | COMPLETED | Pre-migration cleanup, 960 TypeScript tests passing |
 | Phase 1 | COMPLETED | Tauri project initialized |
 | Phase 2 | COMPLETED | HID communication layer fully implemented |
 | Phase 3 | COMPLETED | Image processing fully implemented |
@@ -23,7 +23,7 @@
 **Rust Code Status:**
 - Compiles: YES
 - **Rust Tests:** 228 passing (was 156, added 38 new tests for HID types)
-- TypeScript Tests: 872 passing
+- TypeScript Tests: 960 passing
 - Clippy: Zero warnings
 
 Breaking changes are allowed, as long as the implemention_plan.md file is updated with the potential outcomes and changes needed. 
@@ -158,7 +158,7 @@ Comments removed from:
 - Debug output is automatically enabled in development mode
 
 ### Task 0.5: Add Missing Test Coverage - IN PROGRESS
-**Current: 872 tests total** (was 462, added 410 new tests)
+**Current: 960 tests total** (was 462, added 498 new tests)
 
 **Device modules with tests (added 2026-01-16):**
 - [x] `src/core/device/packet-builder.ts` - **68 tests** (pure functions, no mocking needed)
@@ -183,6 +183,12 @@ Comments removed from:
   - Tests ConfigMigrator class and checkAndMigrate integration
 - [x] `src/core/device/soomfon-protocol.ts` - **37 tests** (was 0, added 2026-01-16)
   - Tests validation, packet transmission, and initialization
+
+**Integration modules with tests (added 2026-01-16):**
+- [x] `src/core/integrations/home-assistant.ts` - **43 tests** (was 0, added 2026-01-16)
+  - Tests configuration, connection, service calls, error handling
+- [x] `src/core/integrations/node-red.ts` - **45 tests** (was 0, added 2026-01-16)
+  - Tests configuration, webhooks, events, error handling
 
 **Critical modules still WITHOUT tests:**
 - [ ] `src/core/device/hid-manager.ts` - 0 tests (requires node-hid mock)
@@ -961,7 +967,7 @@ strip = true
 - [x] Task 0.2b: Encoder Trigger Naming - **WON'T FIX** (documented, keeping current design to preserve user configs)
 - [x] Task 0.3: Remove Outdated Comments - **COMPLETED** (3 files fixed)
 - [x] Task 0.4: Add Debug Logging Control - **COMPLETED** (48 console.logs replaced)
-- [x] Task 0.5: Add Missing Test Coverage - **COMPLETED** (7/8 modules tested, 872 tests total)
+- [x] Task 0.5: Add Missing Test Coverage - **COMPLETED** (7/8 modules tested + integrations, 960 tests total)
   - [x] packet-builder.ts: 68 tests
   - [x] image-processor.ts: 35 tests
   - [x] device-events.ts: 50 tests
@@ -969,6 +975,9 @@ strip = true
   - [x] profile-manager.ts: 58 tests
   - [x] import-export.ts: 50 tests
   - [x] migrations.ts: 72 tests
+  - [x] soomfon-protocol.ts: 37 tests
+  - [x] home-assistant.ts: 43 tests (integration)
+  - [x] node-red.ts: 45 tests (integration)
   - [ ] hid-manager.ts: 0 tests (requires node-hid mock - DEFERRED)
 - [x] Task 0.6: Add Input Validation - **COMPLETED** (29 tests, validation utilities)
 
@@ -994,8 +1003,8 @@ strip = true
 2. [x] **Complete Phase 0 Quality Items:**
    - [x] Remove outdated comments (Task 0.3) - **COMPLETED**
    - [x] Add logging utility (Task 0.4) - **COMPLETED**
-   - [x] Add tests for critical modules (Task 0.5) - **COMPLETED** (7/8 modules, 872 tests)
-3. [x] Run `npm test` - verify 872 tests pass (100%) - **COMPLETED**
+   - [x] Add tests for critical modules (Task 0.5) - **COMPLETED** (7/8 modules + integrations, 960 tests)
+3. [x] Run `npm test` - verify 960 tests pass (100%) - **COMPLETED**
 4. [x] Initialize Tauri project (Phase 1) - **COMPLETED**
 5. [x] Port HID manager (Phase 2) - **COMPLETED** (228 Rust tests passing)
 6. [x] Port image processor (Phase 3) - **COMPLETED**
@@ -1041,10 +1050,10 @@ Compilation fixes (HttpMethod Display trait, mutex-across-await, deprecated tray
 23. **Added comprehensive soomfon-protocol.ts unit tests**
     - File: `src/core/device/__tests__/soomfon-protocol.test.ts`
     - Added 37 unit tests covering validation, packet transmission, and initialization
-    - Total TypeScript tests: 872
+    - Total TypeScript tests: 960
 
 ---
 
 ## Phase 0 Completion Criteria
 
-**Status: COMPLETED** - All 7 criteria met: tests passing (872 TypeScript), type definitions fixed (encoder longPress), outdated comments removed, logger utility implemented, input validation added, and critical modules tested (7/8, hid-manager deferred due to native module mocking complexity).
+**Status: COMPLETED** - All 7 criteria met: tests passing (960 TypeScript), type definitions fixed (encoder longPress), outdated comments removed, logger utility implemented, input validation added, and critical modules tested (7/8 + integrations, hid-manager deferred due to native module mocking complexity).
