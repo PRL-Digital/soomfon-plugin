@@ -106,12 +106,13 @@ pub async fn open_file_dialog(
     }
 
     // Handle different dialog modes using blocking methods (safe in async commands)
+    // FilePath implements Display, so we use to_string() to convert to String
     if is_directory {
         // Directory picker (single selection only, multi-directory not commonly supported)
         let result = builder.blocking_pick_folder();
 
         match result {
-            Some(path) => Ok(vec![path.to_string_lossy().to_string()]),
+            Some(path) => Ok(vec![path.to_string()]),
             None => Ok(vec![]), // Cancelled
         }
     } else if is_multiple {
@@ -122,7 +123,7 @@ pub async fn open_file_dialog(
             Some(paths) => {
                 let string_paths: Vec<String> = paths
                     .iter()
-                    .map(|p| p.to_string_lossy().to_string())
+                    .map(|p| p.to_string())
                     .collect();
                 Ok(string_paths)
             }
@@ -133,7 +134,7 @@ pub async fn open_file_dialog(
         let result = builder.blocking_pick_file();
 
         match result {
-            Some(path) => Ok(vec![path.to_string_lossy().to_string()]),
+            Some(path) => Ok(vec![path.to_string()]),
             None => Ok(vec![]), // Cancelled
         }
     }
