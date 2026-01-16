@@ -104,39 +104,27 @@ Comments removed from:
 - [x] `src/renderer/components/ActionEditor/LaunchAction.tsx` - Browse button works via `window.electronAPI.openFileDialog()`
 - [x] `src/renderer/components/ActionEditor/ImagePicker.tsx` - Browse button works via `window.electronAPI.openFileDialog()`
 
-### Task 0.4: Add Debug Logging Control - INCOMPLETE
-**48 console.log statements found across 7 files with NO logging control**
+### Task 0.4: Add Debug Logging Control - COMPLETED
+**Status:** Replaced 48 console.log statements with logger utility
 
-- [ ] **Create logging utility: `src/shared/utils/logger.ts`**
-  ```typescript
-  const DEBUG = process.env.DEBUG_LOGGING === 'true';
-  export const debug = (...args: unknown[]) => DEBUG && console.log(...args);
-  export const logger = {
-    debug: (...args: unknown[]) => DEBUG && console.log('[DEBUG]', ...args),
-    info: (...args: unknown[]) => console.info('[INFO]', ...args),
-    warn: (...args: unknown[]) => console.warn('[WARN]', ...args),
-    error: (...args: unknown[]) => console.error('[ERROR]', ...args),
-  };
-  ```
+**Created:** `src/shared/utils/logger.ts` with:
+- [x] `createLogger(prefix)` - Creates prefixed logger for modules
+- [x] `logger.debug()` - Only logs when DEBUG_LOGGING=true or NODE_ENV=development
+- [x] `logger.info()`, `logger.warn()`, `logger.error()` - Always log
+- [x] `debug()` - Quick debug function for temporary logging
 
-- [ ] **Replace console.log in hid-manager.ts** (12 occurrences)
-  - This is a critical migration module
+**Updated Files:**
+- [x] `src/core/device/hid-manager.ts` - 14 console.log/error replaced
+- [x] `src/main/ipc-handlers.ts` - 23 console.log/error replaced
+- [x] `src/renderer/components/DeviceView/DeviceView.tsx` - 8 console.log replaced
+- [x] `src/renderer/hooks/useDevice.ts` - 4 console.log replaced
+- [x] `src/core/device/device-events.ts` - 2 console.log replaced
+- [x] `src/main/auto-launch.ts` - 4 console.log/error replaced
+- [x] `src/main/index.ts` - 1 console.log replaced
 
-- [ ] **Replace console.log in ipc-handlers.ts** (19 occurrences)
-  - This is a critical migration module
-
-- [ ] **Replace console.log in DeviceView.tsx** (8 occurrences)
-
-- [ ] **Replace console.log in useDevice.ts** (4 occurrences)
-
-- [ ] **Replace console.log in device-events.ts** (2 occurrences)
-  - Lines 97, 124
-
-- [ ] **Replace console.log in auto-launch.ts** (2 occurrences)
-
-- [ ] **Replace console.log in index.ts** (1 occurrence)
-
-**Note:** config-manager.ts properly uses console.info/warn/error (acceptable) - NOT console.log
+**Usage:**
+- Set `DEBUG_LOGGING=true` environment variable to enable debug output
+- Debug output is automatically enabled in development mode
 
 ### Task 0.5: Add Missing Test Coverage - INCOMPLETE
 **Current: 430 tests total**
@@ -850,7 +838,7 @@ strip = true
 - [x] Task 0.2: Fix Type Definitions - **COMPLETED** (encoder longPress binding fixed)
 - [ ] Task 0.2b: Fix Encoder Trigger Naming (rotateCW vs clockwise)
 - [x] Task 0.3: Remove Outdated Comments - **COMPLETED** (3 files fixed)
-- [ ] Task 0.4: Add Debug Logging Control (7 files, 48 console.logs)
+- [x] Task 0.4: Add Debug Logging Control - **COMPLETED** (48 console.logs replaced)
 - [ ] Task 0.5: Add Missing Test Coverage (8 critical modules + parseSoomfonReport)
 - [x] Task 0.6: Add Input Validation - **COMPLETED** (29 tests, validation utilities)
 
@@ -875,7 +863,7 @@ strip = true
    - [x] Add input validation (Task 0.6) - **COMPLETED**
 2. [ ] **Complete Phase 0 Quality Items:**
    - [x] Remove outdated comments (Task 0.3) - **COMPLETED**
-   - [ ] Add logging utility (Task 0.4)
+   - [x] Add logging utility (Task 0.4) - **COMPLETED**
    - [ ] Add tests for critical modules (Task 0.5)
 3. [x] Run `npm test` - verify 433 tests pass (100%) - **COMPLETED**
 4. [ ] Initialize Tauri project (Phase 1)
@@ -894,7 +882,7 @@ Phase 0 is complete when ALL of the following are true:
 2. **Types:** EncoderTrigger includes 'longPress', EncoderEventType includes LONG_PRESS - ✓ **COMPLETED**
 3. **Types:** Encoder trigger naming is consistent across all layers
 4. **Comments:** No false "not implemented" comments remain - ✓ **COMPLETED**
-5. **Logging:** All console.log replaced with logger utility
+5. **Logging:** All console.log replaced with logger utility - ✓ **COMPLETED**
 6. **Security:** Input validation in place for images, file paths - ✓ **COMPLETED**
 7. **Coverage:** Critical modules have basic test coverage
 

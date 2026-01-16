@@ -14,6 +14,9 @@ import {
   LCD_BUTTON_COUNT,
   ENCODER_COUNT,
 } from '../../shared/types/device';
+import { createLogger } from '../../shared/utils/logger';
+
+const log = createLogger('PARSER');
 
 /** Long press detection threshold in milliseconds */
 const LONG_PRESS_THRESHOLD = 500;
@@ -94,7 +97,7 @@ export class DeviceEventParser extends EventEmitter {
     const state = data[10];
     const isPressed = state === 1;
 
-    console.log(`[PARSER] SOOMFON report: button=${buttonIndex}, state=${state}, pressed=${isPressed}`);
+    log.debug(`[PARSER] SOOMFON report: button=${buttonIndex}, state=${state}, pressed=${isPressed}`);
 
     // Determine if this is an LCD button (1-6), normal button (49-51 / 0x31-0x33), or encoder (52-54 / 0x34-0x36)
     if (buttonIndex >= 1 && buttonIndex <= LCD_BUTTON_COUNT) {
@@ -121,7 +124,7 @@ export class DeviceEventParser extends EventEmitter {
         this.handleEncoderInput(encoderIndex, 0, 1); // CCW
       }
     } else {
-      console.log(`[PARSER] Unknown SOOMFON button index: ${buttonIndex} (0x${buttonIndex.toString(16)})`);
+      log.debug(`[PARSER] Unknown SOOMFON button index: ${buttonIndex} (0x${buttonIndex.toString(16)})`);
     }
   }
 

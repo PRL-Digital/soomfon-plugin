@@ -44,6 +44,9 @@ import { EventBinder, createEventBinder } from '../core/actions/event-binder';
 import type { ActionBinding, ElementType, ButtonTrigger, EncoderTrigger } from '../shared/types/actions';
 import type { ButtonConfig, EncoderConfig } from '../shared/types/config';
 import { validateBase64, extractBase64Data, MAX_IMAGE_SIZE_BYTES } from '../shared/utils/validation';
+import { createLogger } from '../shared/utils/logger';
+
+const log = createLogger('IPC');
 
 // Import action handlers
 import { KeyboardHandler } from '../core/actions/handlers/keyboard-handler';
@@ -99,11 +102,11 @@ function initHidManager(): HIDManager {
       // Initialize protocol after connection (wake device, enable input reporting)
       try {
         const protocol = initSoomfonProtocol();
-        console.log('[IPC] Initializing device protocol...');
+        log.debug('[IPC] Initializing device protocol...');
         await protocol.initialize();
-        console.log('[IPC] Device protocol initialized');
+        log.debug('[IPC] Device protocol initialized');
       } catch (error) {
-        console.error('[IPC] Failed to initialize protocol:', error);
+        log.error('[IPC] Failed to initialize protocol:', error);
       }
     });
 
@@ -112,7 +115,7 @@ function initHidManager(): HIDManager {
     });
 
     hidManager.on('error', (error) => {
-      console.error('HID Manager error:', error);
+      log.error('HID Manager error:', error);
     });
   }
   return hidManager;
@@ -184,7 +187,7 @@ function initActionEngine(): ActionEngine {
     // NodeRedHandler for Node-RED webhook integration
     actionEngine.registerHandler(new NodeRedHandler(cm));
 
-    console.log('ActionEngine initialized with handlers:', actionEngine.getRegisteredTypes());
+    log.debug('ActionEngine initialized with handlers:', actionEngine.getRegisteredTypes());
   }
   return actionEngine;
 }
@@ -220,15 +223,15 @@ function initEventBinder(): EventBinder {
 
     // Log binding matches and executions for debugging
     eventBinder.on('binding:matched', (binding, event) => {
-      console.log(`Binding matched: ${binding.elementType}[${binding.elementIndex}].${binding.trigger}`);
+      log.debug(`Binding matched: ${binding.elementType}[${binding.elementIndex}].${binding.trigger}`);
     });
 
     eventBinder.on('binding:executed', (binding, result) => {
-      console.log(`Action executed: ${binding.action.type} - ${result.status}`);
+      log.debug(`Action executed: ${binding.action.type} - ${result.status}`);
     });
 
     eventBinder.on('binding:error', (binding, error) => {
-      console.error(`Action execution error: ${error.message}`);
+      log.error(`Action execution error: ${error.message}`);
     });
 
     eventBinder.on('binding:notFound', (event) => {
@@ -342,9 +345,9 @@ function loadBindingsFromProfile(): void {
     }
 
     binder.loadBindings(allBindings);
-    console.log(`Loaded ${allBindings.length} bindings from profile: ${activeProfile.name}`);
+    log.debug(`Loaded ${allBindings.length} bindings from profile: ${activeProfile.name}`);
   } catch (error) {
-    console.error('Failed to load bindings from profile:', error);
+    log.error('Failed to load bindings from profile:', error);
   }
 }
 
@@ -436,7 +439,7 @@ export function registerIpcHandlers(): void {
 
     // Send brightness command to device
     await protocol.setBrightness(brightness);
-    console.log(`Brightness set to ${brightness}%`);
+    log.debug(`Brightness set to ${brightness}%`);
   });
 
   ipcMain.handle(DeviceChannels.SET_BUTTON_IMAGE, async (_event, request: SetButtonImageRequest): Promise<void> => {
@@ -472,7 +475,7 @@ export function registerIpcHandlers(): void {
 
     // Send image to device
     await protocol.setButtonImage(request.buttonIndex, processedImage);
-    console.log(`Button ${request.buttonIndex} image set successfully`);
+    log.debug(`Button ${request.buttonIndex} image set successfully`);
   });
 
   // ============================================================================
@@ -787,59 +790,59 @@ export function getAutoLaunchManagerInstance(): AutoLaunchManager {
  * HIDManager -> DeviceEventParser -> EventBinder -> ActionEngine
  */
 export function wireEventPipeline(): void {
-  console.log('[PIPELINE] Wiring event pipeline...');
+  log.debug('[PIPELINE] Wiring event pipeline...');
   const hid = initHidManager();
   const parser = initDeviceEventParser();
   const binder = initEventBinder();
 
-  console.log('[PIPELINE] HID manager state:', hid.getConnectionState(), 'connected:', hid.isConnected());
+  log.debug('[PIPELINE] HID manager state:', hid.getConnectionState(), 'connected:', hid.isConnected());
 
   // Wire HID data events to parser
   hid.on('data', (data: Buffer) => {
-    console.log('[HID] Raw data received:', data.toString('hex'));
+    log.debug('[HID] Raw data received:', data.toString('hex'));
     parser.parseData(data);
   });
-  console.log('[PIPELINE] HID data listener registered');
+  log.debug('[PIPELINE] HID data listener registered');
 
   // Wire parser button events to event binder
   parser.on('button', async (event) => {
-    console.log('[PARSER] Button event:', JSON.stringify(event));
+    log.debug('[PARSER] Button event:', JSON.stringify(event));
     try {
       // Forward to renderer for UI feedback based on event type
       if (event.type === ButtonEventType.RELEASE) {
         sendToRenderer(DeviceChannels.BUTTON_RELEASE, event);
-        console.log('[IPC] Sent button release to renderer:', event.buttonType, event.buttonIndex);
+        log.debug('[IPC] Sent button release to renderer:', event.buttonType, event.buttonIndex);
       } else {
         // PRESS and LONG_PRESS go to BUTTON_PRESS channel
         sendToRenderer(DeviceChannels.BUTTON_PRESS, event);
-        console.log('[IPC] Sent button press to renderer:', event.buttonType, event.buttonIndex);
+        log.debug('[IPC] Sent button press to renderer:', event.buttonType, event.buttonIndex);
       }
 
       // Execute action via event binder
       await binder.handleButtonEvent(event);
     } catch (error) {
-      console.error('Error handling button event:', error);
+      log.error('Error handling button event:', error);
     }
   });
 
   // Wire parser encoder events to event binder
   parser.on('encoder', async (event) => {
-    console.log('[PARSER] Encoder event:', JSON.stringify(event));
+    log.debug('[PARSER] Encoder event:', JSON.stringify(event));
     try {
       // Forward to renderer for UI feedback based on event type
       if (event.type === EncoderEventType.PRESS || event.type === EncoderEventType.RELEASE) {
         sendToRenderer(DeviceChannels.ENCODER_PRESS, event);
-        console.log('[IPC] Sent encoder press to renderer:', event.encoderIndex, event.type);
+        log.debug('[IPC] Sent encoder press to renderer:', event.encoderIndex, event.type);
       } else {
         // ROTATE_CW and ROTATE_CCW go to ENCODER_ROTATE channel
         sendToRenderer(DeviceChannels.ENCODER_ROTATE, event);
-        console.log('[IPC] Sent encoder rotate to renderer:', event.encoderIndex, event.type);
+        log.debug('[IPC] Sent encoder rotate to renderer:', event.encoderIndex, event.type);
       }
 
       // Execute action via event binder
       await binder.handleEncoderEvent(event);
     } catch (error) {
-      console.error('Error handling encoder event:', error);
+      log.error('Error handling encoder event:', error);
     }
   });
 
@@ -854,7 +857,7 @@ export function wireEventPipeline(): void {
     }
   });
 
-  console.log('Event processing pipeline wired successfully');
+  log.debug('Event processing pipeline wired successfully');
 }
 
 /**

@@ -5,6 +5,9 @@
  */
 
 import { app } from 'electron';
+import { createLogger } from '../shared/utils/logger';
+
+const log = createLogger('AUTO-LAUNCH');
 
 /**
  * Auto-launch configuration options
@@ -101,9 +104,9 @@ export class AutoLaunchManager {
         args: options.startMinimized ? ['--hidden'] : [],
       });
 
-      console.log('Auto-launch enabled successfully');
+      log.info('Auto-launch enabled successfully');
     } catch (error) {
-      console.error('Failed to enable auto-launch:', error);
+      log.error('Failed to enable auto-launch:', error);
       throw new Error(
         `Failed to enable auto-launch: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -121,9 +124,9 @@ export class AutoLaunchManager {
         args: [],
       });
 
-      console.log('Auto-launch disabled successfully');
+      log.info('Auto-launch disabled successfully');
     } catch (error) {
-      console.error('Failed to disable auto-launch:', error);
+      log.error('Failed to disable auto-launch:', error);
       throw new Error(
         `Failed to disable auto-launch: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

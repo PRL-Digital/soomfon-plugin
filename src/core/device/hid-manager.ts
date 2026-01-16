@@ -13,6 +13,9 @@ import {
   DeviceInfo,
   DeviceEventMap,
 } from '../../shared/types/device';
+import { createLogger } from '../../shared/utils/logger';
+
+const log = createLogger('HID-MANAGER');
 
 /** Keyboard usage page (Generic Desktop) */
 const KEYBOARD_USAGE_PAGE = 1;
@@ -97,17 +100,17 @@ export class HIDManager extends EventEmitter {
   /** Connect to the SOOMFON device */
   async connect(): Promise<void> {
     if (this.connectionState === ConnectionState.CONNECTED) {
-      console.log('[HID-MANAGER] Already connected, skipping');
+      log.debug('[HID-MANAGER] Already connected, skipping');
       return;
     }
 
     this.setConnectionState(ConnectionState.CONNECTING);
-    console.log('[HID-MANAGER] Connecting to device...');
+    log.debug('[HID-MANAGER] Connecting to device...');
 
     try {
       // Log all available interfaces for debugging
       const allDevices = HIDManager.enumerateDevices();
-      console.log('[HID-MANAGER] Found interfaces:', allDevices.map(d => ({
+      log.debug('[HID-MANAGER] Found interfaces:', allDevices.map(d => ({
         interface: d.interface,
         usagePage: d.usagePage,
         usage: d.usage,
@@ -120,7 +123,7 @@ export class HIDManager extends EventEmitter {
         throw new Error('SOOMFON device not found');
       }
 
-      console.log('[HID-MANAGER] Using vendor interface:', {
+      log.debug('[HID-MANAGER] Using vendor interface:', {
         interface: vendorInterface.interface,
         usagePage: vendorInterface.usagePage,
         usage: vendorInterface.usage,
@@ -129,17 +132,17 @@ export class HIDManager extends EventEmitter {
 
       this.deviceInfo = vendorInterface;
       this.vendorDevice = new HID.HID(vendorInterface.path);
-      console.log('[HID-MANAGER] Vendor device opened successfully');
+      log.debug('[HID-MANAGER] Vendor device opened successfully');
 
       // Set up error handler for vendor device
       this.vendorDevice.on('error', (err: Error) => {
-        console.log('[HID-MANAGER] Vendor device error:', err.message);
+        log.debug('[HID-MANAGER] Vendor device error:', err.message);
         this.handleError(err);
       });
 
       // Set up async data handler (may not work on Windows, polling is the fallback)
       this.vendorDevice.on('data', (data: Buffer) => {
-        console.log('[HID-MANAGER] Async vendor data received:', data.toString('hex'));
+        log.debug('[HID-MANAGER] Async vendor data received:', data.toString('hex'));
         this.emit('data', data);
       });
 
@@ -150,11 +153,11 @@ export class HIDManager extends EventEmitter {
       this.startPolling();
 
       this.emit('connected');
-      console.log('[HID-MANAGER] Connection complete, state:', this.connectionState);
+      log.debug('[HID-MANAGER] Connection complete, state:', this.connectionState);
     } catch (error) {
       this.setConnectionState(ConnectionState.ERROR);
       const err = error instanceof Error ? error : new Error(String(error));
-      console.error('[HID-MANAGER] Connection failed:', err.message);
+      log.error('[HID-MANAGER] Connection failed:', err.message);
       this.emit('error', err);
 
       if (this.autoReconnect) {
@@ -323,14 +326,14 @@ export class HIDManager extends EventEmitter {
       return;
     }
 
-    console.log('[HID-MANAGER] Starting data polling...');
+    log.debug('[HID-MANAGER] Starting data polling...');
 
     // Log once to confirm polling started
     let pollCount = 0;
     this.pollingTimer = setInterval(() => {
       pollCount++;
       if (pollCount === 1 || pollCount === 100) {
-        console.log('[HID-MANAGER] Poll count:', pollCount);
+        log.debug('[HID-MANAGER] Poll count:', pollCount);
       }
       this.pollData();
     }, POLLING_INTERVAL);
@@ -341,7 +344,7 @@ export class HIDManager extends EventEmitter {
     if (this.pollingTimer) {
       clearInterval(this.pollingTimer);
       this.pollingTimer = null;
-      console.log('[HID-MANAGER] Stopped data polling');
+      log.debug('[HID-MANAGER] Stopped data polling');
     }
   }
 
@@ -357,12 +360,12 @@ export class HIDManager extends EventEmitter {
         const data = this.vendorDevice.readTimeout(READ_TIMEOUT);
         if (data && data.length > 0) {
           const buffer = Buffer.from(data);
-          console.log('[HID-MANAGER] Vendor data received:', buffer.toString('hex'), 'length:', buffer.length);
+          log.debug('[HID-MANAGER] Vendor data received:', buffer.toString('hex'), 'length:', buffer.length);
           this.emit('data', buffer);
         }
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
-        console.error('[HID-MANAGER] Vendor poll error:', err.message);
+        log.error('[HID-MANAGER] Vendor poll error:', err.message);
       }
     }
   }

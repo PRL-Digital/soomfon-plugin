@@ -7,6 +7,9 @@ import { useState, useEffect, useCallback } from 'react';
 import type { DeviceStatus } from '@shared/types/ipc';
 import type { ButtonEvent, EncoderEvent } from '@shared/types/device';
 import { ConnectionState } from '@shared/types/device';
+import { createLogger } from '@shared/utils/logger';
+
+const log = createLogger('RENDERER');
 
 export interface UseDeviceReturn {
   /** Current device status */
@@ -94,23 +97,23 @@ export function useDevice(): UseDeviceReturn {
 
     // Button events
     const unsubButtonPress = device.onButtonPress((event) => {
-      console.log('[RENDERER] Button press received:', event);
+      log.debug('[RENDERER] Button press received:', event);
       setLastButtonEvent(event);
     });
 
     const unsubButtonRelease = device.onButtonRelease((event) => {
-      console.log('[RENDERER] Button release received:', event);
+      log.debug('[RENDERER] Button release received:', event);
       setLastButtonEvent(event);
     });
 
     // Encoder events
     const unsubEncoderRotate = device.onEncoderRotate((event) => {
-      console.log('[RENDERER] Encoder rotate received:', event);
+      log.debug('[RENDERER] Encoder rotate received:', event);
       setLastEncoderEvent(event);
     });
 
     const unsubEncoderPress = device.onEncoderPress((event) => {
-      console.log('[RENDERER] Encoder press received:', event);
+      log.debug('[RENDERER] Encoder press received:', event);
       setLastEncoderEvent(event);
     });
 

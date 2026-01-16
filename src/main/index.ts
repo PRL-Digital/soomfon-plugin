@@ -16,6 +16,9 @@ import {
   getAutoLaunchManagerInstance,
 } from './ipc-handlers';
 import { createTrayManager, getTrayManager, destroyTrayManager } from './tray';
+import { createLogger } from '../shared/utils/logger';
+
+const log = createLogger('MAIN');
 
 // Check if running in development mode
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -52,7 +55,7 @@ function createWindow(): void {
     if (!startHidden) {
       mainWindow?.show();
     } else {
-      console.log('Started with --hidden flag, minimizing to tray');
+      log.info('Started with --hidden flag, minimizing to tray');
     }
   });
 
