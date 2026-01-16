@@ -65,6 +65,8 @@ while true; do
         git push -u origin "$CURRENT_BRANCH"
     }
 
+    echo -e "\n\n======================================= Iteration $ITERATION complete =======================================\n"
+
     ITERATION=$((ITERATION + 1))
     echo -e "\n\n======================== LOOP $ITERATION ========================\n"
 done

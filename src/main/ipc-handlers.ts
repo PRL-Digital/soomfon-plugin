@@ -92,8 +92,18 @@ function initHidManager(): HIDManager {
     hidManager = new HIDManager();
 
     // Forward device events to renderer
-    hidManager.on('connected', () => {
+    hidManager.on('connected', async () => {
       sendToRenderer(DeviceChannels.CONNECTED);
+
+      // Initialize protocol after connection (wake device, enable input reporting)
+      try {
+        const protocol = initSoomfonProtocol();
+        console.log('[IPC] Initializing device protocol...');
+        await protocol.initialize();
+        console.log('[IPC] Device protocol initialized');
+      } catch (error) {
+        console.error('[IPC] Failed to initialize protocol:', error);
+      }
     });
 
     hidManager.on('disconnected', () => {

@@ -14,14 +14,27 @@ import {
   DeviceEventMap,
 } from '../../shared/types/device';
 
+/** Keyboard usage page (Generic Desktop) */
+const KEYBOARD_USAGE_PAGE = 1;
+/** Keyboard usage (within Generic Desktop) */
+const KEYBOARD_USAGE = 6;
+
 /** Reconnection interval in milliseconds */
 const RECONNECT_INTERVAL = 2000;
+
+/** Polling interval in milliseconds for reading HID data (Windows workaround) - must be very fast */
+const POLLING_INTERVAL = 1;
+
+/** Read timeout in milliseconds - must be very short (1ms) for reliable polling */
+const READ_TIMEOUT = 1;
 
 /** HID Manager class for device connection management */
 export class HIDManager extends EventEmitter {
   private vendorDevice: HID.HID | null = null;
+  private inputDevice: HID.HID | null = null;
   private connectionState: ConnectionState = ConnectionState.DISCONNECTED;
   private reconnectTimer: ReturnType<typeof setInterval> | null = null;
+  private pollingTimer: ReturnType<typeof setInterval> | null = null;
   private autoReconnect: boolean = true;
   private deviceInfo: DeviceInfo | null = null;
 
@@ -75,6 +88,12 @@ export class HIDManager extends EventEmitter {
     return devices.find((d) => d.usagePage === VENDOR_USAGE_PAGE) || null;
   }
 
+  /** Find the keyboard/input interface (MI_01) */
+  static findInputInterface(): DeviceInfo | null {
+    const devices = HIDManager.enumerateDevices();
+    return devices.find((d) => d.usagePage === KEYBOARD_USAGE_PAGE && d.usage === KEYBOARD_USAGE) || null;
+  }
+
   /** Connect to the SOOMFON device */
   async connect(): Promise<void> {
     if (this.connectionState === ConnectionState.CONNECTED) {
@@ -110,23 +129,26 @@ export class HIDManager extends EventEmitter {
 
       this.deviceInfo = vendorInterface;
       this.vendorDevice = new HID.HID(vendorInterface.path);
-      console.log('[HID-MANAGER] HID device opened successfully');
+      console.log('[HID-MANAGER] Vendor device opened successfully');
 
-      // Set up data handler
-      this.vendorDevice.on('data', (data: Buffer) => {
-        console.log('[HID-MANAGER] Data event received, forwarding...');
-        this.emit('data', data);
-      });
-      console.log('[HID-MANAGER] Data handler registered');
-
-      // Set up error handler
+      // Set up error handler for vendor device
       this.vendorDevice.on('error', (err: Error) => {
-        console.log('[HID-MANAGER] Error event:', err.message);
+        console.log('[HID-MANAGER] Vendor device error:', err.message);
         this.handleError(err);
+      });
+
+      // Set up async data handler (may not work on Windows, polling is the fallback)
+      this.vendorDevice.on('data', (data: Buffer) => {
+        console.log('[HID-MANAGER] Async vendor data received:', data.toString('hex'));
+        this.emit('data', data);
       });
 
       this.setConnectionState(ConnectionState.CONNECTED);
       this.stopReconnectTimer();
+
+      // Start polling for data immediately (Windows workaround - async events don't work reliably)
+      this.startPolling();
+
       this.emit('connected');
       console.log('[HID-MANAGER] Connection complete, state:', this.connectionState);
     } catch (error) {
@@ -146,6 +168,16 @@ export class HIDManager extends EventEmitter {
   /** Disconnect from the device */
   disconnect(): void {
     this.stopReconnectTimer();
+    this.stopPolling();
+
+    if (this.inputDevice) {
+      try {
+        this.inputDevice.close();
+      } catch {
+        // Ignore close errors
+      }
+      this.inputDevice = null;
+    }
 
     if (this.vendorDevice) {
       try {
@@ -229,6 +261,16 @@ export class HIDManager extends EventEmitter {
   /** Handle device errors */
   private handleError(error: Error): void {
     this.setConnectionState(ConnectionState.ERROR);
+    this.stopPolling();
+
+    if (this.inputDevice) {
+      try {
+        this.inputDevice.close();
+      } catch {
+        // Ignore close errors
+      }
+      this.inputDevice = null;
+    }
 
     if (this.vendorDevice) {
       try {
@@ -272,6 +314,56 @@ export class HIDManager extends EventEmitter {
     if (this.reconnectTimer) {
       clearInterval(this.reconnectTimer);
       this.reconnectTimer = null;
+    }
+  }
+
+  /** Start polling for HID data (Windows workaround) */
+  private startPolling(): void {
+    if (this.pollingTimer) {
+      return;
+    }
+
+    console.log('[HID-MANAGER] Starting data polling...');
+
+    // Log once to confirm polling started
+    let pollCount = 0;
+    this.pollingTimer = setInterval(() => {
+      pollCount++;
+      if (pollCount === 1 || pollCount === 100) {
+        console.log('[HID-MANAGER] Poll count:', pollCount);
+      }
+      this.pollData();
+    }, POLLING_INTERVAL);
+  }
+
+  /** Stop polling for HID data */
+  private stopPolling(): void {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+      console.log('[HID-MANAGER] Stopped data polling');
+    }
+  }
+
+  /** Poll for HID data */
+  private pollData(): void {
+    if (this.connectionState !== ConnectionState.CONNECTED) {
+      return;
+    }
+
+    // Poll vendor device for button/encoder events
+    if (this.vendorDevice) {
+      try {
+        const data = this.vendorDevice.readTimeout(READ_TIMEOUT);
+        if (data && data.length > 0) {
+          const buffer = Buffer.from(data);
+          console.log('[HID-MANAGER] Vendor data received:', buffer.toString('hex'), 'length:', buffer.length);
+          this.emit('data', buffer);
+        }
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        console.error('[HID-MANAGER] Vendor poll error:', err.message);
+      }
     }
   }
 

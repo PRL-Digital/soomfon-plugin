@@ -70,7 +70,14 @@
       "Skill(ralph-loop:ralph-loop)",
       "Bash(.claude/scripts/ralph-loop.sh --help)",
       "Bash(npm uninstall:*)",
-      "Bash(npm run dist:win:*)"
+      "Bash(npm run dist:win:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(tasklist:*)",
+      "Bash(cmd //c \"netstat -ano | findstr :5173\")",
+      "Bash(taskkill:*)",
+      "Bash(xxd:*)"
     ],
     "deny": [],
     "ask": []

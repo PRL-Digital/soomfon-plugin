@@ -21,6 +21,12 @@ const LONG_PRESS_THRESHOLD = 500;
 /** Debounce interval in milliseconds */
 const DEBOUNCE_INTERVAL = 50;
 
+/** SOOMFON device report header: "ACK\0\0OK\0\0" */
+const SOOMFON_HEADER = Buffer.from([0x41, 0x43, 0x4b, 0x00, 0x00, 0x4f, 0x4b, 0x00, 0x00]);
+
+/** Normal button index offset (buttons 7+ are normal buttons, 1-6 are LCD) */
+const NORMAL_BUTTON_OFFSET = 0x30; // Normal buttons start at 0x31 (49)
+
 /** Event types emitted by DeviceEventParser */
 export type DeviceEventParserEvents = {
   button: (event: ButtonEvent) => void;
@@ -55,6 +61,12 @@ export class DeviceEventParser extends EventEmitter {
       return;
     }
 
+    // Check for SOOMFON "ACK\0\0OK\0\0" header format (most common)
+    if (data.length >= 11 && this.hasSoomfonHeader(data)) {
+      this.parseSoomfonReport(data);
+      return;
+    }
+
     const reportType = data[0];
 
     switch (reportType) {
@@ -69,6 +81,59 @@ export class DeviceEventParser extends EventEmitter {
         this.parseGenericReport(data);
         break;
     }
+  }
+
+  /** Check if data has SOOMFON header */
+  private hasSoomfonHeader(data: Buffer): boolean {
+    return data.subarray(0, 9).equals(SOOMFON_HEADER);
+  }
+
+  /** Parse SOOMFON device report format: ACK\0\0OK\0\0 + buttonIndex + state */
+  private parseSoomfonReport(data: Buffer): void {
+    const buttonIndex = data[9];
+    const state = data[10];
+    const isPressed = state === 1;
+
+    console.log(`[PARSER] SOOMFON report: button=${buttonIndex}, state=${state}, pressed=${isPressed}`);
+
+    // Determine if this is an LCD button (1-6), normal button (49-51 / 0x31-0x33), or encoder (52-54 / 0x34-0x36)
+    if (buttonIndex >= 1 && buttonIndex <= LCD_BUTTON_COUNT) {
+      // LCD buttons (1-6) - convert to 0-indexed
+      this.handleButtonState(buttonIndex - 1, isPressed);
+    } else if (buttonIndex >= 0x31 && buttonIndex <= 0x33) {
+      // Normal buttons (0x31=49, 0x32=50, 0x33=51) - convert to indices 6, 7, 8
+      const normalButtonIndex = LCD_BUTTON_COUNT + (buttonIndex - 0x31);
+      this.handleButtonState(normalButtonIndex, isPressed);
+    } else if (buttonIndex >= 0x34 && buttonIndex <= 0x36) {
+      // Encoder press (0x34=52, 0x35=53, 0x36=54) - convert to indices 0, 1, 2
+      const encoderIndex = buttonIndex - 0x34;
+      this.handleEncoderPress(encoderIndex, isPressed);
+    } else if (buttonIndex >= 0x37 && buttonIndex <= 0x39) {
+      // Encoder rotate CW (0x37=55, 0x38=56, 0x39=57)
+      const encoderIndex = buttonIndex - 0x37;
+      if (isPressed) {
+        this.handleEncoderInput(encoderIndex, 1, 1); // CW
+      }
+    } else if (buttonIndex >= 0x3A && buttonIndex <= 0x3C) {
+      // Encoder rotate CCW (0x3A=58, 0x3B=59, 0x3C=60)
+      const encoderIndex = buttonIndex - 0x3A;
+      if (isPressed) {
+        this.handleEncoderInput(encoderIndex, 0, 1); // CCW
+      }
+    } else {
+      console.log(`[PARSER] Unknown SOOMFON button index: ${buttonIndex} (0x${buttonIndex.toString(16)})`);
+    }
+  }
+
+  /** Handle encoder press/release */
+  private handleEncoderPress(encoderIndex: number, isPressed: boolean): void {
+    const eventType = isPressed ? EncoderEventType.PRESS : EncoderEventType.RELEASE;
+    const event: EncoderEvent = {
+      type: eventType,
+      encoderIndex,
+      timestamp: Date.now(),
+    };
+    this.emit('encoder', event);
   }
 
   /** Parse button input report */
