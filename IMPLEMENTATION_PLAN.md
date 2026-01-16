@@ -633,6 +633,8 @@ The Rust code structure is verified and follows the planned architecture.
 - [ ] Update import paths
 - [x] **Electron has:** Complete React UI with device visualization, action editors (43 component files)
 
+**Note (2026-01-16):** Task 7.1 appears to already be complete based on codebase analysis showing all frontend components exist in `src/renderer/`. The components, hooks, and types are already in place and do not need to be copied.
+
 ### Task 7.2: Create IPC Bridge - COMPLETED
 - [x] Create `src/lib/tauri.ts` with typed invoke wrappers
   - Note: File created at `src/lib/tauri-api.ts`
@@ -1022,6 +1024,12 @@ These fixes were applied to get the Rust code compiling:
     - Added event emission to device commands (connect/disconnect)
     - Added event emission to config commands (profile changes, settings changes)
     - Uses Tauri's Emitter trait for frontend event notifications
+
+11. **Fixed FilePath API for tauri-plugin-dialog 2.6.0 (2026-01-16)**
+    - File: `src-tauri/src/commands/system.rs`
+    - The FilePath enum no longer has `to_string_lossy()` method
+    - FilePath now implements Display trait, so use `to_string()` instead
+    - Updated all 3 occurrences in open_file_dialog function
 
 ---
 
