@@ -1,8 +1,11 @@
 //! Action Engine
 //!
 //! Central engine for executing actions. Manages handler registration and execution.
+//! Supports cancellation of long-running actions via a cancellation token pattern.
 
 use super::types::{Action, ActionResult};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Instant;
 
 /// Action execution history entry
@@ -16,6 +19,45 @@ pub struct HistoryEntry {
     pub error: Option<String>,
 }
 
+/// Cancellation token for long-running actions
+///
+/// This token can be cloned and shared across async tasks. When `cancel()` is called,
+/// all holders of the token will see `is_cancelled()` return true.
+#[derive(Debug, Clone)]
+pub struct CancellationToken {
+    cancelled: Arc<AtomicBool>,
+}
+
+impl CancellationToken {
+    /// Create a new cancellation token
+    pub fn new() -> Self {
+        Self {
+            cancelled: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    /// Check if cancellation has been requested
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled.load(Ordering::SeqCst)
+    }
+
+    /// Request cancellation
+    pub fn cancel(&self) {
+        self.cancelled.store(true, Ordering::SeqCst);
+    }
+
+    /// Reset the token for reuse
+    pub fn reset(&self) {
+        self.cancelled.store(false, Ordering::SeqCst);
+    }
+}
+
+impl Default for CancellationToken {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Central action execution engine
 pub struct ActionEngine {
     /// Execution history (limited to last 100 entries)
@@ -24,6 +66,8 @@ pub struct ActionEngine {
     max_history: usize,
     /// Whether an action is currently executing
     is_executing: bool,
+    /// Cancellation token for the current action
+    cancellation_token: CancellationToken,
 }
 
 impl ActionEngine {
@@ -33,7 +77,16 @@ impl ActionEngine {
             history: Vec::new(),
             max_history: 100,
             is_executing: false,
+            cancellation_token: CancellationToken::new(),
         }
+    }
+
+    /// Get a clone of the current cancellation token
+    ///
+    /// This can be passed to handlers that support cancellation so they can
+    /// check `is_cancelled()` during long-running operations.
+    pub fn get_cancellation_token(&self) -> CancellationToken {
+        self.cancellation_token.clone()
     }
 
     /// Execute an action
@@ -43,6 +96,8 @@ impl ActionEngine {
         }
 
         self.is_executing = true;
+        // Reset the cancellation token for the new action
+        self.cancellation_token.reset();
         let start = Instant::now();
 
         let result = match action {
@@ -106,8 +161,17 @@ impl ActionEngine {
     }
 
     /// Cancel the current action (if supported)
+    ///
+    /// This sets the cancellation token, which long-running handlers can check
+    /// to abort their operations early. Handlers that don't support cancellation
+    /// will complete normally.
+    ///
+    /// Note: This does not immediately stop the action - it signals a cancellation
+    /// request that cooperative handlers will check and respond to.
     pub fn cancel(&mut self) {
-        // TODO: Implement cancellation for long-running actions
+        // Signal cancellation to any handler that supports it
+        self.cancellation_token.cancel();
+        // Reset the executing flag to allow new actions
         self.is_executing = false;
     }
 
@@ -521,5 +585,97 @@ mod tests {
         assert!(result.message.is_none());
         assert_eq!(result.error, Some("Something went wrong".to_string()));
         assert_eq!(result.duration_ms, 500);
+    }
+
+    // ========== CancellationToken Tests ==========
+
+    #[test]
+    fn test_cancellation_token_new_is_not_cancelled() {
+        let token = CancellationToken::new();
+        assert!(!token.is_cancelled());
+    }
+
+    #[test]
+    fn test_cancellation_token_default_is_not_cancelled() {
+        let token = CancellationToken::default();
+        assert!(!token.is_cancelled());
+    }
+
+    #[test]
+    fn test_cancellation_token_cancel_sets_cancelled() {
+        let token = CancellationToken::new();
+        token.cancel();
+        assert!(token.is_cancelled());
+    }
+
+    #[test]
+    fn test_cancellation_token_reset_clears_cancelled() {
+        let token = CancellationToken::new();
+        token.cancel();
+        assert!(token.is_cancelled());
+        token.reset();
+        assert!(!token.is_cancelled());
+    }
+
+    #[test]
+    fn test_cancellation_token_clone_shares_state() {
+        let token1 = CancellationToken::new();
+        let token2 = token1.clone();
+
+        assert!(!token1.is_cancelled());
+        assert!(!token2.is_cancelled());
+
+        token1.cancel();
+
+        // Both tokens should see cancellation
+        assert!(token1.is_cancelled());
+        assert!(token2.is_cancelled());
+    }
+
+    #[test]
+    fn test_cancellation_token_clone_reset_affects_all() {
+        let token1 = CancellationToken::new();
+        let token2 = token1.clone();
+
+        token1.cancel();
+        assert!(token2.is_cancelled());
+
+        token2.reset();
+        assert!(!token1.is_cancelled());
+        assert!(!token2.is_cancelled());
+    }
+
+    #[test]
+    fn test_engine_get_cancellation_token() {
+        let engine = ActionEngine::new();
+        let token = engine.get_cancellation_token();
+        assert!(!token.is_cancelled());
+    }
+
+    #[test]
+    fn test_cancel_sets_cancellation_token() {
+        let mut engine = ActionEngine::new();
+        let token = engine.get_cancellation_token();
+
+        assert!(!token.is_cancelled());
+
+        engine.cancel();
+
+        // The token should reflect cancellation
+        assert!(token.is_cancelled());
+    }
+
+    #[test]
+    fn test_multiple_cancel_calls_are_safe() {
+        let mut engine = ActionEngine::new();
+        let token = engine.get_cancellation_token();
+
+        engine.cancel();
+        engine.cancel();
+        engine.cancel();
+
+        // Should still be cancelled and not panic
+        assert!(token.is_cancelled());
+        assert!(!engine.is_executing());
     }
 }

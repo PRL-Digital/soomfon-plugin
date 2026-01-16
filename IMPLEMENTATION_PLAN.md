@@ -22,7 +22,7 @@
 
 **Rust Code Status:**
 - Compiles: YES
-- Tests: 130 passing (was 21)
+- **Rust Tests:** 156 passing (was 139, added 17 new tests for cancellation token and tray status)
 - TypeScript Tests: 835 passing
 - Clippy: Zero warnings
 
@@ -564,6 +564,7 @@ The Rust code structure is verified and follows the planned architecture.
 - [x] Full implementation:
   - Trigger flow via HTTP
   - Send data to inject node
+  - Config-based execution with `execute_with_config()`
 - [x] **Electron has:** Implementation with 21 tests
 
 ### Task 5.12: Port Profile Handler - COMPLETED
@@ -1101,6 +1102,46 @@ These fixes were applied to get the Rust code compiling:
     - ButtonConfig/EncoderConfig: Use `#[derive(Default)]` instead of manual impl
     - process_base64_image: Use `next_back()` instead of `last()` for DoubleEndedIterator
     - **Note:** Zero clippy warnings policy now in effect
+
+17. **Implemented config-based integration handlers (2026-01-16)**
+    - Files: `src-tauri/src/actions/handlers/home_assistant.rs`, `src-tauri/src/actions/handlers/node_red.rs`, `src-tauri/src/actions/mod.rs`, `src-tauri/src/commands/actions.rs`
+    - Home Assistant and Node-RED handlers now accept configuration from AppSettings instead of only environment variables
+    - Added `execute_with_config()` functions for both handlers, keeping backwards-compatible `execute()` wrappers
+    - Created `IntegrationConfig` struct to pass HA/NR settings to handlers
+    - Updated `execute_action` command to read integration config from ConfigManager state
+    - Removed TODO comments from both handler files
+    - Added 9 new Rust tests for config-based execution
+
+18. **Implemented action cancellation support (2026-01-16)**
+    - File: `src-tauri/src/actions/engine.rs`
+    - Added `CancellationToken` struct with atomic-based thread-safe state
+    - Token can be cloned and shared across async tasks
+    - `ActionEngine::get_cancellation_token()` provides token for handlers
+    - `ActionEngine::cancel()` now signals cancellation and resets executing state
+    - Token automatically resets on new action execution
+    - Added 9 new unit tests for CancellationToken functionality
+    - Re-exported `CancellationToken` from actions module for handler use
+
+19. **Implemented macOS auto-launch using LaunchAgent (2026-01-16)**
+    - File: `src-tauri/src/system/auto_launch.rs`
+    - Uses LaunchAgent plist at `~/Library/LaunchAgents/com.soomfon.controller.plist`
+    - `enable()` creates plist and optionally loads it immediately with `launchctl load`
+    - `disable()` unloads with `launchctl unload` then removes plist file
+    - `is_enabled()` checks for plist existence
+    - Includes `--hidden` flag for tray-only startup
+    - Removed all TODO comments from macOS implementation
+
+20. **Implemented dynamic tray icon status updates (2026-01-16)**
+    - File: `src-tauri/src/tray/mod.rs`
+    - `TrayStatus` now provides `color()` and `tooltip()` methods
+    - `create_status_icon()` generates 32x32 RGBA icons dynamically:
+      - Connected: Green circle (#4CAF50)
+      - Disconnected: Gray circle (#646464)
+      - Error: Red circle (#F44336)
+    - Icons have anti-aliased edges for smooth appearance
+    - `update_tray_status()` updates icon and tooltip in one call
+    - Added 8 unit tests for color, tooltip, and icon generation
+    - Removed TODO comment from tray status update function
 
 ---
 

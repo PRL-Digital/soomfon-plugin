@@ -119,23 +119,92 @@ fn disable_windows() -> Result<(), String> {
     }
 }
 
-// macOS implementation
+// macOS implementation using LaunchAgent
+//
+// LaunchAgent is the preferred method for user-level auto-launch on macOS.
+// The plist file is placed in ~/Library/LaunchAgents/ and loaded by launchd.
 #[cfg(target_os = "macos")]
 fn is_enabled_macos() -> bool {
-    // TODO: Check Login Items
-    false
+    get_launch_agent_path()
+        .map(|p| p.exists())
+        .unwrap_or(false)
 }
 
 #[cfg(target_os = "macos")]
-fn enable_macos(_app_path: &str) -> Result<(), String> {
-    // TODO: Add to Login Items using AppleScript or LaunchAgent
-    Err("Auto-launch not yet implemented for macOS".to_string())
+fn enable_macos(app_path: &str) -> Result<(), String> {
+    use std::fs;
+
+    let plist_path = get_launch_agent_path()
+        .ok_or("Could not determine LaunchAgents directory")?;
+
+    // Ensure the LaunchAgents directory exists
+    if let Some(parent) = plist_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create LaunchAgents directory: {}", e))?;
+    }
+
+    // Create the LaunchAgent plist content
+    // The --hidden flag tells the app to start minimized to tray
+    let plist_content = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.soomfon.controller</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{}</string>
+        <string>--hidden</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+</dict>
+</plist>
+"#,
+        app_path
+    );
+
+    fs::write(&plist_path, plist_content)
+        .map_err(|e| format!("Failed to write LaunchAgent plist: {}", e))?;
+
+    // Load the LaunchAgent (optional - it will be loaded on next login anyway)
+    // Using launchctl to load immediately
+    let _ = std::process::Command::new("launchctl")
+        .args(["load", plist_path.to_str().unwrap_or("")])
+        .output();
+
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]
 fn disable_macos() -> Result<(), String> {
-    // TODO: Remove from Login Items
-    Err("Auto-launch not yet implemented for macOS".to_string())
+    use std::fs;
+
+    let plist_path = get_launch_agent_path()
+        .ok_or("Could not determine LaunchAgents directory")?;
+
+    if plist_path.exists() {
+        // Unload the LaunchAgent first
+        let _ = std::process::Command::new("launchctl")
+            .args(["unload", plist_path.to_str().unwrap_or("")])
+            .output();
+
+        // Remove the plist file
+        fs::remove_file(&plist_path)
+            .map_err(|e| format!("Failed to remove LaunchAgent plist: {}", e))?;
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn get_launch_agent_path() -> Option<std::path::PathBuf> {
+    dirs::home_dir().map(|home| {
+        home.join("Library/LaunchAgents/com.soomfon.controller.plist")
+    })
 }
 
 // Linux implementation using XDG autostart

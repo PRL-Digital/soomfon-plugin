@@ -10,16 +10,26 @@
 //! - FireEvent: Fire a Home Assistant event
 
 use crate::actions::types::{ActionResult, HomeAssistantAction, HomeAssistantActionType};
+use crate::config::types::HomeAssistantConfig;
 use std::time::Duration;
 
-/// Execute a Home Assistant action
-pub async fn execute(config: &HomeAssistantAction) -> ActionResult {
+/// Execute a Home Assistant action with configuration
+pub async fn execute_with_config(
+    config: &HomeAssistantAction,
+    ha_config: Option<&HomeAssistantConfig>,
+) -> ActionResult {
     log::debug!("Executing Home Assistant action: {:?}", config.action_type);
 
-    // Get Home Assistant URL and token from environment variables
-    // In the frontend migration (Phase 7), this will be updated to use the config system
-    let ha_url = std::env::var("HOME_ASSISTANT_URL").unwrap_or_default();
-    let ha_token = std::env::var("HOME_ASSISTANT_TOKEN").unwrap_or_default();
+    // Get Home Assistant URL and token from config, falling back to environment variables
+    let (ha_url, ha_token) = match ha_config {
+        Some(cfg) => (cfg.url.clone(), cfg.token.clone()),
+        None => {
+            // Fallback to environment variables for backwards compatibility
+            let url = std::env::var("HOME_ASSISTANT_URL").unwrap_or_default();
+            let token = std::env::var("HOME_ASSISTANT_TOKEN").unwrap_or_default();
+            (url, token)
+        }
+    };
 
     if ha_url.is_empty() || ha_token.is_empty() {
         return ActionResult::failure("Home Assistant not configured".to_string(), 0);
@@ -168,6 +178,11 @@ async fn fire_event(
     }
 }
 
+/// Execute a Home Assistant action (backwards-compatible, uses env vars)
+pub async fn execute(config: &HomeAssistantAction) -> ActionResult {
+    execute_with_config(config, None).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -227,5 +242,77 @@ mod tests {
         let data = action.service_data.unwrap();
         assert_eq!(data["key"], "value");
         assert_eq!(data["number"], 42);
+    }
+
+    // ========== Config-based execution tests ==========
+
+    #[tokio::test]
+    async fn test_execute_with_config_none_falls_back_to_env() {
+        // When no config is provided, should check env vars
+        // Since env vars are not set, should return "not configured" error
+        let action = HomeAssistantAction {
+            action_type: HomeAssistantActionType::Toggle,
+            entity_id: "light.test".to_string(),
+            service: None,
+            service_data: None,
+        };
+
+        let result = execute_with_config(&action, None).await;
+        assert!(!result.success);
+        assert!(result.error.as_ref().unwrap().contains("not configured"));
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_config_empty_url_fails() {
+        let action = HomeAssistantAction {
+            action_type: HomeAssistantActionType::Toggle,
+            entity_id: "light.test".to_string(),
+            service: None,
+            service_data: None,
+        };
+
+        let config = HomeAssistantConfig {
+            url: "".to_string(),
+            token: "valid-token".to_string(),
+        };
+
+        let result = execute_with_config(&action, Some(&config)).await;
+        assert!(!result.success);
+        assert!(result.error.as_ref().unwrap().contains("not configured"));
+    }
+
+    #[tokio::test]
+    async fn test_execute_with_config_empty_token_fails() {
+        let action = HomeAssistantAction {
+            action_type: HomeAssistantActionType::Toggle,
+            entity_id: "light.test".to_string(),
+            service: None,
+            service_data: None,
+        };
+
+        let config = HomeAssistantConfig {
+            url: "http://ha.local:8123".to_string(),
+            token: "".to_string(),
+        };
+
+        let result = execute_with_config(&action, Some(&config)).await;
+        assert!(!result.success);
+        assert!(result.error.as_ref().unwrap().contains("not configured"));
+    }
+
+    #[test]
+    fn test_home_assistant_config_serialization() {
+        let config = HomeAssistantConfig {
+            url: "http://ha.local:8123".to_string(),
+            token: "my-secret-token".to_string(),
+        };
+
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(json.contains("\"url\":\"http://ha.local:8123\""));
+        assert!(json.contains("\"token\":\"my-secret-token\""));
+
+        let deserialized: HomeAssistantConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.url, config.url);
+        assert_eq!(deserialized.token, config.token);
     }
 }
