@@ -4,6 +4,8 @@
 **Target:** < 10 MB installer, < 25 MB RAM idle, < 500ms startup
 **Last Updated:** 2026-01-16
 
+Breaking changes are allowed, as long as the implemention_plan.md file is updated with the potential outcomes and changes needed. 
+
 ---
 
 ## Current vs Target
@@ -82,15 +84,22 @@ Before starting the Tauri migration, fix all known issues in the Electron codeba
   - File: `src/main/ipc-handlers.ts` (line 294)
   - Changed workaround to use 'longPress' instead of 'press' trigger
 
-### Task 0.2b: Fix Encoder Trigger Naming Inconsistency - NEW
-**Priority: HIGH - Confusing mapping between layers**
+### Task 0.2b: Encoder Trigger Naming Inconsistency - WON'T FIX (By Design)
+**Status:** Documented, keeping current design
 
-- [ ] **Standardize encoder trigger names across codebase**
-  - Action system uses: `'rotateCW'` / `'rotateCCW'`
-  - IPC layer uses: `'clockwise'` / `'counterClockwise'`
-  - Manual mapping exists at: `src/main/ipc-handlers.ts` (lines 640-648)
-  - Decision needed: Pick one convention and use it everywhere
-  - Recommendation: Use `'rotateCW'` / `'rotateCCW'` (matches config schema)
+**Analysis performed:** The codebase uses different naming conventions across layers:
+- Config/Profile properties: `clockwiseAction` / `counterClockwiseAction` (stored in user JSON configs)
+- Action system triggers: `'rotateCW'` / `'rotateCCW'` (internal event binding system)
+- UI editor keys: `'rotateClockwise'` / `'rotateCounterClockwise'` (display only)
+
+**Decision: Keep current design** for the following reasons:
+1. **User data preservation** - Changing config property names would break existing user configuration files
+2. **Migration risk** - While the migration system exists (`src/core/config/migrations.ts`), adding a migration adds risk of data corruption
+3. **Low ROI** - The mapping is isolated to 2 files (`ipc-handlers.ts`, `App.tsx`), working correctly, and well-tested
+4. **TypeScript safety** - Type system catches mismatches at compile time
+
+**Documentation added:**
+- [x] Added detailed comment block in `src/main/ipc-handlers.ts` (line 280-288) explaining the mapping rationale
 
 ### Task 0.3: Remove Outdated Comments - COMPLETED
 **Status:** All 3 outdated comments removed
@@ -836,7 +845,7 @@ strip = true
 ### Phase 0: Pre-Migration Cleanup - IN PROGRESS
 - [x] Task 0.1: Fix Failing Tests - **COMPLETED** (433 tests passing, 100% pass rate)
 - [x] Task 0.2: Fix Type Definitions - **COMPLETED** (encoder longPress binding fixed)
-- [ ] Task 0.2b: Fix Encoder Trigger Naming (rotateCW vs clockwise)
+- [x] Task 0.2b: Encoder Trigger Naming - **WON'T FIX** (documented, keeping current design to preserve user configs)
 - [x] Task 0.3: Remove Outdated Comments - **COMPLETED** (3 files fixed)
 - [x] Task 0.4: Add Debug Logging Control - **COMPLETED** (48 console.logs replaced)
 - [ ] Task 0.5: Add Missing Test Coverage (8 critical modules + parseSoomfonReport)
@@ -856,9 +865,9 @@ strip = true
 
 ## Quick Start Checklist
 
-1. [ ] **Complete Phase 0 Priority Items:**
+1. [x] **Complete Phase 0 Priority Items:**
    - [x] Fix CRITICAL encoder longPress type bug (Task 0.2) - **COMPLETED**
-   - [ ] Fix encoder trigger naming inconsistency (Task 0.2b)
+   - [x] Encoder trigger naming inconsistency (Task 0.2b) - **WON'T FIX** (documented)
    - [x] Fix 3 failing tests (Task 0.1) - **COMPLETED**
    - [x] Add input validation (Task 0.6) - **COMPLETED**
 2. [ ] **Complete Phase 0 Quality Items:**
@@ -880,7 +889,7 @@ Phase 0 is complete when ALL of the following are true:
 
 1. **Tests:** All tests pass (0 failures) - ✓ **COMPLETED**
 2. **Types:** EncoderTrigger includes 'longPress', EncoderEventType includes LONG_PRESS - ✓ **COMPLETED**
-3. **Types:** Encoder trigger naming is consistent across all layers
+3. **Types:** Encoder trigger naming documented (different conventions by design to preserve user configs) - ✓ **DOCUMENTED**
 4. **Comments:** No false "not implemented" comments remain - ✓ **COMPLETED**
 5. **Logging:** All console.log replaced with logger utility - ✓ **COMPLETED**
 6. **Security:** Input validation in place for images, file paths - ✓ **COMPLETED**

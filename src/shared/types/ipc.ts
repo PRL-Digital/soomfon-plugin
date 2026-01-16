@@ -207,8 +207,8 @@ export interface BindingTarget {
   elementType: 'lcdButton' | 'normalButton' | 'encoder';
   /** Index of the element (0-5 for LCD buttons, 0-2 for normal buttons, 0-2 for encoders) */
   elementIndex: number;
-  /** Trigger type for the binding */
-  trigger: 'press' | 'longPress' | 'clockwise' | 'counterClockwise';
+  /** Trigger type for the binding (uses EncoderTrigger naming convention for rotation) */
+  trigger: 'press' | 'longPress' | 'rotateCW' | 'rotateCCW';
 }
 
 /** Save binding request */

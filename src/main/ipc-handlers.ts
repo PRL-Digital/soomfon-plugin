@@ -276,6 +276,16 @@ function buttonConfigToBindings(button: ButtonConfig): ActionBinding[] {
 /**
  * Convert an EncoderConfig to ActionBinding(s)
  * Creates bindings for press, longPress, clockwise, and counter-clockwise actions
+ *
+ * ENCODER TRIGGER NAME MAPPING:
+ * The codebase uses different naming conventions across layers for historical reasons:
+ * - Config/Profile properties: clockwiseAction / counterClockwiseAction (stored in user JSON configs)
+ * - Action system triggers: 'rotateCW' / 'rotateCCW' (internal event binding system)
+ * - UI editor keys: 'rotateClockwise' / 'rotateCounterClockwise' (display only, in EncoderEditor.tsx)
+ *
+ * This function maps config property names to action trigger names.
+ * The reverse mapping happens in SET_BINDING and DELETE_BINDING handlers below.
+ * Standardizing would require a config migration and risk breaking user data.
  */
 function encoderConfigToBindings(encoder: EncoderConfig): ActionBinding[] {
   const bindings: ActionBinding[] = [];
@@ -653,10 +663,10 @@ export function registerIpcHandlers(): void {
         case 'longPress':
           encoderConfig.longPressAction = action;
           break;
-        case 'clockwise':
+        case 'rotateCW':
           encoderConfig.clockwiseAction = action;
           break;
-        case 'counterClockwise':
+        case 'rotateCCW':
           encoderConfig.counterClockwiseAction = action;
           break;
         default:
@@ -707,10 +717,10 @@ export function registerIpcHandlers(): void {
           case 'longPress':
             encoderConfig.longPressAction = undefined;
             break;
-          case 'clockwise':
+          case 'rotateCW':
             encoderConfig.clockwiseAction = undefined;
             break;
-          case 'counterClockwise':
+          case 'rotateCCW':
             encoderConfig.counterClockwiseAction = undefined;
             break;
         }
