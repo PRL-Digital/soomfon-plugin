@@ -13,3 +13,17 @@ npm test
 - Tests run in Windows Node even in WSL
 - Module-level constants like `isWindows = process.platform === 'win32'` are evaluated at load time
 - Don't rely on changing `process.platform` at runtime in tests
+
+## Rust/Tauri Development
+```bash
+# Source Rust environment (if not in PATH)
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# Check Rust version
+rustc --version && cargo --version
+
+# Tauri build requires platform-specific dev libraries:
+# Linux: apt install libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev pkg-config
+# Windows: WebView2 (included in Windows 10+)
+# macOS: Xcode Command Line Tools
+```
