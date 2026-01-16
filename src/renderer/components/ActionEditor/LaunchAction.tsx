@@ -58,8 +58,6 @@ export const LaunchActionForm: React.FC<LaunchActionFormProps> = ({
   const handleBrowse = useCallback(async () => {
     setBrowseError(null);
     try {
-      // Use Electron's dialog via IPC if available
-      // Note: openFileDialog is not yet implemented in the IPC handlers
       const api = window.electronAPI as { openFileDialog?: (options: unknown) => Promise<string[]> };
       if (api?.openFileDialog) {
         const result = await api.openFileDialog({

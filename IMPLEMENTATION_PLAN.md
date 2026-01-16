@@ -92,26 +92,17 @@ Before starting the Tauri migration, fix all known issues in the Electron codeba
   - Decision needed: Pick one convention and use it everywhere
   - Recommendation: Use `'rotateCW'` / `'rotateCCW'` (matches config schema)
 
-### Task 0.3: Remove Outdated Comments - INCOMPLETE (3 files)
-**Note:** The `openFileDialog` IS implemented at:
+### Task 0.3: Remove Outdated Comments - COMPLETED
+**Status:** All 3 outdated comments removed
+
+The `openFileDialog` IS implemented at:
 - `src/main/ipc-handlers.ts` (lines 712-734)
 - `src/preload/index.ts` (lines 292-294)
 
-The comments are factually wrong and should be removed:
-
-- [ ] **ScriptAction.tsx** (line 83)
-  - Remove: `// Note: openFileDialog is not yet implemented in the IPC handlers`
-  - Verify: Check if the browse button actually calls `window.api.openFileDialog()`
-
-- [ ] **LaunchAction.tsx** (line 62)
-  - Remove: `// Note: openFileDialog is not yet implemented in the IPC handlers`
-  - Verify: Check if the browse button actually calls `window.api.openFileDialog()`
-
-- [ ] **ImagePicker.tsx** (line 23)
-  - Remove: `// Note: openFileDialog is not yet implemented in the IPC handlers`
-  - Verify: Check if the image picker actually calls `window.api.openFileDialog()`
-
-**Follow-up:** After removing comments, verify each component's browse button uses the implemented IPC.
+Comments removed from:
+- [x] `src/renderer/components/ActionEditor/ScriptAction.tsx` - Browse button works via `window.electronAPI.openFileDialog()`
+- [x] `src/renderer/components/ActionEditor/LaunchAction.tsx` - Browse button works via `window.electronAPI.openFileDialog()`
+- [x] `src/renderer/components/ActionEditor/ImagePicker.tsx` - Browse button works via `window.electronAPI.openFileDialog()`
 
 ### Task 0.4: Add Debug Logging Control - INCOMPLETE
 **48 console.log statements found across 7 files with NO logging control**
@@ -860,7 +851,7 @@ strip = true
 - [x] Task 0.1: Fix Failing Tests - **COMPLETED** (433 tests passing, 100% pass rate)
 - [x] Task 0.2: Fix Type Definitions - **COMPLETED** (encoder longPress binding fixed)
 - [ ] Task 0.2b: Fix Encoder Trigger Naming (rotateCW vs clockwise)
-- [ ] Task 0.3: Remove Outdated Comments (3 files)
+- [x] Task 0.3: Remove Outdated Comments - **COMPLETED** (3 files fixed)
 - [ ] Task 0.4: Add Debug Logging Control (7 files, 48 console.logs)
 - [ ] Task 0.5: Add Missing Test Coverage (8 critical modules + parseSoomfonReport)
 - [ ] Task 0.6: Add Input Validation (5 security gaps)
@@ -885,7 +876,7 @@ strip = true
    - [x] Fix 3 failing tests (Task 0.1) - **COMPLETED**
    - [ ] Add input validation (Task 0.6) - security
 2. [ ] **Complete Phase 0 Quality Items:**
-   - [ ] Remove outdated comments (Task 0.3)
+   - [x] Remove outdated comments (Task 0.3) - **COMPLETED**
    - [ ] Add logging utility (Task 0.4)
    - [ ] Add tests for critical modules (Task 0.5)
 3. [x] Run `npm test` - verify 433 tests pass (100%) - **COMPLETED**
@@ -904,7 +895,7 @@ Phase 0 is complete when ALL of the following are true:
 1. **Tests:** All tests pass (0 failures) - ✓ **COMPLETED**
 2. **Types:** EncoderTrigger includes 'longPress', EncoderEventType includes LONG_PRESS - ✓ **COMPLETED**
 3. **Types:** Encoder trigger naming is consistent across all layers
-4. **Comments:** No false "not implemented" comments remain
+4. **Comments:** No false "not implemented" comments remain - ✓ **COMPLETED**
 5. **Logging:** All console.log replaced with logger utility
 6. **Security:** Input validation in place for images, file paths
 7. **Coverage:** Critical modules have basic test coverage

@@ -20,7 +20,6 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
       setError(null);
       setIsLoading(true);
 
-      // Note: openFileDialog is not yet implemented in the IPC handlers
       const api = window.electronAPI as { openFileDialog?: (options: unknown) => Promise<string[]> };
       if (api?.openFileDialog) {
         const result = await api.openFileDialog({

@@ -80,7 +80,6 @@ export const ScriptActionForm: React.FC<ScriptActionFormProps> = ({
   const handleBrowse = useCallback(async () => {
     setBrowseError(null);
     try {
-      // Note: openFileDialog is not yet implemented in the IPC handlers
       const api = window.electronAPI as { openFileDialog?: (options: unknown) => Promise<string[]> };
       if (api?.openFileDialog) {
         const scriptType = config.scriptType || 'powershell';
