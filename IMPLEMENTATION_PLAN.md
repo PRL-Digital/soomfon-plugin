@@ -22,7 +22,7 @@
 
 **Rust Code Status:**
 - Compiles: YES
-- **Rust Tests:** 194 passing (was 156, added 38 new tests for HID types)
+- **Rust Tests:** 228 passing (was 156, added 38 new tests for HID types)
 - TypeScript Tests: 835 passing
 - Clippy: Zero warnings
 
@@ -1155,6 +1155,16 @@ These fixes were applied to get the Rust code compiling:
     - File: `src-tauri/src/hid/types.rs`
     - Added 38 unit tests for: constants verification, ConnectionState serialization, DeviceInfo serialization, ButtonEventType/EncoderEventType serialization, DeviceEvent tagged enum serialization, HidError messages
     - Total Rust tests now: 194 (was 156)
+
+23. **Added comprehensive action types unit tests (2026-01-16)**
+    - File: `src-tauri/src/actions/types.rs`
+    - Added 34 unit tests covering all action types and their serialization:
+      - ActionType enum variants (Keyboard, Media, Launch, Script, Http, System, Text, Profile, HomeAssistant, NodeRed)
+      - Individual action structs: KeyboardAction, MediaAction, LaunchAction, ScriptAction, HttpAction, SystemAction, TextAction, ProfileAction, HomeAssistantAction, NodeRedAction
+      - Action tagged enum serialization/deserialization
+      - ActionResult factory methods and serialization
+      - HttpMethod Display trait implementation
+    - Total Rust tests now: 228 (was 194)
 
 ---
 
