@@ -346,11 +346,11 @@ describe('listBackups', () => {
 
   it('returns only matching backup files', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readdirSync).mockReturnValue([
+    (vi.mocked(fs.readdirSync) as ReturnType<typeof vi.fn>).mockReturnValue([
       'config-backup-2024-01-01.json',
       'config-backup-2024-01-02.json',
       'other-file.json',
-    ] as unknown as fs.Dirent[]);
+    ]);
     vi.mocked(fs.statSync).mockReturnValue({
       mtime: new Date('2024-01-01'),
     } as fs.Stats);
@@ -365,10 +365,10 @@ describe('listBackups', () => {
 
   it('sorts backups by modification time (newest first)', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readdirSync).mockReturnValue([
+    (vi.mocked(fs.readdirSync) as ReturnType<typeof vi.fn>).mockReturnValue([
       'config-backup-old.json',
       'config-backup-new.json',
-    ] as unknown as fs.Dirent[]);
+    ]);
 
     let callCount = 0;
     vi.mocked(fs.statSync).mockImplementation(() => {
@@ -566,9 +566,9 @@ describe('ConfigMigrator', () => {
   describe('listBackups', () => {
     it('lists available backups', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readdirSync).mockReturnValue([
+      (vi.mocked(fs.readdirSync) as ReturnType<typeof vi.fn>).mockReturnValue([
         'config-backup-1.json',
-      ] as unknown as fs.Dirent[]);
+      ]);
       vi.mocked(fs.statSync).mockReturnValue({ mtime: new Date() } as fs.Stats);
 
       const migrator = new ConfigMigrator(mockConfigPath);

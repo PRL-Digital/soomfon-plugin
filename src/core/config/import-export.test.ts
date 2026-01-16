@@ -20,6 +20,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { AppConfig, Profile, ButtonConfig, EncoderConfig } from '../../shared/types/config';
+import type { Action } from '../../shared/types/actions';
 import type { ConfigManager } from './config-manager';
 import type { ProfileManager } from './profile-manager';
 import {
@@ -213,14 +214,14 @@ describe('exportConfig', () => {
           {
             index: 0,
             label: 'Button 1',
-            action: { type: 'keyboard', key: 'A', modifiers: [] },
+            action: { type: 'keyboard', keys: 'A', modifiers: [] } as unknown as Action,
           },
         ],
         encoders: [
           {
             index: 0,
-            clockwiseAction: { type: 'media', action: 'volumeUp' },
-            counterClockwiseAction: { type: 'media', action: 'volumeDown' },
+            clockwiseAction: { type: 'media', action: 'volume_up' } as unknown as Action,
+            counterClockwiseAction: { type: 'media', action: 'volume_down' } as unknown as Action,
           },
         ],
       })],
@@ -498,7 +499,7 @@ describe('importProfile', () => {
 
   it('preserves buttons and encoders from imported profile', () => {
     const profile = createTestProfile({
-      buttons: [{ index: 0, label: 'Test Button', actions: {} }],
+      buttons: [{ index: 0, label: 'Test Button', action: undefined }],
       encoders: [{ index: 0 }],
     });
     const profileManager = createMockProfileManager([]);
@@ -749,7 +750,11 @@ describe('edge cases', () => {
     const originalConfig = createTestConfig({
       profiles: [createTestProfile({
         name: 'Gaming',
-        buttons: [{ index: 0, label: 'Volume', actions: { press: { type: 'media', action: 'mute' } } }],
+        buttons: [{
+          index: 0,
+          label: 'Volume',
+          action: { id: 'test-action-1', name: 'Mute', type: 'media', action: 'mute', enabled: true },
+        }],
       })],
       deviceSettings: { brightness: 100, sleepTimeout: 0, screensaverEnabled: false },
     });
@@ -763,7 +768,10 @@ describe('edge cases', () => {
     const importManager = createMockConfigManager();
     const importResult = importConfig(importManager, exportResult.json!);
 
-    expect(importResult.success).toBe(true);
+    // Check for errors if import failed
+    if (!importResult.success) {
+      throw new Error(`Import failed: ${importResult.error}`);
+    }
     expect(importResult.data?.profiles[0].name).toBe('Gaming');
     expect(importResult.data?.deviceSettings.brightness).toBe(100);
   });

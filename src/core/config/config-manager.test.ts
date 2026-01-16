@@ -51,7 +51,7 @@ vi.mock('electron-store', () => {
 
       set(key: string | AppConfig, value?: unknown): void {
         if (typeof key === 'string' && value !== undefined) {
-          (mockStoreState as Record<string, unknown>)[key] = value;
+          (mockStoreState as unknown as Record<string, unknown>)[key] = value;
         }
       }
     },
