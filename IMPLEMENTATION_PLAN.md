@@ -10,7 +10,7 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0 | COMPLETED | Pre-migration cleanup, 980 TypeScript tests passing |
+| Phase 0 | COMPLETED | Pre-migration cleanup, 1025 TypeScript tests passing |
 | Phase 1 | COMPLETED | Tauri project initialized |
 | Phase 2 | COMPLETED | HID communication layer fully implemented |
 | Phase 3 | COMPLETED | Image processing fully implemented |
@@ -23,7 +23,7 @@
 **Rust Code Status:**
 - Compiles: YES
 - **Rust Tests:** 228 passing (was 156, added 38 new tests for HID types)
-- TypeScript Tests: 980 passing
+- TypeScript Tests: 1025 passing
 - Clippy: Zero warnings
 
 Breaking changes are allowed, as long as the implemention_plan.md file is updated with the potential outcomes and changes needed. 
@@ -158,7 +158,7 @@ Comments removed from:
 - Debug output is automatically enabled in development mode
 
 ### Task 0.5: Add Missing Test Coverage - IN PROGRESS
-**Current: 980 tests total** (was 462, added 518 new tests)
+**Current: 1025 tests total** (was 462, added 563 new tests)
 
 **Device modules with tests (added 2026-01-16):**
 - [x] `src/core/device/packet-builder.ts` - **68 tests** (pure functions, no mocking needed)
@@ -187,6 +187,9 @@ Comments removed from:
 **Utility modules with tests:**
 - [x] `src/shared/utils/logger.ts` - **20 tests** (was 0, added 2026-01-16)
   - Tests createLogger with prefixing, default logger, debug function, Logger interface
+- [x] `src/lib/tauri-api.ts` - **45 tests** (was 0, added 2026-01-16)
+  - Tests Tauri-Electron API bridge: device, profile, config, action, autoLaunch, dialog APIs
+  - Tests event subscription/unsubscription, response transformation, channel mapping
 
 **Integration modules with tests (added 2026-01-16):**
 - [x] `src/core/integrations/home-assistant.ts` - **43 tests** (was 0, added 2026-01-16)
@@ -971,7 +974,7 @@ strip = true
 - [x] Task 0.2b: Encoder Trigger Naming - **WON'T FIX** (documented, keeping current design to preserve user configs)
 - [x] Task 0.3: Remove Outdated Comments - **COMPLETED** (3 files fixed)
 - [x] Task 0.4: Add Debug Logging Control - **COMPLETED** (48 console.logs replaced)
-- [x] Task 0.5: Add Missing Test Coverage - **COMPLETED** (7/8 modules tested + integrations, 980 tests total)
+- [x] Task 0.5: Add Missing Test Coverage - **COMPLETED** (7/8 modules tested + integrations, 1025 tests total)
   - [x] packet-builder.ts: 68 tests
   - [x] image-processor.ts: 35 tests
   - [x] device-events.ts: 50 tests
@@ -1007,8 +1010,8 @@ strip = true
 2. [x] **Complete Phase 0 Quality Items:**
    - [x] Remove outdated comments (Task 0.3) - **COMPLETED**
    - [x] Add logging utility (Task 0.4) - **COMPLETED**
-   - [x] Add tests for critical modules (Task 0.5) - **COMPLETED** (7/8 modules + integrations, 980 tests)
-3. [x] Run `npm test` - verify 980 tests pass (100%) - **COMPLETED**
+   - [x] Add tests for critical modules (Task 0.5) - **COMPLETED** (7/8 modules + integrations, 1025 tests)
+3. [x] Run `npm test` - verify 1025 tests pass (100%) - **COMPLETED**
 4. [x] Initialize Tauri project (Phase 1) - **COMPLETED**
 5. [x] Port HID manager (Phase 2) - **COMPLETED** (228 Rust tests passing)
 6. [x] Port image processor (Phase 3) - **COMPLETED**
@@ -1054,10 +1057,10 @@ Compilation fixes (HttpMethod Display trait, mutex-across-await, deprecated tray
 23. **Added comprehensive soomfon-protocol.ts unit tests**
     - File: `src/core/device/__tests__/soomfon-protocol.test.ts`
     - Added 37 unit tests covering validation, packet transmission, and initialization
-    - Total TypeScript tests: 980
+    - Total TypeScript tests: 1025
 
 ---
 
 ## Phase 0 Completion Criteria
 
-**Status: COMPLETED** - All 7 criteria met: tests passing (980 TypeScript), type definitions fixed (encoder longPress), outdated comments removed, logger utility implemented, input validation added, and critical modules tested (7/8 + integrations, hid-manager deferred due to native module mocking complexity).
+**Status: COMPLETED** - All 7 criteria met: tests passing (1025 TypeScript), type definitions fixed (encoder longPress), outdated comments removed, logger utility implemented, input validation added, and critical modules tested (7/8 + integrations, hid-manager deferred due to native module mocking complexity).
