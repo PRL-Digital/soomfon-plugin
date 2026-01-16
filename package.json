@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
+    "@tauri-apps/api": "^2.0.0",
     "axios": "^1.13.2",
     "electron-store": "^8.2.0",
     "node-hid": "^3.2.0",

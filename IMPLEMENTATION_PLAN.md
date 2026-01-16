@@ -17,7 +17,7 @@
 | Phase 4 | COMPLETED | Configuration system fully implemented |
 | Phase 5 | COMPLETED | All 10 handlers fully implemented |
 | Phase 6 | COMPLETED | Tray, auto-launch, and file dialog all implemented |
-| Phase 7 | NOT STARTED | Frontend migration pending |
+| Phase 7 | IN PROGRESS | IPC bridge created, event emission added |
 | Phase 8 | NOT STARTED | Device testing pending |
 
 **Rust Code Status:**
@@ -633,15 +633,9 @@ The Rust code structure is verified and follows the planned architecture.
 - [ ] Update import paths
 - [x] **Electron has:** Complete React UI with device visualization, action editors (43 component files)
 
-### Task 7.2: Create IPC Bridge
-- [ ] Create `src/lib/tauri.ts` with typed invoke wrappers:
-  ```typescript
-  export const device = {
-    connect: () => invoke('connect_device'),
-    disconnect: () => invoke('disconnect_device'),
-    // ...
-  }
-  ```
+### Task 7.2: Create IPC Bridge - COMPLETED
+- [x] Create `src/lib/tauri.ts` with typed invoke wrappers
+  - Note: File created at `src/lib/tauri-api.ts`
 - [x] **Electron has:** Preload bridge in `src/preload/index.ts` (26 invoke channels, 9 listen channels)
 
 ### Task 7.3: Update Hooks
@@ -651,11 +645,16 @@ The Rust code structure is verified and follows the planned architecture.
 - [ ] Remove Electron-specific code
 - [x] **Electron has:** Custom hooks in `src/renderer/hooks/` (6 hooks)
 
-### Task 7.4: Update Event Listeners
-- [ ] Replace Electron IPC listeners with Tauri events:
-  - `listen('device-event', callback)`
-  - `listen('connection-state', callback)`
+### Task 7.4: Update Event Listeners - COMPLETED
+- [x] Replace Electron IPC listeners with Tauri events
+  - Note: Event emission added to Tauri backend for device/profile/config changes
 - [x] **Electron has:** IPC event listeners
+
+### Task 7.6: Add Event Emission to Tauri Backend - COMPLETED
+- [x] Add Tauri event emission for device:connected/disconnected
+- [x] Add Tauri event emission for profile:changed
+- [x] Add Tauri event emission for config:changed
+- Note: Events emitted using tauri::Emitter trait
 
 ### Task 7.5: Remove Electron Dependencies
 - [ ] Remove from package.json:
@@ -943,7 +942,7 @@ strip = true
 - [x] Phase 4: Configuration (Tasks 4.1-4.4) - **COMPLETED**
 - [x] Phase 5: Action System (Tasks 5.1-5.13) - **COMPLETED** (all 10 handlers fully implemented)
 - [x] Phase 6: System Integration (Tasks 6.1-6.4) - **COMPLETED**
-- [ ] Phase 7: Frontend Migration (Tasks 7.1-7.5) - **NOT STARTED**
+- [~] Phase 7: Frontend Migration (Tasks 7.1-7.6) - **IN PROGRESS** (IPC bridge and event emission done)
 - [ ] Phase 8: Testing & Polish (Tasks 8.1-8.5) - **NOT STARTED**
 
 ---
@@ -966,7 +965,7 @@ strip = true
 7. [x] Port configuration system (Phase 4) - **COMPLETED**
 8. [x] Port action handlers (Phase 5) - **COMPLETED** (all 10 handlers fully implemented)
 9. [x] Port system integration (Phase 6) - **COMPLETED**
-10. [ ] Migrate frontend (Phase 7) - mostly copy-paste with IPC changes
+10. [~] Migrate frontend (Phase 7) - **IN PROGRESS** (IPC bridge and event emission done)
 11. [ ] Build and measure - verify < 10 MB installer, < 25 MB RAM
 
 ---
@@ -1016,6 +1015,13 @@ These fixes were applied to get the Rust code compiling:
    - Implemented open_file_dialog command with Electron-compatible API
    - Supports single/multiple file selection and directory picking
    - Uses blocking_* methods safe for async commands
+
+10. **Implemented Tauri IPC bridge and event emission (2026-01-16)**
+    - Created `src/lib/tauri-api.ts` - Tauri adapter implementing ElectronAPI interface
+    - Added `@tauri-apps/api` package dependency
+    - Added event emission to device commands (connect/disconnect)
+    - Added event emission to config commands (profile changes, settings changes)
+    - Uses Tauri's Emitter trait for frontend event notifications
 
 ---
 
