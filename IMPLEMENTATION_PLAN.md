@@ -22,7 +22,7 @@
 
 **Rust Code Status:**
 - Compiles: YES
-- **Rust Tests:** 156 passing (was 139, added 17 new tests for cancellation token and tray status)
+- **Rust Tests:** 194 passing (was 156, added 38 new tests for HID types)
 - TypeScript Tests: 835 passing
 - Clippy: Zero warnings
 
@@ -1150,6 +1150,11 @@ These fixes were applied to get the Rust code compiling:
     - Fixed `startMinimized` in `autoLaunchAPI.getStatus()` - Now fetches `start_minimized` from app settings via `get_app_settings` command
     - Fixed `autoLaunchAPI.setEnabled()` - Now saves `startMinimized` preference to app settings when provided
     - **Result:** All TODO comments in the codebase have been resolved
+
+22. **Added comprehensive HID types unit tests (2026-01-16)**
+    - File: `src-tauri/src/hid/types.rs`
+    - Added 38 unit tests for: constants verification, ConnectionState serialization, DeviceInfo serialization, ButtonEventType/EncoderEventType serialization, DeviceEvent tagged enum serialization, HidError messages
+    - Total Rust tests now: 194 (was 156)
 
 ---
 
