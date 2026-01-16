@@ -10,7 +10,7 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0 | COMPLETED | Pre-migration cleanup, 835 TypeScript tests passing |
+| Phase 0 | COMPLETED | Pre-migration cleanup, 872 TypeScript tests passing |
 | Phase 1 | COMPLETED | Tauri project initialized |
 | Phase 2 | COMPLETED | HID communication layer fully implemented |
 | Phase 3 | COMPLETED | Image processing fully implemented |
@@ -23,7 +23,7 @@
 **Rust Code Status:**
 - Compiles: YES
 - **Rust Tests:** 228 passing (was 156, added 38 new tests for HID types)
-- TypeScript Tests: 835 passing
+- TypeScript Tests: 872 passing
 - Clippy: Zero warnings
 
 Breaking changes are allowed, as long as the implemention_plan.md file is updated with the potential outcomes and changes needed. 
@@ -158,7 +158,7 @@ Comments removed from:
 - Debug output is automatically enabled in development mode
 
 ### Task 0.5: Add Missing Test Coverage - IN PROGRESS
-**Current: 835 tests total** (was 462, added 373 new tests)
+**Current: 872 tests total** (was 462, added 410 new tests)
 
 **Device modules with tests (added 2026-01-16):**
 - [x] `src/core/device/packet-builder.ts` - **68 tests** (pure functions, no mocking needed)
@@ -181,12 +181,11 @@ Comments removed from:
   - Tests version detection, migration path calculation
   - Tests backup/restore operations with fs mocking
   - Tests ConfigMigrator class and checkAndMigrate integration
+- [x] `src/core/device/soomfon-protocol.ts` - **37 tests** (was 0, added 2026-01-16)
+  - Tests validation, packet transmission, and initialization
 
 **Critical modules still WITHOUT tests:**
 - [ ] `src/core/device/hid-manager.ts` - 0 tests (requires node-hid mock)
-
-**Additional modules without tests:**
-- [ ] `src/core/device/soomfon-protocol.ts` - 0 tests (depends on hid-manager)
 
 **Status Notes:**
 - All 10 action handlers ARE well-tested (249 tests)
@@ -199,6 +198,7 @@ Comments removed from:
 - device-events.ts parseSoomfonReport: 31 tests (total 50 now) - TESTED
 - import-export.ts: 50 tests - TESTED
 - migrations.ts: 72 tests - TESTED
+- soomfon-protocol.ts: 37 tests - TESTED
 
 ### Task 0.6: Add Input Validation - COMPLETED
 **Status:** Input validation utilities implemented with 29 tests
@@ -755,7 +755,7 @@ This section documents the complete Electron implementation that can be used as 
 | HID Manager | `device/hid-manager.ts` | Complete | 0 | Windows 1ms polling workaround |
 | Device Events | `device/device-events.ts` | Complete | 50 | Button/encoder event parsing (parseSoomfonReport now tested) |
 | Packet Builder | `device/packet-builder.ts` | Complete | 68 | All HID packet formats |
-| SOOMFON Protocol | `device/soomfon-protocol.ts` | Complete | 0 | High-level device API |
+| SOOMFON Protocol | `device/soomfon-protocol.ts` | Complete | 37 | High-level device API |
 | Image Processor | `device/image-processor.ts` | Complete | 35 | RGB565, 72x72 LCD |
 | Config Manager | `config/config-manager.ts` | Complete | 59 | electron-store wrapper (Rust: 22 tests) |
 | Profile Manager | `config/profile-manager.ts` | Complete | 58 | CRUD + import/export (Rust: 38 tests) |
@@ -961,7 +961,7 @@ strip = true
 - [x] Task 0.2b: Encoder Trigger Naming - **WON'T FIX** (documented, keeping current design to preserve user configs)
 - [x] Task 0.3: Remove Outdated Comments - **COMPLETED** (3 files fixed)
 - [x] Task 0.4: Add Debug Logging Control - **COMPLETED** (48 console.logs replaced)
-- [x] Task 0.5: Add Missing Test Coverage - **COMPLETED** (6/7 modules tested, 835 tests total)
+- [x] Task 0.5: Add Missing Test Coverage - **COMPLETED** (7/8 modules tested, 872 tests total)
   - [x] packet-builder.ts: 68 tests
   - [x] image-processor.ts: 35 tests
   - [x] device-events.ts: 50 tests
@@ -994,8 +994,8 @@ strip = true
 2. [x] **Complete Phase 0 Quality Items:**
    - [x] Remove outdated comments (Task 0.3) - **COMPLETED**
    - [x] Add logging utility (Task 0.4) - **COMPLETED**
-   - [x] Add tests for critical modules (Task 0.5) - **COMPLETED** (6/7 modules, 835 tests)
-3. [x] Run `npm test` - verify 835 tests pass (100%) - **COMPLETED**
+   - [x] Add tests for critical modules (Task 0.5) - **COMPLETED** (7/8 modules, 872 tests)
+3. [x] Run `npm test` - verify 872 tests pass (100%) - **COMPLETED**
 4. [x] Initialize Tauri project (Phase 1) - **COMPLETED**
 5. [x] Port HID manager (Phase 2) - **COMPLETED** (228 Rust tests passing)
 6. [x] Port image processor (Phase 3) - **COMPLETED**
@@ -1038,8 +1038,13 @@ Compilation fixes (HttpMethod Display trait, mutex-across-await, deprecated tray
     - Added 34 unit tests covering all action types and their serialization
     - Total Rust tests: 228
 
+23. **Added comprehensive soomfon-protocol.ts unit tests**
+    - File: `src/core/device/__tests__/soomfon-protocol.test.ts`
+    - Added 37 unit tests covering validation, packet transmission, and initialization
+    - Total TypeScript tests: 872
+
 ---
 
 ## Phase 0 Completion Criteria
 
-**Status: COMPLETED** - All 7 criteria met: tests passing (835 TypeScript), type definitions fixed (encoder longPress), outdated comments removed, logger utility implemented, input validation added, and critical modules tested (6/7, hid-manager deferred due to native module mocking complexity).
+**Status: COMPLETED** - All 7 criteria met: tests passing (872 TypeScript), type definitions fixed (encoder longPress), outdated comments removed, logger utility implemented, input validation added, and critical modules tested (7/8, hid-manager deferred due to native module mocking complexity).
