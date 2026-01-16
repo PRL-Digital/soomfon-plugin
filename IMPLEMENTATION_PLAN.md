@@ -136,7 +136,7 @@ Comments removed from:
 - Debug output is automatically enabled in development mode
 
 ### Task 0.5: Add Missing Test Coverage - IN PROGRESS
-**Current: 565 tests total** (was 462, added 103 new tests)
+**Current: 713 tests total** (was 462, added 251 new tests)
 
 **Device modules with tests (added 2026-01-16):**
 - [x] `src/core/device/packet-builder.ts` - **68 tests** (pure functions, no mocking needed)
@@ -145,19 +145,20 @@ Comments removed from:
 - [x] `src/core/device/image-processor.ts` - **35 tests** (integration tests with sharp)
   - Verifies RGB565 conversion accuracy, solid color generation, gradient patterns
   - Tests color conversion for pure colors (black, white, red, green, blue)
+- [x] `src/core/device/device-events.ts` parseSoomfonReport - **31 tests** (was 0)
+  - Tests parsing of button press/release events, encoder rotation, long press detection
+- [x] `src/core/config/config-manager.ts` - **59 tests** (was 0)
+  - Tests configuration loading, saving, defaults, and edge cases
+- [x] `src/core/config/profile-manager.ts` - **58 tests** (was 0)
+  - Tests profile CRUD operations, active profile management, import/export
 
 **Critical modules still WITHOUT tests:**
 - [ ] `src/core/device/hid-manager.ts` - 0 tests (requires node-hid mock)
-- [ ] `src/core/config/config-manager.ts` - 0 tests (CRITICAL for Tauri migration)
-- [ ] `src/core/config/profile-manager.ts` - 0 tests (CRITICAL for Tauri migration)
 
 **Additional modules without tests:**
 - [ ] `src/core/device/soomfon-protocol.ts` - 0 tests (depends on hid-manager)
 - [ ] `src/core/config/import-export.ts` - 0 tests
 - [ ] `src/core/config/migrations.ts` - 0 tests
-
-**Existing test gap:**
-- [ ] `src/core/device/device-events.ts` - has 19 tests but `parseSoomfonReport()` (the most common format) is NOT tested
 
 **Status Notes:**
 - All 10 action handlers ARE well-tested (249 tests)
@@ -165,6 +166,9 @@ Comments removed from:
 - Action engine: 20 tests
 - Event binder: 26 tests
 - Validation: 62 tests (33 config + 29 input)
+- config-manager.ts: 59 tests - TESTED
+- profile-manager.ts: 58 tests - TESTED
+- device-events.ts parseSoomfonReport: 31 tests (total 50 now) - TESTED
 
 ### Task 0.6: Add Input Validation - COMPLETED
 **Status:** Input validation utilities implemented with 29 tests
@@ -646,12 +650,12 @@ This section documents the complete Electron implementation that can be used as 
 | Module | File | Status | Tests | Notes |
 |--------|------|--------|-------|-------|
 | HID Manager | `device/hid-manager.ts` | Complete | 0 | Windows 1ms polling workaround |
-| Device Events | `device/device-events.ts` | Complete | 19 | Button/encoder event parsing (parseSoomfonReport untested) |
+| Device Events | `device/device-events.ts` | Complete | 50 | Button/encoder event parsing (parseSoomfonReport now tested) |
 | Packet Builder | `device/packet-builder.ts` | Complete | 0 | All HID packet formats |
 | SOOMFON Protocol | `device/soomfon-protocol.ts` | Complete | 0 | High-level device API |
 | Image Processor | `device/image-processor.ts` | Complete | 0 | RGB565, 72x72 LCD |
-| Config Manager | `config/config-manager.ts` | Complete | 0 | electron-store wrapper |
-| Profile Manager | `config/profile-manager.ts` | Complete | 0 | CRUD + import/export |
+| Config Manager | `config/config-manager.ts` | Complete | 59 | electron-store wrapper |
+| Profile Manager | `config/profile-manager.ts` | Complete | 58 | CRUD + import/export |
 | Import/Export | `config/import-export.ts` | Complete | 0 | Profile import/export |
 | Validation | `config/validation.ts` | Complete | 33 | Zod schemas |
 | Migrations | `config/migrations.ts` | Complete | 0 | Config versioning |
@@ -880,7 +884,7 @@ strip = true
    - [x] Remove outdated comments (Task 0.3) - **COMPLETED**
    - [x] Add logging utility (Task 0.4) - **COMPLETED**
    - [~] Add tests for critical modules (Task 0.5) - **IN PROGRESS** (packet-builder: 68, image-processor: 35)
-3. [x] Run `npm test` - verify 565 tests pass (100%) - **COMPLETED**
+3. [x] Run `npm test` - verify 713 tests pass (100%) - **COMPLETED**
 4. [ ] Initialize Tauri project (Phase 1)
 5. [ ] Port HID manager first (Phase 2) - this is the core functionality
 6. [ ] Port action handlers (Phase 5) - makes the device useful
@@ -899,6 +903,6 @@ Phase 0 is complete when ALL of the following are true:
 4. **Comments:** No false "not implemented" comments remain - ✓ **COMPLETED**
 5. **Logging:** All console.log replaced with logger utility - ✓ **COMPLETED**
 6. **Security:** Input validation in place for images, file paths - ✓ **COMPLETED**
-7. **Coverage:** Critical modules have basic test coverage - **IN PROGRESS** (2/5 critical modules tested)
+7. **Coverage:** Critical modules have basic test coverage - **IN PROGRESS** (4/5 critical modules tested)
 
 **Estimated effort:** 2-3 developer days

@@ -340,19 +340,6 @@ while true; do
         print_success "Claude completed successfully"
     fi
 
-    # Push changes after each iteration with robust error handling
-    print_info "Pushing changes to origin/$CURRENT_BRANCH..."
-    if ! git push origin "$CURRENT_BRANCH" 2>/dev/null; then
-        print_warning "Push failed. Attempting to create remote branch..."
-        if ! git push -u origin "$CURRENT_BRANCH" 2>/dev/null; then
-            print_warning "Git push failed, continuing loop anyway..."
-        else
-            print_success "Remote branch created and pushed"
-        fi
-    else
-        print_success "Changes pushed successfully"
-    fi
-
     # Calculate and display iteration duration
     ITER_END=$(date +%s)
     ITER_DURATION=$((ITER_END - ITER_START))
