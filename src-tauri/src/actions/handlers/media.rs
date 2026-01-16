@@ -2,7 +2,7 @@
 //!
 //! Simulates media key input for play/pause, volume, track navigation.
 
-use crate::actions::types::{ActionResult, MediaAction, MediaActionType};
+use crate::actions::types::{ActionResult, MediaAction};
 
 /// Execute a media action
 pub async fn execute(config: &MediaAction) -> ActionResult {

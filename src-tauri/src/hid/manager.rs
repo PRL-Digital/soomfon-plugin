@@ -5,8 +5,6 @@
 
 use super::types::*;
 use hidapi::{HidApi, HidDevice};
-use std::sync::Arc;
-use parking_lot::RwLock;
 
 /// Manages HID device connections
 pub struct HidManager {

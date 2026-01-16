@@ -103,6 +103,18 @@ pub enum HttpMethod {
     Patch,
 }
 
+impl std::fmt::Display for HttpMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HttpMethod::Get => write!(f, "GET"),
+            HttpMethod::Post => write!(f, "POST"),
+            HttpMethod::Put => write!(f, "PUT"),
+            HttpMethod::Delete => write!(f, "DELETE"),
+            HttpMethod::Patch => write!(f, "PATCH"),
+        }
+    }
+}
+
 /// System action configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -5,7 +5,7 @@
 use crate::hid::manager::HidManager;
 use crate::hid::protocol::SoomfonProtocol;
 use crate::hid::types::{ConnectionState, DeviceInfo};
-use crate::image::processor::{create_solid_color, process_base64_image, ImageOptions};
+use crate::image::processor::{process_base64_image, ImageOptions};
 use parking_lot::Mutex;
 use std::sync::Arc;
 use tauri::State;

@@ -111,6 +111,30 @@ impl ActionEngine {
         self.is_executing = false;
     }
 
+    /// Check if an action is currently executing
+    pub fn is_executing(&self) -> bool {
+        self.is_executing
+    }
+
+    /// Record an action execution to history
+    pub fn record_execution(&mut self, action: &Action, result: &ActionResult) {
+        let entry = HistoryEntry {
+            action_type: self.get_action_type_name(action),
+            success: result.success,
+            duration_ms: result.duration_ms,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64,
+            error: result.error.clone(),
+        };
+
+        self.history.push(entry);
+        if self.history.len() > self.max_history {
+            self.history.remove(0);
+        }
+    }
+
     /// Get execution history
     pub fn get_history(&self) -> &[HistoryEntry] {
         &self.history

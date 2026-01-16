@@ -23,7 +23,18 @@ export PATH="$HOME/.cargo/bin:$PATH"
 rustc --version && cargo --version
 
 # Tauri build requires platform-specific dev libraries:
-# Linux: apt install libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev pkg-config
+# Linux: apt install libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev pkg-config libudev-dev libssl-dev
 # Windows: WebView2 (included in Windows 10+)
 # macOS: Xcode Command Line Tools
+
+# Run Rust tests
+cd src-tauri && cargo test
+
+# Check compilation
+cd src-tauri && cargo check
 ```
+
+## Icon Requirements
+- Tauri icons must be RGBA format PNG files
+- Use Python Pillow: `Image.new('RGBA', (size, size), (r, g, b, 255))`
+- Required files: icons/32x32.png, 128x128.png, 128x128@2x.png, icon.png, icon.ico, icon.icns

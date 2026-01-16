@@ -15,7 +15,7 @@ pub fn get_auto_launch() -> bool {
 #[tauri::command]
 pub fn set_auto_launch(
     enabled: bool,
-    app: AppHandle,
+    _app: AppHandle,
 ) -> Result<(), String> {
     if enabled {
         // Get the executable path
@@ -31,12 +31,10 @@ pub fn set_auto_launch(
 /// Open a file dialog
 #[tauri::command]
 pub async fn open_file_dialog(
-    title: Option<String>,
-    filters: Option<Vec<FileFilter>>,
-    default_path: Option<String>,
+    _title: Option<String>,
+    _filters: Option<Vec<FileFilter>>,
+    _default_path: Option<String>,
 ) -> Result<Option<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
-
     // TODO: Implement file dialog using tauri-plugin-dialog
     // For now, return an error indicating it's not implemented
     Err("File dialog not yet implemented - needs tauri-plugin-dialog".to_string())

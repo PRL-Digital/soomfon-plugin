@@ -22,7 +22,7 @@ pub fn build_tray(app: &AppHandle) -> Result<TrayIcon, tauri::Error> {
 
     TrayIconBuilder::new()
         .menu(&menu)
-        .menu_on_left_click(false)
+        .show_menu_on_left_click(false)
         .on_menu_event(|app, event| {
             handle_menu_event(app, &event.id.0);
         })
