@@ -85,9 +85,12 @@ const deviceAPI: DeviceAPI = {
       device_info: {
         vendor_id: number;
         product_id: number;
+        path: string;
         serial_number: string | null;
         manufacturer: string | null;
         product: string | null;
+        release: number;
+        interface_number: number;
       } | null;
     }>('get_device_status');
 
@@ -98,9 +101,12 @@ const deviceAPI: DeviceAPI = {
         ? {
             vendorId: result.device_info.vendor_id,
             productId: result.device_info.product_id,
+            path: result.device_info.path,
             serialNumber: result.device_info.serial_number ?? undefined,
             manufacturer: result.device_info.manufacturer ?? undefined,
             product: result.device_info.product ?? undefined,
+            release: result.device_info.release,
+            interface: result.device_info.interface_number,
           }
         : null,
       isConnected: result.state === 'connected',
@@ -204,15 +210,15 @@ const configAPI: ConfigAPI = {
     // We need to assemble it from individual getters
     const [deviceSettings, appSettings, integrations, profiles, activeProfile] =
       await Promise.all([
-        invoke<DeviceSettings>('get_app_settings'), // Note: this gets app settings in Tauri
+        invoke<DeviceSettings>('get_device_settings'),
         invoke<AppSettings>('get_app_settings'),
-        invoke<IntegrationSettings>('get_app_settings'),
+        invoke<IntegrationSettings>('get_integrations'),
         invoke<Profile[]>('get_profiles'),
         invoke<Profile>('get_active_profile'),
       ]);
 
     return {
-      version: '1.0.0', // TODO: Get from Tauri
+      version: 1, // Configuration schema version
       deviceSettings,
       appSettings,
       integrations,
@@ -285,22 +291,27 @@ const actionAPI: ActionAPI = {
     // We extract bindings from the active profile
     const profile = await invoke<Profile>('get_active_profile');
     const bindings: ActionBinding[] = [];
+    let bindingId = 0;
 
-    // Extract bindings from profile configuration
-    if (profile.lcdButtons) {
-      profile.lcdButtons.forEach((button, index) => {
-        if (button?.pressAction) {
+    // Extract bindings from buttons (LCD buttons with images)
+    // The Profile.buttons array contains ButtonConfig items
+    if (profile.buttons) {
+      profile.buttons.forEach((button) => {
+        // ButtonConfig has index, action (press), and longPressAction
+        if (button?.action) {
           bindings.push({
+            id: `button-${button.index}-press-${++bindingId}`,
             elementType: 'lcdButton',
-            elementIndex: index,
+            elementIndex: button.index,
             trigger: 'press',
-            action: button.pressAction,
+            action: button.action,
           });
         }
         if (button?.longPressAction) {
           bindings.push({
+            id: `button-${button.index}-longPress-${++bindingId}`,
             elementType: 'lcdButton',
-            elementIndex: index,
+            elementIndex: button.index,
             trigger: 'longPress',
             action: button.longPressAction,
           });
@@ -308,51 +319,43 @@ const actionAPI: ActionAPI = {
       });
     }
 
-    if (profile.normalButtons) {
-      profile.normalButtons.forEach((button, index) => {
-        if (button?.pressAction) {
-          bindings.push({
-            elementType: 'normalButton',
-            elementIndex: index,
-            trigger: 'press',
-            action: button.pressAction,
-          });
-        }
-        if (button?.longPressAction) {
-          bindings.push({
-            elementType: 'normalButton',
-            elementIndex: index,
-            trigger: 'longPress',
-            action: button.longPressAction,
-          });
-        }
-      });
-    }
-
+    // Extract bindings from encoders
     if (profile.encoders) {
-      profile.encoders.forEach((encoder, index) => {
+      profile.encoders.forEach((encoder) => {
         if (encoder?.clockwiseAction) {
           bindings.push({
+            id: `encoder-${encoder.index}-rotateCW-${++bindingId}`,
             elementType: 'encoder',
-            elementIndex: index,
+            elementIndex: encoder.index,
             trigger: 'rotateCW',
             action: encoder.clockwiseAction,
           });
         }
         if (encoder?.counterClockwiseAction) {
           bindings.push({
+            id: `encoder-${encoder.index}-rotateCCW-${++bindingId}`,
             elementType: 'encoder',
-            elementIndex: index,
+            elementIndex: encoder.index,
             trigger: 'rotateCCW',
             action: encoder.counterClockwiseAction,
           });
         }
         if (encoder?.pressAction) {
           bindings.push({
+            id: `encoder-${encoder.index}-press-${++bindingId}`,
             elementType: 'encoder',
-            elementIndex: index,
+            elementIndex: encoder.index,
             trigger: 'press',
             action: encoder.pressAction,
+          });
+        }
+        if (encoder?.longPressAction) {
+          bindings.push({
+            id: `encoder-${encoder.index}-longPress-${++bindingId}`,
+            elementType: 'encoder',
+            elementIndex: encoder.index,
+            trigger: 'longPress',
+            action: encoder.longPressAction,
           });
         }
       });
@@ -367,43 +370,40 @@ const actionAPI: ActionAPI = {
     const { target, action } = request;
 
     // Update the appropriate binding based on target
-    if (target.elementType === 'lcdButton') {
-      if (!profile.lcdButtons) {
-        profile.lcdButtons = [];
+    // Both lcdButton and normalButton use the same `buttons` array with ButtonConfig
+    if (target.elementType === 'lcdButton' || target.elementType === 'normalButton') {
+      if (!profile.buttons) {
+        profile.buttons = [];
       }
-      if (!profile.lcdButtons[target.elementIndex]) {
-        profile.lcdButtons[target.elementIndex] = {};
-      }
-      if (target.trigger === 'press') {
-        profile.lcdButtons[target.elementIndex].pressAction = action;
-      } else if (target.trigger === 'longPress') {
-        profile.lcdButtons[target.elementIndex].longPressAction = action;
-      }
-    } else if (target.elementType === 'normalButton') {
-      if (!profile.normalButtons) {
-        profile.normalButtons = [];
-      }
-      if (!profile.normalButtons[target.elementIndex]) {
-        profile.normalButtons[target.elementIndex] = {};
+      // Find existing button config or create new one
+      let buttonConfig = profile.buttons.find(b => b.index === target.elementIndex);
+      if (!buttonConfig) {
+        buttonConfig = { index: target.elementIndex };
+        profile.buttons.push(buttonConfig);
       }
       if (target.trigger === 'press') {
-        profile.normalButtons[target.elementIndex].pressAction = action;
+        buttonConfig.action = action;
       } else if (target.trigger === 'longPress') {
-        profile.normalButtons[target.elementIndex].longPressAction = action;
+        buttonConfig.longPressAction = action;
       }
     } else if (target.elementType === 'encoder') {
       if (!profile.encoders) {
         profile.encoders = [];
       }
-      if (!profile.encoders[target.elementIndex]) {
-        profile.encoders[target.elementIndex] = {};
+      // Find existing encoder config or create new one
+      let encoderConfig = profile.encoders.find(e => e.index === target.elementIndex);
+      if (!encoderConfig) {
+        encoderConfig = { index: target.elementIndex };
+        profile.encoders.push(encoderConfig);
       }
       if (target.trigger === 'rotateCW') {
-        profile.encoders[target.elementIndex].clockwiseAction = action;
+        encoderConfig.clockwiseAction = action;
       } else if (target.trigger === 'rotateCCW') {
-        profile.encoders[target.elementIndex].counterClockwiseAction = action;
+        encoderConfig.counterClockwiseAction = action;
       } else if (target.trigger === 'press') {
-        profile.encoders[target.elementIndex].pressAction = action;
+        encoderConfig.pressAction = action;
+      } else if (target.trigger === 'longPress') {
+        encoderConfig.longPressAction = action;
       }
     }
 
@@ -411,8 +411,7 @@ const actionAPI: ActionAPI = {
     await invoke('update_profile', {
       id: profile.id,
       updates: {
-        lcdButtons: profile.lcdButtons,
-        normalButtons: profile.normalButtons,
+        buttons: profile.buttons,
         encoders: profile.encoders,
       },
     });
@@ -424,25 +423,27 @@ const actionAPI: ActionAPI = {
     const { target } = request;
 
     // Remove the appropriate binding based on target
-    if (target.elementType === 'lcdButton' && profile.lcdButtons?.[target.elementIndex]) {
-      if (target.trigger === 'press') {
-        delete profile.lcdButtons[target.elementIndex].pressAction;
-      } else if (target.trigger === 'longPress') {
-        delete profile.lcdButtons[target.elementIndex].longPressAction;
+    if (target.elementType === 'lcdButton' || target.elementType === 'normalButton') {
+      const buttonConfig = profile.buttons?.find(b => b.index === target.elementIndex);
+      if (buttonConfig) {
+        if (target.trigger === 'press') {
+          delete buttonConfig.action;
+        } else if (target.trigger === 'longPress') {
+          delete buttonConfig.longPressAction;
+        }
       }
-    } else if (target.elementType === 'normalButton' && profile.normalButtons?.[target.elementIndex]) {
-      if (target.trigger === 'press') {
-        delete profile.normalButtons[target.elementIndex].pressAction;
-      } else if (target.trigger === 'longPress') {
-        delete profile.normalButtons[target.elementIndex].longPressAction;
-      }
-    } else if (target.elementType === 'encoder' && profile.encoders?.[target.elementIndex]) {
-      if (target.trigger === 'rotateCW') {
-        delete profile.encoders[target.elementIndex].clockwiseAction;
-      } else if (target.trigger === 'rotateCCW') {
-        delete profile.encoders[target.elementIndex].counterClockwiseAction;
-      } else if (target.trigger === 'press') {
-        delete profile.encoders[target.elementIndex].pressAction;
+    } else if (target.elementType === 'encoder') {
+      const encoderConfig = profile.encoders?.find(e => e.index === target.elementIndex);
+      if (encoderConfig) {
+        if (target.trigger === 'rotateCW') {
+          delete encoderConfig.clockwiseAction;
+        } else if (target.trigger === 'rotateCCW') {
+          delete encoderConfig.counterClockwiseAction;
+        } else if (target.trigger === 'press') {
+          delete encoderConfig.pressAction;
+        } else if (target.trigger === 'longPress') {
+          delete encoderConfig.longPressAction;
+        }
       }
     }
 
@@ -450,8 +451,7 @@ const actionAPI: ActionAPI = {
     await invoke('update_profile', {
       id: profile.id,
       updates: {
-        lcdButtons: profile.lcdButtons,
-        normalButtons: profile.normalButtons,
+        buttons: profile.buttons,
         encoders: profile.encoders,
       },
     });

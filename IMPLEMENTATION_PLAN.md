@@ -17,7 +17,7 @@
 | Phase 4 | COMPLETED | Configuration system fully implemented |
 | Phase 5 | COMPLETED | All 10 handlers fully implemented |
 | Phase 6 | COMPLETED | Tray, auto-launch, and file dialog all implemented |
-| Phase 7 | IN PROGRESS | Tasks 7.1-7.4, 7.6 complete; only Task 7.5 (Remove Electron Dependencies) pending |
+| Phase 7 | COMPLETED | All tasks complete - Electron dependencies removed, Tauri-only workflow |
 | Phase 8 | NOT STARTED | Device testing pending |
 
 **Rust Code Status:**
@@ -662,13 +662,26 @@ The Rust code structure is verified and follows the planned architecture.
 - [x] Add Tauri event emission for config:changed
 - Note: Events emitted using tauri::Emitter trait
 
-### Task 7.5: Remove Electron Dependencies
-- [ ] Remove from package.json:
+### Task 7.5: Remove Electron Dependencies - COMPLETED
+- [x] Removed from package.json devDependencies:
   - `electron`
   - `electron-builder`
+  - `concurrently`
+  - `cross-env`
+  - `wait-on`
+- [x] Moved to devDependencies (needed for tests):
   - `electron-store`
-  - Any other Electron-specific packages
-- [ ] Remove `src/main/`, `src/preload/` directories
+  - `@nut-tree-fork/nut-js`
+  - `node-hid`
+  - `sharp`
+- [x] Removed `src/main/` directory
+- [x] Removed `src/preload/` directory
+- [x] Removed configuration files:
+  - `tsconfig.main.json`
+  - `tsconfig.preload.json`
+  - `electron-builder.json`
+- [x] Updated package.json scripts for Tauri-only workflow
+- [x] Fixed type errors in tauri-api.ts to match Profile type (buttons/encoders arrays)
 
 ---
 
@@ -948,7 +961,7 @@ strip = true
 - [x] Phase 4: Configuration (Tasks 4.1-4.4) - **COMPLETED**
 - [x] Phase 5: Action System (Tasks 5.1-5.13) - **COMPLETED** (all 10 handlers fully implemented)
 - [x] Phase 6: System Integration (Tasks 6.1-6.4) - **COMPLETED**
-- [~] Phase 7: Frontend Migration (Tasks 7.1-7.6) - **IN PROGRESS** (IPC bridge and event emission done)
+- [x] Phase 7: Frontend Migration (Tasks 7.1-7.6) - **COMPLETED** (Electron dependencies removed, Tauri-only workflow)
 - [ ] Phase 8: Testing & Polish (Tasks 8.1-8.5) - **NOT STARTED**
 
 ---
@@ -971,7 +984,7 @@ strip = true
 7. [x] Port configuration system (Phase 4) - **COMPLETED**
 8. [x] Port action handlers (Phase 5) - **COMPLETED** (all 10 handlers fully implemented)
 9. [x] Port system integration (Phase 6) - **COMPLETED**
-10. [~] Migrate frontend (Phase 7) - **NEARLY COMPLETE** (only Task 7.5 - Remove Electron Dependencies remaining)
+10. [x] Migrate frontend (Phase 7) - **COMPLETED** (Electron dependencies removed, Tauri-only workflow)
 11. [ ] Build and measure - verify < 10 MB installer, < 25 MB RAM
 
 ---
@@ -1039,6 +1052,14 @@ These fixes were applied to get the Rust code compiling:
     - Files: config-manager.test.ts, import-export.test.ts, migrations.test.ts
     - Fixed mock typing issues: Record<string, unknown> conversion, action property names
     - All 835 tests pass with strict type checking (npx tsc --noEmit)
+
+13. **Removed Electron dependencies and migrated to Tauri-only workflow (2026-01-16)**
+    - Removed from devDependencies: electron, electron-builder, concurrently, cross-env, wait-on
+    - Moved to devDependencies (needed for tests): electron-store, @nut-tree-fork/nut-js, node-hid, sharp
+    - Removed src/main/ and src/preload/ directories
+    - Removed tsconfig.main.json, tsconfig.preload.json, electron-builder.json
+    - Updated package.json scripts for Tauri-only workflow
+    - Fixed type errors in tauri-api.ts to match Profile type (buttons/encoders arrays)
 
 ---
 
