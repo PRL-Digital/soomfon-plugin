@@ -35,7 +35,7 @@ pub fn process_image(image_data: &[u8], options: &ImageOptions) -> Result<Vec<u8
 pub fn process_base64_image(base64_data: &str, options: &ImageOptions) -> Result<Vec<u8>, String> {
     // Strip data URL prefix if present
     let data = if base64_data.contains(',') {
-        base64_data.split(',').last().unwrap_or(base64_data)
+        base64_data.split(',').next_back().unwrap_or(base64_data)
     } else {
         base64_data
     };

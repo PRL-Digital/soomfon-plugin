@@ -116,7 +116,7 @@ pub enum EncoderTrigger {
 }
 
 /// Configuration for a single button
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ButtonConfig {
     /// Button label
@@ -130,18 +130,8 @@ pub struct ButtonConfig {
     pub actions: HashMap<ButtonTrigger, Action>,
 }
 
-impl Default for ButtonConfig {
-    fn default() -> Self {
-        Self {
-            label: None,
-            image: None,
-            actions: HashMap::new(),
-        }
-    }
-}
-
 /// Configuration for a single encoder
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EncoderConfig {
     /// Encoder label
@@ -150,15 +140,6 @@ pub struct EncoderConfig {
     /// Actions mapped to triggers
     #[serde(default)]
     pub actions: HashMap<EncoderTrigger, Action>,
-}
-
-impl Default for EncoderConfig {
-    fn default() -> Self {
-        Self {
-            label: None,
-            actions: HashMap::new(),
-        }
-    }
 }
 
 /// Profile update request

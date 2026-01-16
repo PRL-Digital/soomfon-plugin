@@ -39,10 +39,11 @@ pub const DEBOUNCE_MS: u64 = 50;
 pub const RECONNECT_INTERVAL_MS: u64 = 2000;
 
 /// Connection state of the HID device
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum ConnectionState {
     /// Not connected to any device
+    #[default]
     Disconnected,
     /// Currently attempting to connect
     Connecting,
@@ -50,12 +51,6 @@ pub enum ConnectionState {
     Connected,
     /// Connection error occurred
     Error,
-}
-
-impl Default for ConnectionState {
-    fn default() -> Self {
-        Self::Disconnected
-    }
 }
 
 /// Information about a connected SOOMFON device

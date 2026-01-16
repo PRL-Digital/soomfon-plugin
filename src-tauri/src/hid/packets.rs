@@ -115,7 +115,7 @@ pub fn build_image_data_packet(
 /// Calculate the number of packets needed for image data
 pub fn calculate_packet_count(data_length: usize) -> usize {
     let bytes_per_packet = REPORT_SIZE - 6; // 58 bytes
-    (data_length + bytes_per_packet - 1) / bytes_per_packet
+    data_length.div_ceil(bytes_per_packet)
 }
 
 #[cfg(test)]
