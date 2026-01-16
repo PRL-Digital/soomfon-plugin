@@ -16,7 +16,7 @@
 | Phase 3 | COMPLETED | Image processing fully implemented |
 | Phase 4 | COMPLETED | Configuration system fully implemented |
 | Phase 5 | COMPLETED | All 10 handlers fully implemented |
-| Phase 6 | PARTIALLY COMPLETE | Tray and auto-launch exist, dialog plugin needed |
+| Phase 6 | COMPLETED | Tray, auto-launch, and file dialog all implemented |
 | Phase 7 | NOT STARTED | Frontend migration pending |
 | Phase 8 | NOT STARTED | Device testing pending |
 
@@ -584,11 +584,11 @@ The Rust code structure is verified and follows the planned architecture.
 
 ---
 
-## Phase 6: System Integration - PARTIALLY COMPLETED
+## Phase 6: System Integration - COMPLETED
 
 **Electron Reference:** `src/main/tray.ts`, `src/main/auto-launch.ts`
 
-**Status:** Tray and auto-launch implementations exist. File dialog needs tauri-plugin-dialog.
+**Status:** All system integration features implemented: tray, auto-launch, and file dialog.
 
 ### Task 6.1: Implement System Tray - COMPLETED
 - [x] Add dependency: use Tauri's built-in tray
@@ -616,10 +616,10 @@ The Rust code structure is verified and follows the planned architecture.
   - `#[tauri::command] set_auto_launch(enabled: bool)`
 - [x] **Electron has:** IPC handlers implemented
 
-### Task 6.4: File Dialog - PENDING
-- [ ] Add `tauri-plugin-dialog` dependency
-- [ ] Implement file picker for image selection
-- **Note:** Required for browse functionality in action editors
+### Task 6.4: File Dialog - COMPLETED
+- [x] Add `tauri-plugin-dialog` dependency
+- [x] Implement file picker for image selection
+- **Implementation:** Uses DialogExt trait with blocking_* methods safe for async commands
 
 ---
 
@@ -942,7 +942,7 @@ strip = true
 - [x] Phase 3: Image Processing (Tasks 3.1-3.2) - **COMPLETED**
 - [x] Phase 4: Configuration (Tasks 4.1-4.4) - **COMPLETED**
 - [x] Phase 5: Action System (Tasks 5.1-5.13) - **COMPLETED** (all 10 handlers fully implemented)
-- [~] Phase 6: System Integration (Tasks 6.1-6.3) - **PARTIALLY COMPLETE** (tray/auto-launch done, dialog pending)
+- [x] Phase 6: System Integration (Tasks 6.1-6.4) - **COMPLETED**
 - [ ] Phase 7: Frontend Migration (Tasks 7.1-7.5) - **NOT STARTED**
 - [ ] Phase 8: Testing & Polish (Tasks 8.1-8.5) - **NOT STARTED**
 
@@ -965,7 +965,7 @@ strip = true
 6. [x] Port image processor (Phase 3) - **COMPLETED**
 7. [x] Port configuration system (Phase 4) - **COMPLETED**
 8. [x] Port action handlers (Phase 5) - **COMPLETED** (all 10 handlers fully implemented)
-9. [~] Port system integration (Phase 6) - **IN PROGRESS** (tray/auto-launch done)
+9. [x] Port system integration (Phase 6) - **COMPLETED**
 10. [ ] Migrate frontend (Phase 7) - mostly copy-paste with IPC changes
 11. [ ] Build and measure - verify < 10 MB installer, < 25 MB RAM
 
@@ -1009,6 +1009,13 @@ These fixes were applied to get the Rust code compiling:
    - File: `src-tauri/src/actions/handlers/home_assistant.rs`
    - Implemented FireEvent endpoint (POST to /api/events/{event_type})
    - Added unit tests for all Home Assistant action types
+
+9. **Implemented file dialog with tauri-plugin-dialog (2026-01-16)**
+   - File: `src-tauri/src/commands/system.rs`
+   - Added tauri-plugin-dialog dependency
+   - Implemented open_file_dialog command with Electron-compatible API
+   - Supports single/multiple file selection and directory picking
+   - Uses blocking_* methods safe for async commands
 
 ---
 

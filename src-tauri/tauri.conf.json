@@ -3,6 +3,11 @@
   "productName": "SOOMFON Controller",
   "version": "0.1.0",
   "identifier": "com.soomfon.controller",
+  "plugins": {
+    "dialog": {
+      "all": true
+    }
+  },
   "build": {
     "beforeDevCommand": "npm run dev:vite",
     "devUrl": "http://localhost:5173",
