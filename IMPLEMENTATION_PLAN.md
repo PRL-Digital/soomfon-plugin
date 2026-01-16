@@ -136,7 +136,7 @@ Comments removed from:
 - Debug output is automatically enabled in development mode
 
 ### Task 0.5: Add Missing Test Coverage - IN PROGRESS
-**Current: 713 tests total** (was 462, added 251 new tests)
+**Current: 835 tests total** (was 462, added 373 new tests)
 
 **Device modules with tests (added 2026-01-16):**
 - [x] `src/core/device/packet-builder.ts` - **68 tests** (pure functions, no mocking needed)
@@ -151,14 +151,20 @@ Comments removed from:
   - Tests configuration loading, saving, defaults, and edge cases
 - [x] `src/core/config/profile-manager.ts` - **58 tests** (was 0)
   - Tests profile CRUD operations, active profile management, import/export
+- [x] `src/core/config/import-export.ts` - **50 tests** (was 0, added 2026-01-16)
+  - Tests export of configurations and profiles as JSON
+  - Tests import with validation, error handling, and name override options
+  - Tests async wrapper functions and edge cases (unicode, special chars)
+- [x] `src/core/config/migrations.ts` - **72 tests** (was 0, added 2026-01-16)
+  - Tests version detection, migration path calculation
+  - Tests backup/restore operations with fs mocking
+  - Tests ConfigMigrator class and checkAndMigrate integration
 
 **Critical modules still WITHOUT tests:**
 - [ ] `src/core/device/hid-manager.ts` - 0 tests (requires node-hid mock)
 
 **Additional modules without tests:**
 - [ ] `src/core/device/soomfon-protocol.ts` - 0 tests (depends on hid-manager)
-- [ ] `src/core/config/import-export.ts` - 0 tests
-- [ ] `src/core/config/migrations.ts` - 0 tests
 
 **Status Notes:**
 - All 10 action handlers ARE well-tested (249 tests)
@@ -169,6 +175,8 @@ Comments removed from:
 - config-manager.ts: 59 tests - TESTED
 - profile-manager.ts: 58 tests - TESTED
 - device-events.ts parseSoomfonReport: 31 tests (total 50 now) - TESTED
+- import-export.ts: 50 tests - TESTED
+- migrations.ts: 72 tests - TESTED
 
 ### Task 0.6: Add Input Validation - COMPLETED
 **Status:** Input validation utilities implemented with 29 tests
@@ -642,7 +650,7 @@ This section documents the complete Electron implementation that can be used as 
 
 ### Codebase Statistics
 - **Total LOC:** ~23,000
-- **Test Coverage:** 462 tests (100% passing)
+- **Test Coverage:** 835 tests (100% passing)
 - **Framework:** Electron 39.2.7 + Vite 7.3.1 + React 19.2.3 + TypeScript
 
 ### Core Modules (src/core/) - ALL COMPLETE
@@ -651,14 +659,14 @@ This section documents the complete Electron implementation that can be used as 
 |--------|------|--------|-------|-------|
 | HID Manager | `device/hid-manager.ts` | Complete | 0 | Windows 1ms polling workaround |
 | Device Events | `device/device-events.ts` | Complete | 50 | Button/encoder event parsing (parseSoomfonReport now tested) |
-| Packet Builder | `device/packet-builder.ts` | Complete | 0 | All HID packet formats |
+| Packet Builder | `device/packet-builder.ts` | Complete | 68 | All HID packet formats |
 | SOOMFON Protocol | `device/soomfon-protocol.ts` | Complete | 0 | High-level device API |
-| Image Processor | `device/image-processor.ts` | Complete | 0 | RGB565, 72x72 LCD |
+| Image Processor | `device/image-processor.ts` | Complete | 35 | RGB565, 72x72 LCD |
 | Config Manager | `config/config-manager.ts` | Complete | 59 | electron-store wrapper |
 | Profile Manager | `config/profile-manager.ts` | Complete | 58 | CRUD + import/export |
-| Import/Export | `config/import-export.ts` | Complete | 0 | Profile import/export |
+| Import/Export | `config/import-export.ts` | Complete | 50 | Profile import/export |
 | Validation | `config/validation.ts` | Complete | 33 | Zod schemas |
-| Migrations | `config/migrations.ts` | Complete | 0 | Config versioning |
+| Migrations | `config/migrations.ts` | Complete | 72 | Config versioning |
 | Action Engine | `actions/action-engine.ts` | Complete | 20 | Handler registry, timeout |
 | Event Binder | `actions/event-binder.ts` | Complete | 26 | Event->Action routing |
 
@@ -858,7 +866,15 @@ strip = true
 - [x] Task 0.2b: Encoder Trigger Naming - **WON'T FIX** (documented, keeping current design to preserve user configs)
 - [x] Task 0.3: Remove Outdated Comments - **COMPLETED** (3 files fixed)
 - [x] Task 0.4: Add Debug Logging Control - **COMPLETED** (48 console.logs replaced)
-- [ ] Task 0.5: Add Missing Test Coverage (8 critical modules + parseSoomfonReport)
+- [~] Task 0.5: Add Missing Test Coverage - **IN PROGRESS** (6/7 modules tested, 835 tests total)
+  - [x] packet-builder.ts: 68 tests
+  - [x] image-processor.ts: 35 tests
+  - [x] device-events.ts: 50 tests
+  - [x] config-manager.ts: 59 tests
+  - [x] profile-manager.ts: 58 tests
+  - [x] import-export.ts: 50 tests
+  - [x] migrations.ts: 72 tests
+  - [ ] hid-manager.ts: 0 tests (requires node-hid mock - DEFERRED)
 - [x] Task 0.6: Add Input Validation - **COMPLETED** (29 tests, validation utilities)
 
 ### Remaining Phases
@@ -880,11 +896,11 @@ strip = true
    - [x] Encoder trigger naming inconsistency (Task 0.2b) - **WON'T FIX** (documented)
    - [x] Fix 3 failing tests (Task 0.1) - **COMPLETED**
    - [x] Add input validation (Task 0.6) - **COMPLETED**
-2. [ ] **Complete Phase 0 Quality Items:**
+2. [x] **Complete Phase 0 Quality Items:**
    - [x] Remove outdated comments (Task 0.3) - **COMPLETED**
    - [x] Add logging utility (Task 0.4) - **COMPLETED**
-   - [~] Add tests for critical modules (Task 0.5) - **IN PROGRESS** (packet-builder: 68, image-processor: 35)
-3. [x] Run `npm test` - verify 713 tests pass (100%) - **COMPLETED**
+   - [x] Add tests for critical modules (Task 0.5) - **MOSTLY COMPLETE** (6/7 modules, 835 tests)
+3. [x] Run `npm test` - verify 835 tests pass (100%) - **COMPLETED**
 4. [ ] Initialize Tauri project (Phase 1)
 5. [ ] Port HID manager first (Phase 2) - this is the core functionality
 6. [ ] Port action handlers (Phase 5) - makes the device useful
@@ -897,12 +913,13 @@ strip = true
 
 Phase 0 is complete when ALL of the following are true:
 
-1. **Tests:** All tests pass (0 failures) - ✓ **COMPLETED**
+1. **Tests:** All tests pass (0 failures) - ✓ **COMPLETED** (835 tests)
 2. **Types:** EncoderTrigger includes 'longPress', EncoderEventType includes LONG_PRESS - ✓ **COMPLETED**
 3. **Types:** Encoder trigger naming documented (different conventions by design to preserve user configs) - ✓ **DOCUMENTED**
 4. **Comments:** No false "not implemented" comments remain - ✓ **COMPLETED**
 5. **Logging:** All console.log replaced with logger utility - ✓ **COMPLETED**
 6. **Security:** Input validation in place for images, file paths - ✓ **COMPLETED**
-7. **Coverage:** Critical modules have basic test coverage - **IN PROGRESS** (4/5 critical modules tested)
+7. **Coverage:** Critical modules have basic test coverage - ✓ **MOSTLY COMPLETE** (6/7 modules tested, hid-manager deferred)
+   - Note: hid-manager.ts requires complex node-hid native module mocking, deferred to Phase 2
 
-**Estimated effort:** 2-3 developer days
+**Estimated effort:** 2-3 developer days (Phase 0 nearly complete)
