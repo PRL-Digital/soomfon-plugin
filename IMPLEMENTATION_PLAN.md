@@ -15,7 +15,7 @@
 | Phase 2 | COMPLETED | HID communication layer fully implemented |
 | Phase 3 | COMPLETED | Image processing fully implemented |
 | Phase 4 | COMPLETED | Configuration system fully implemented |
-| Phase 5 | PARTIALLY COMPLETE | Infrastructure exists, handlers need implementation |
+| Phase 5 | MOSTLY COMPLETE | 8 fully implemented, 2 partial (system, home_assistant) |
 | Phase 6 | PARTIALLY COMPLETE | Tray and auto-launch exist, dialog plugin needed |
 | Phase 7 | NOT STARTED | Frontend migration pending |
 | Phase 8 | NOT STARTED | Device testing pending |
@@ -454,11 +454,14 @@ The Rust code structure is verified and follows the planned architecture.
 
 ---
 
-## Phase 5: Action System - PARTIALLY COMPLETED
+## Phase 5: Action System - MOSTLY COMPLETE
 
 **Electron Reference:** `src/core/actions/action-engine.ts`, `src/core/actions/event-binder.ts`, `src/core/actions/handlers/*.ts`
 
-**Status:** Infrastructure complete, but most handlers return "not yet implemented" stubs. Needs actual Win32/platform implementations.
+**Status:** 8 handlers fully implemented, 2 partial (system, home_assistant). Handler implementation summary:
+- **Fully Implemented (8):** keyboard, media, text, profile, launch, script, http, node_red
+- **Partial (2):** system (lock/sleep/hibernate work, screenshot not implemented), home_assistant (Toggle/TurnOn/TurnOff/CallService work, FireEvent not implemented)
+- **Stubs (0):** None remaining
 
 ### Task 5.1: Define Action Types - COMPLETED
 - [x] Create `src-tauri/src/actions/mod.rs`
@@ -479,80 +482,89 @@ The Rust code structure is verified and follows the planned architecture.
 - [x] Fixed mutex-across-await issue in execute_action command
 - [x] **Electron has:** Handler registry, execution with timeout, history tracking, statistics
 
-### Task 5.3: Port Keyboard Handler - STUB IMPLEMENTATION
+### Task 5.3: Port Keyboard Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/keyboard.rs`
-- [ ] **NEEDS WORK:** Implement actual Win32 `SendInput`:
-  - Key press/release
-  - Modifier keys (Ctrl, Alt, Shift, Win)
-  - Key combinations
+- [x] Full Windows SendInput API implementation:
+  - All virtual key codes mapped (letters, numbers, F-keys, navigation, punctuation, media, etc.)
+  - Modifier key support (Ctrl, Alt, Shift, Win)
+  - Extended key handling for arrows, home/end, etc.
+  - Key press/release with proper timing
 - [x] **Electron has:** Full implementation with 52 tests passing
 
-### Task 5.4: Port Media Handler - STUB IMPLEMENTATION
+### Task 5.4: Port Media Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/media.rs`
-- [ ] **NEEDS WORK:** Implement actual media key simulation:
-  - Play/Pause
-  - Next/Previous track
-  - Volume up/down/mute
+- [x] Windows SendInput implementation for all media actions:
+  - PlayPause, NextTrack, PreviousTrack
+  - VolumeUp, VolumeDown, VolumeMute
+  - Stop
 - [x] **Electron has:** Complete with 30 tests
 
-### Task 5.5: Port Launch Handler - STUB IMPLEMENTATION
+### Task 5.5: Port Launch Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/launch.rs`
-- [ ] **NEEDS WORK:** Implement actual:
+- [x] Full implementation:
   - Launch application by path
   - Launch with arguments
   - Open URL in default browser
 - [x] **Electron has:** Cross-platform with shell execution
 
-### Task 5.6: Port HTTP Handler - STUB IMPLEMENTATION
+### Task 5.6: Port HTTP Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/http.rs`
-- [ ] **NEEDS WORK:** Implement actual:
+- [x] Full implementation with reqwest:
   - GET/POST/PUT/DELETE requests
   - Custom headers
   - JSON body support
 - [x] **Electron has:** Full implementation with 27 tests
 
-### Task 5.7: Port System Handler - STUB IMPLEMENTATION
+### Task 5.7: Port System Handler - PARTIAL IMPLEMENTATION
 - [x] Create `src-tauri/src/actions/handlers/system.rs`
-- [ ] **NEEDS WORK:** Implement actual:
-  - Lock screen
-  - Sleep/hibernate (optional)
-  - Screenshot (optional)
+- [x] Implemented:
+  - Lock screen (working)
+  - Sleep/hibernate (working)
+- [ ] Not implemented:
+  - Screenshot (not implemented)
 - [x] **Electron has:** Implementation with 25 tests
 
-### Task 5.8: Port Text Handler - STUB IMPLEMENTATION
+### Task 5.8: Port Text Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/text.rs`
-- [ ] **NEEDS WORK:** Implement actual text typing using keyboard simulation
+- [x] Full Unicode input support:
+  - Uses KEYEVENTF_UNICODE flag for direct Unicode input
+  - UTF-16 encoding for full Unicode character support (including emoji)
+  - Configurable delay between characters
+  - Special handling for newline and tab
 - [x] **Electron has:** Implementation with 14 tests
 
-### Task 5.9: Port Script Handler - STUB IMPLEMENTATION
+### Task 5.9: Port Script Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/script.rs`
-- [ ] **NEEDS WORK:** Implement actual:
+- [x] Full implementation:
   - Execute inline scripts (PowerShell, Bash, CMD)
   - Execute script files
   - Timeout handling
   - Process cancellation
 - [x] **Electron has:** Implementation with 29 tests (after fix)
 
-### Task 5.10: Port Home Assistant Handler - STUB IMPLEMENTATION
+### Task 5.10: Port Home Assistant Handler - PARTIAL IMPLEMENTATION
 - [x] Create `src-tauri/src/actions/handlers/home_assistant.rs`
-- [ ] **NEEDS WORK:** Implement actual:
-  - Call service
+- [x] Implemented:
   - Toggle entity
+  - TurnOn/TurnOff entity
+  - Call service
+- [ ] Not implemented:
   - Fire event
 - [x] **Electron has:** Full implementation with 21 tests
 
-### Task 5.11: Port Node-RED Handler - STUB IMPLEMENTATION
+### Task 5.11: Port Node-RED Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/node_red.rs`
-- [ ] **NEEDS WORK:** Implement actual:
+- [x] Full implementation:
   - Trigger flow via HTTP
   - Send data to inject node
 - [x] **Electron has:** Implementation with 21 tests
 
-### Task 5.12: Port Profile Handler - STUB IMPLEMENTATION
+### Task 5.12: Port Profile Handler - COMPLETED
 - [x] Create `src-tauri/src/actions/handlers/profile.rs`
-- [ ] **NEEDS WORK:** Implement actual:
-  - Switch to profile by ID
-  - Switch to profile by name
+- [x] Full implementation:
+  - Validates profile action requests
+  - Returns success with profile ID/name
+  - Note: Actual profile switching done via IPC due to Tauri architecture
 - [x] **Electron has:** Implementation with 12 tests
 
 ### Task 5.13: Port Event Binder - COMPLETED
@@ -923,7 +935,7 @@ strip = true
 - [x] Phase 2: HID Communication (Tasks 2.1-2.6) - **COMPLETED** (Task 2.7 device testing pending)
 - [x] Phase 3: Image Processing (Tasks 3.1-3.2) - **COMPLETED**
 - [x] Phase 4: Configuration (Tasks 4.1-4.4) - **COMPLETED**
-- [~] Phase 5: Action System (Tasks 5.1-5.13) - **PARTIALLY COMPLETE** (infrastructure done, handlers need implementation)
+- [~] Phase 5: Action System (Tasks 5.1-5.13) - **MOSTLY COMPLETE** (8 fully implemented, 2 partial)
 - [~] Phase 6: System Integration (Tasks 6.1-6.3) - **PARTIALLY COMPLETE** (tray/auto-launch done, dialog pending)
 - [ ] Phase 7: Frontend Migration (Tasks 7.1-7.5) - **NOT STARTED**
 - [ ] Phase 8: Testing & Polish (Tasks 8.1-8.5) - **NOT STARTED**
@@ -946,7 +958,7 @@ strip = true
 5. [x] Port HID manager (Phase 2) - **COMPLETED** (16 Rust tests passing)
 6. [x] Port image processor (Phase 3) - **COMPLETED**
 7. [x] Port configuration system (Phase 4) - **COMPLETED**
-8. [~] Port action handlers (Phase 5) - **IN PROGRESS** (infrastructure done, handlers need actual implementation)
+8. [~] Port action handlers (Phase 5) - **MOSTLY COMPLETE** (8 fully implemented, 2 partial: system, home_assistant)
 9. [~] Port system integration (Phase 6) - **IN PROGRESS** (tray/auto-launch done)
 10. [ ] Migrate frontend (Phase 7) - mostly copy-paste with IPC changes
 11. [ ] Build and measure - verify < 10 MB installer, < 25 MB RAM
