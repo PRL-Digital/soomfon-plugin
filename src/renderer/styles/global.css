@@ -1410,7 +1410,7 @@
     background-color: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    overflow: hidden;
+    /* Note: overflow visible to allow action type dropdowns to show */
   }
 
   .encoder-editor__content {
@@ -1425,7 +1425,7 @@
     background-color: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    overflow: hidden;
+    /* Note: overflow visible to allow action type dropdowns to show */
   }
 
   .encoder-section:last-child {

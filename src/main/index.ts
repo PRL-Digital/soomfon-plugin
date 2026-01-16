@@ -38,7 +38,7 @@ function createWindow(): void {
     title: 'SOOMFON Controller',
     backgroundColor: '#1e1e1e',
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
+      preload: path.join(__dirname, '../../preload/preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false, // Required for some native modules

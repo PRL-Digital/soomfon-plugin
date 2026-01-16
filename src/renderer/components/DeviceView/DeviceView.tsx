@@ -64,16 +64,19 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
   useEffect(() => {
     if (!lastButtonEvent) return;
 
+    console.log('[DEVICEVIEW] Processing button event:', lastButtonEvent);
     const key = `${lastButtonEvent.buttonType}-${lastButtonEvent.buttonIndex}`;
 
     if (lastButtonEvent.type === 'press' || lastButtonEvent.type === 'longPress') {
       setPressedButtons((prev) => new Set(prev).add(key));
+      console.log('[DEVICEVIEW] Added pressed button:', key);
     } else if (lastButtonEvent.type === 'release') {
       setPressedButtons((prev) => {
         const next = new Set(prev);
         next.delete(key);
         return next;
       });
+      console.log('[DEVICEVIEW] Removed pressed button:', key);
     }
   }, [lastButtonEvent]);
 
@@ -81,6 +84,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
   useEffect(() => {
     if (!lastEncoderEvent) return;
 
+    console.log('[DEVICEVIEW] Processing encoder event:', lastEncoderEvent);
     const { encoderIndex, type } = lastEncoderEvent;
 
     if (type === 'rotateCW') {
@@ -88,14 +92,17 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
         ...prev,
         [encoderIndex]: prev[encoderIndex] + 15,
       }));
+      console.log('[DEVICEVIEW] Encoder rotated CW:', encoderIndex);
     } else if (type === 'rotateCCW') {
       setEncoderRotations((prev) => ({
         ...prev,
         [encoderIndex]: prev[encoderIndex] - 15,
       }));
+      console.log('[DEVICEVIEW] Encoder rotated CCW:', encoderIndex);
     } else if (type === 'press') {
       const key = `encoder-press-${encoderIndex}`;
       setPressedButtons((prev) => new Set(prev).add(key));
+      console.log('[DEVICEVIEW] Encoder pressed:', encoderIndex);
     } else if (type === 'release') {
       const key = `encoder-press-${encoderIndex}`;
       setPressedButtons((prev) => {
@@ -103,6 +110,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
         next.delete(key);
         return next;
       });
+      console.log('[DEVICEVIEW] Encoder released:', encoderIndex);
     }
   }, [lastEncoderEvent]);
 

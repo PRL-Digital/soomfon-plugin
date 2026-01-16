@@ -2,13 +2,56 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useDevice, useProfiles, useConfig } from './hooks';
 import { Header, TabNav, TabId } from './components/Layout';
 import { DeviceView, Selection } from './components/DeviceView';
-import { ActionEditor, EncoderEditor, EncoderConfig } from './components/ActionEditor';
+import { ActionEditor, EncoderEditor, EncoderConfig, ActionTypeOption } from './components/ActionEditor';
 import { ProfileSelector, ProfileList, ProfileEditor, ProfileDialogMode } from './components/ProfileManager';
 import { SettingsPanel } from './components/Settings';
 import { useToast, Spinner } from './components/common';
 import { ConnectionState } from '@shared/types/device';
-import type { Action } from '@shared/types/actions';
+import type {
+  Action,
+  KeyboardAction,
+  LaunchAction,
+  ScriptAction,
+  HttpAction,
+  MediaAction,
+  SystemAction,
+  ProfileAction,
+  TextAction,
+  HomeAssistantAction,
+  NodeRedAction,
+} from '@shared/types/actions';
 import type { Profile } from '@shared/types/config';
+
+/** Generate a descriptive name for an action based on its type and config */
+const generateActionName = (action: Partial<Action>): string => {
+  switch (action.type) {
+    case 'keyboard': {
+      const kb = action as Partial<KeyboardAction>;
+      const mods = kb.modifiers?.join('+') || '';
+      return mods ? `${mods}+${kb.keys || 'Key'}` : kb.keys || 'Keyboard Action';
+    }
+    case 'launch':
+      return `Launch: ${(action as Partial<LaunchAction>).path?.split(/[/\\]/).pop() || 'App'}`;
+    case 'media':
+      return `Media: ${(action as Partial<MediaAction>).action || 'Control'}`;
+    case 'system':
+      return `System: ${(action as Partial<SystemAction>).action || 'Action'}`;
+    case 'http':
+      return `HTTP ${(action as Partial<HttpAction>).method || 'Request'}`;
+    case 'script':
+      return `Script: ${(action as Partial<ScriptAction>).scriptType || 'Run'}`;
+    case 'profile':
+      return `Profile: ${(action as Partial<ProfileAction>).profileId || 'Switch'}`;
+    case 'text':
+      return 'Type Text';
+    case 'home_assistant':
+      return `HA: ${(action as Partial<HomeAssistantAction>).operation || 'Action'}`;
+    case 'node_red':
+      return `Node-RED: ${(action as Partial<NodeRedAction>).operation || 'Trigger'}`;
+    default:
+      return 'Action';
+  }
+};
 
 interface AppInfo {
   name: string;
@@ -28,6 +71,52 @@ const DeviceTab: React.FC<{
 }> = ({ device, profiles, selection, onSelectionChange, onActionSave, onActionClear, onEncoderSave, onEncoderClear, isSaving }) => {
   // Determine if we should show the encoder editor
   const isEncoderSelected = selection?.type === 'encoder';
+
+  // Get current action and image for the selected button from active profile
+  const getCurrentButtonConfig = () => {
+    if (!selection || !profiles.activeProfile) return { action: undefined, image: undefined };
+
+    // Map selection to button index in profile
+    // LCD buttons: index 0-5, Normal buttons: index 6-8
+    const buttonIndex = selection.type === 'lcd'
+      ? selection.index
+      : selection.type === 'normal'
+        ? 6 + selection.index
+        : -1;
+
+    if (buttonIndex < 0) return { action: undefined, image: undefined };
+
+    const buttonConfig = profiles.activeProfile.buttons.find(b => b.index === buttonIndex);
+    return {
+      action: buttonConfig?.action,
+      image: buttonConfig?.image,
+    };
+  };
+
+  const { action: currentAction, image: currentImage } = getCurrentButtonConfig();
+
+  // Get current encoder config for the selected encoder from active profile
+  const getCurrentEncoderConfig = (): Partial<EncoderConfig> | undefined => {
+    if (!selection || selection.type !== 'encoder' || !profiles.activeProfile) return undefined;
+
+    const encoderConfig = profiles.activeProfile.encoders.find(e => e.index === selection.index);
+    if (!encoderConfig) return undefined;
+
+    // Convert Profile's EncoderConfig to EncoderEditor's EncoderConfig format
+    const mapActionToEditorConfig = (action: Action | undefined): { enabled: boolean; actionType: ActionTypeOption | null; action: Partial<Action> } => {
+      if (!action) return { enabled: false, actionType: null, action: {} };
+      return { enabled: true, actionType: action.type as ActionTypeOption, action };
+    };
+
+    return {
+      press: mapActionToEditorConfig(encoderConfig.pressAction),
+      longPress: mapActionToEditorConfig(encoderConfig.longPressAction),
+      rotateClockwise: mapActionToEditorConfig(encoderConfig.clockwiseAction),
+      rotateCounterClockwise: mapActionToEditorConfig(encoderConfig.counterClockwiseAction),
+    };
+  };
+
+  const currentEncoderConfig = getCurrentEncoderConfig();
 
   return (
     <div className="flex gap-lg h-full">
@@ -50,12 +139,15 @@ const DeviceTab: React.FC<{
         {isEncoderSelected ? (
           <EncoderEditor
             selection={selection}
+            currentConfig={currentEncoderConfig}
             onSave={onEncoderSave}
             onClear={onEncoderClear}
           />
         ) : (
           <ActionEditor
             selection={selection}
+            currentAction={currentAction}
+            currentImage={currentImage}
             onSave={onActionSave}
             onClear={onActionClear}
             isSaving={isSaving}
@@ -390,6 +482,13 @@ const App: React.FC = () => {
 
     if (buttonIndex < 0) return; // Not a button
 
+    // Generate id and name if not provided
+    const completeAction: Action = {
+      ...action,
+      id: action.id || crypto.randomUUID(),
+      name: action.name || generateActionName(action),
+    } as Action;
+
     setIsActionSaving(true);
     try {
       // Clone the buttons array
@@ -402,14 +501,14 @@ const App: React.FC = () => {
         // Create new button config
         updatedButtons.push({
           index: buttonIndex,
-          action: action as Action,
+          action: completeAction,
           image: imageUrl,
         });
       } else {
         // Update existing config
         updatedButtons[buttonConfigIndex] = {
           ...updatedButtons[buttonConfigIndex],
-          action: action as Action,
+          action: completeAction,
           ...(imageUrl !== undefined && { image: imageUrl }),
         };
       }
@@ -473,6 +572,16 @@ const App: React.FC = () => {
   const handleEncoderSave = useCallback(async (encoderConfig: EncoderConfig) => {
     if (!selection || selection.type !== 'encoder' || !profiles.activeProfile) return;
 
+    // Helper to complete an action with id and name
+    const completeEncoderAction = (action: Partial<Action> | undefined): Action | undefined => {
+      if (!action) return undefined;
+      return {
+        ...action,
+        id: action.id || crypto.randomUUID(),
+        name: action.name || generateActionName(action),
+      } as Action;
+    };
+
     try {
       // Convert EncoderEditor's EncoderConfig to Profile's EncoderConfig format
       // EncoderEditor has: { press, longPress, rotateClockwise, rotateCounterClockwise }
@@ -480,16 +589,16 @@ const App: React.FC = () => {
       const profileEncoderConfig: import('@shared/types/config').EncoderConfig = {
         index: selection.index,
         pressAction: encoderConfig.press.enabled && encoderConfig.press.actionType
-          ? encoderConfig.press.action as Action
+          ? completeEncoderAction(encoderConfig.press.action)
           : undefined,
         longPressAction: encoderConfig.longPress.enabled && encoderConfig.longPress.actionType
-          ? encoderConfig.longPress.action as Action
+          ? completeEncoderAction(encoderConfig.longPress.action)
           : undefined,
         clockwiseAction: encoderConfig.rotateClockwise.enabled && encoderConfig.rotateClockwise.actionType
-          ? encoderConfig.rotateClockwise.action as Action
+          ? completeEncoderAction(encoderConfig.rotateClockwise.action)
           : undefined,
         counterClockwiseAction: encoderConfig.rotateCounterClockwise.enabled && encoderConfig.rotateCounterClockwise.actionType
-          ? encoderConfig.rotateCounterClockwise.action as Action
+          ? completeEncoderAction(encoderConfig.rotateCounterClockwise.action)
           : undefined,
       };
 

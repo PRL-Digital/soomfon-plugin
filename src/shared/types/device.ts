@@ -60,12 +60,14 @@ export interface EncoderEvent {
 }
 
 /** Device connection state */
-export enum ConnectionState {
-  DISCONNECTED = 'disconnected',
-  CONNECTING = 'connecting',
-  CONNECTED = 'connected',
-  ERROR = 'error',
-}
+export const ConnectionState = {
+  DISCONNECTED: 'disconnected',
+  CONNECTING: 'connecting',
+  CONNECTED: 'connected',
+  ERROR: 'error',
+} as const;
+
+export type ConnectionState = (typeof ConnectionState)[keyof typeof ConnectionState];
 
 /** Device info from HID enumeration */
 export interface DeviceInfo {

@@ -78,37 +78,61 @@ export class HIDManager extends EventEmitter {
   /** Connect to the SOOMFON device */
   async connect(): Promise<void> {
     if (this.connectionState === ConnectionState.CONNECTED) {
+      console.log('[HID-MANAGER] Already connected, skipping');
       return;
     }
 
     this.setConnectionState(ConnectionState.CONNECTING);
+    console.log('[HID-MANAGER] Connecting to device...');
 
     try {
+      // Log all available interfaces for debugging
+      const allDevices = HIDManager.enumerateDevices();
+      console.log('[HID-MANAGER] Found interfaces:', allDevices.map(d => ({
+        interface: d.interface,
+        usagePage: d.usagePage,
+        usage: d.usage,
+        path: d.path
+      })));
+
       const vendorInterface = HIDManager.findVendorInterface();
 
       if (!vendorInterface || !vendorInterface.path) {
         throw new Error('SOOMFON device not found');
       }
 
+      console.log('[HID-MANAGER] Using vendor interface:', {
+        interface: vendorInterface.interface,
+        usagePage: vendorInterface.usagePage,
+        usage: vendorInterface.usage,
+        path: vendorInterface.path
+      });
+
       this.deviceInfo = vendorInterface;
       this.vendorDevice = new HID.HID(vendorInterface.path);
+      console.log('[HID-MANAGER] HID device opened successfully');
 
       // Set up data handler
       this.vendorDevice.on('data', (data: Buffer) => {
+        console.log('[HID-MANAGER] Data event received, forwarding...');
         this.emit('data', data);
       });
+      console.log('[HID-MANAGER] Data handler registered');
 
       // Set up error handler
       this.vendorDevice.on('error', (err: Error) => {
+        console.log('[HID-MANAGER] Error event:', err.message);
         this.handleError(err);
       });
 
       this.setConnectionState(ConnectionState.CONNECTED);
       this.stopReconnectTimer();
       this.emit('connected');
+      console.log('[HID-MANAGER] Connection complete, state:', this.connectionState);
     } catch (error) {
       this.setConnectionState(ConnectionState.ERROR);
       const err = error instanceof Error ? error : new Error(String(error));
+      console.error('[HID-MANAGER] Connection failed:', err.message);
       this.emit('error', err);
 
       if (this.autoReconnect) {

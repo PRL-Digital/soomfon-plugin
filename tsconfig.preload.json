@@ -5,6 +5,6 @@
     "outDir": "./dist/preload",
     "rootDir": "./src"
   },
-  "include": ["src/preload/**/*"],
+  "include": ["src/preload/**/*", "src/shared/**/*"],
   "exclude": ["node_modules", "dist"]
 }

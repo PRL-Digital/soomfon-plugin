@@ -764,24 +764,32 @@ export function getAutoLaunchManagerInstance(): AutoLaunchManager {
  * HIDManager -> DeviceEventParser -> EventBinder -> ActionEngine
  */
 export function wireEventPipeline(): void {
+  console.log('[PIPELINE] Wiring event pipeline...');
   const hid = initHidManager();
   const parser = initDeviceEventParser();
   const binder = initEventBinder();
 
+  console.log('[PIPELINE] HID manager state:', hid.getConnectionState(), 'connected:', hid.isConnected());
+
   // Wire HID data events to parser
   hid.on('data', (data: Buffer) => {
+    console.log('[HID] Raw data received:', data.toString('hex'));
     parser.parseData(data);
   });
+  console.log('[PIPELINE] HID data listener registered');
 
   // Wire parser button events to event binder
   parser.on('button', async (event) => {
+    console.log('[PARSER] Button event:', JSON.stringify(event));
     try {
       // Forward to renderer for UI feedback based on event type
       if (event.type === ButtonEventType.RELEASE) {
         sendToRenderer(DeviceChannels.BUTTON_RELEASE, event);
+        console.log('[IPC] Sent button release to renderer:', event.buttonType, event.buttonIndex);
       } else {
         // PRESS and LONG_PRESS go to BUTTON_PRESS channel
         sendToRenderer(DeviceChannels.BUTTON_PRESS, event);
+        console.log('[IPC] Sent button press to renderer:', event.buttonType, event.buttonIndex);
       }
 
       // Execute action via event binder
@@ -793,13 +801,16 @@ export function wireEventPipeline(): void {
 
   // Wire parser encoder events to event binder
   parser.on('encoder', async (event) => {
+    console.log('[PARSER] Encoder event:', JSON.stringify(event));
     try {
       // Forward to renderer for UI feedback based on event type
       if (event.type === EncoderEventType.PRESS || event.type === EncoderEventType.RELEASE) {
         sendToRenderer(DeviceChannels.ENCODER_PRESS, event);
+        console.log('[IPC] Sent encoder press to renderer:', event.encoderIndex, event.type);
       } else {
         // ROTATE_CW and ROTATE_CCW go to ENCODER_ROTATE channel
         sendToRenderer(DeviceChannels.ENCODER_ROTATE, event);
+        console.log('[IPC] Sent encoder rotate to renderer:', event.encoderIndex, event.type);
       }
 
       // Execute action via event binder
