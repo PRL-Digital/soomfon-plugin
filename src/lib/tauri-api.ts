@@ -7,6 +7,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { getVersion as getTauriVersion, getName as getTauriName } from '@tauri-apps/api/app';
 import type {
   ElectronAPI,
   DeviceAPI,
@@ -464,15 +465,25 @@ const actionAPI: ActionAPI = {
 
 const autoLaunchAPI: AutoLaunchAPI = {
   getStatus: async (): Promise<AutoLaunchStatusResponse> => {
-    const enabled = await invoke<boolean>('get_auto_launch');
+    const [enabled, appSettings] = await Promise.all([
+      invoke<boolean>('get_auto_launch'),
+      invoke<{ start_minimized: boolean }>('get_app_settings'),
+    ]);
     return {
       enabled,
-      startMinimized: false, // TODO: Get from app settings
+      startMinimized: appSettings.start_minimized,
     };
   },
 
-  setEnabled: async (enabled: boolean, _startMinimized?: boolean): Promise<void> => {
+  setEnabled: async (enabled: boolean, startMinimized?: boolean): Promise<void> => {
     await invoke('set_auto_launch', { enabled });
+    // Update startMinimized in app settings if provided
+    if (startMinimized !== undefined) {
+      const appSettings = await invoke<Record<string, unknown>>('get_app_settings');
+      await invoke('set_app_settings', {
+        settings: { ...appSettings, start_minimized: startMinimized },
+      });
+    }
   },
 };
 
@@ -492,13 +503,8 @@ const dialogAPI: DialogAPI = {
 
 export const tauriAPI: ElectronAPI = {
   // App info
-  getVersion: async () => {
-    // TODO: Get from Tauri app info
-    return '0.1.0';
-  },
-  getName: async () => {
-    return 'SOOMFON Controller';
-  },
+  getVersion: getTauriVersion,
+  getName: getTauriName,
 
   // Domain-specific APIs
   device: deviceAPI,

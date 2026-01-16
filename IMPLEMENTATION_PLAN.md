@@ -18,7 +18,7 @@
 | Phase 5 | COMPLETED | All 10 handlers fully implemented |
 | Phase 6 | COMPLETED | Tray, auto-launch, and file dialog all implemented |
 | Phase 7 | COMPLETED | All tasks complete - Electron dependencies removed, Tauri-only workflow |
-| Phase 8 | IN PROGRESS | Rust test coverage expanded, release build completed (3.6 MB), device testing pending |
+| Phase 8 | IN PROGRESS | Rust test coverage expanded, release build completed (3.6 MB), all TODO items resolved, device testing pending |
 
 **Rust Code Status:**
 - Compiles: YES
@@ -1142,6 +1142,14 @@ These fixes were applied to get the Rust code compiling:
     - `update_tray_status()` updates icon and tooltip in one call
     - Added 8 unit tests for color, tooltip, and icon generation
     - Removed TODO comment from tray status update function
+
+21. **Resolved TODO items in tauri-api.ts (2026-01-16)**
+    - File: `src/lib/tauri-api.ts`
+    - Fixed `getVersion` - Now uses `getVersion` from `@tauri-apps/api/app` to dynamically get version from tauri.conf.json
+    - Fixed `getName` - Now uses `getName` from `@tauri-apps/api/app` to dynamically get app name
+    - Fixed `startMinimized` in `autoLaunchAPI.getStatus()` - Now fetches `start_minimized` from app settings via `get_app_settings` command
+    - Fixed `autoLaunchAPI.setEnabled()` - Now saves `startMinimized` preference to app settings when provided
+    - **Result:** All TODO comments in the codebase have been resolved
 
 ---
 
