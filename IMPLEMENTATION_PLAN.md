@@ -135,18 +135,24 @@ Comments removed from:
 - Set `DEBUG_LOGGING=true` environment variable to enable debug output
 - Debug output is automatically enabled in development mode
 
-### Task 0.5: Add Missing Test Coverage - INCOMPLETE
-**Current: 430 tests total**
+### Task 0.5: Add Missing Test Coverage - IN PROGRESS
+**Current: 565 tests total** (was 462, added 103 new tests)
 
-**Critical modules WITHOUT tests (prioritized for migration):**
-- [ ] `src/core/device/hid-manager.ts` - 0 tests (CRITICAL for Tauri migration)
-- [ ] `src/core/device/image-processor.ts` - 0 tests (CRITICAL for Tauri migration)
+**Device modules with tests (added 2026-01-16):**
+- [x] `src/core/device/packet-builder.ts` - **68 tests** (pure functions, no mocking needed)
+  - Verifies HID packet structure, command encoding, multi-byte values (UInt32LE, UInt16LE)
+  - Tests clamping, checksum calculation, packet validation
+- [x] `src/core/device/image-processor.ts` - **35 tests** (integration tests with sharp)
+  - Verifies RGB565 conversion accuracy, solid color generation, gradient patterns
+  - Tests color conversion for pure colors (black, white, red, green, blue)
+
+**Critical modules still WITHOUT tests:**
+- [ ] `src/core/device/hid-manager.ts` - 0 tests (requires node-hid mock)
 - [ ] `src/core/config/config-manager.ts` - 0 tests (CRITICAL for Tauri migration)
 - [ ] `src/core/config/profile-manager.ts` - 0 tests (CRITICAL for Tauri migration)
 
 **Additional modules without tests:**
-- [ ] `src/core/device/packet-builder.ts` - 0 tests
-- [ ] `src/core/device/soomfon-protocol.ts` - 0 tests
+- [ ] `src/core/device/soomfon-protocol.ts` - 0 tests (depends on hid-manager)
 - [ ] `src/core/config/import-export.ts` - 0 tests
 - [ ] `src/core/config/migrations.ts` - 0 tests
 
@@ -158,7 +164,7 @@ Comments removed from:
 - No skipped or flaky tests found
 - Action engine: 20 tests
 - Event binder: 26 tests
-- Validation: 33 tests
+- Validation: 62 tests (33 config + 29 input)
 
 ### Task 0.6: Add Input Validation - COMPLETED
 **Status:** Input validation utilities implemented with 29 tests
@@ -873,8 +879,8 @@ strip = true
 2. [ ] **Complete Phase 0 Quality Items:**
    - [x] Remove outdated comments (Task 0.3) - **COMPLETED**
    - [x] Add logging utility (Task 0.4) - **COMPLETED**
-   - [ ] Add tests for critical modules (Task 0.5)
-3. [x] Run `npm test` - verify 433 tests pass (100%) - **COMPLETED**
+   - [~] Add tests for critical modules (Task 0.5) - **IN PROGRESS** (packet-builder: 68, image-processor: 35)
+3. [x] Run `npm test` - verify 565 tests pass (100%) - **COMPLETED**
 4. [ ] Initialize Tauri project (Phase 1)
 5. [ ] Port HID manager first (Phase 2) - this is the core functionality
 6. [ ] Port action handlers (Phase 5) - makes the device useful
@@ -893,6 +899,6 @@ Phase 0 is complete when ALL of the following are true:
 4. **Comments:** No false "not implemented" comments remain - ✓ **COMPLETED**
 5. **Logging:** All console.log replaced with logger utility - ✓ **COMPLETED**
 6. **Security:** Input validation in place for images, file paths - ✓ **COMPLETED**
-7. **Coverage:** Critical modules have basic test coverage
+7. **Coverage:** Critical modules have basic test coverage - **IN PROGRESS** (2/5 critical modules tested)
 
 **Estimated effort:** 2-3 developer days
