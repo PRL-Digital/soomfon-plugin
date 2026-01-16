@@ -245,7 +245,7 @@ export interface ActionHandler<T extends Action = Action> {
 export type ButtonTrigger = 'press' | 'release' | 'longPress';
 
 /** Trigger types for encoder events */
-export type EncoderTrigger = 'rotateCW' | 'rotateCCW' | 'press' | 'release';
+export type EncoderTrigger = 'rotateCW' | 'rotateCCW' | 'press' | 'release' | 'longPress';
 
 /** Element type for bindings */
 export type ElementType = 'lcdButton' | 'normalButton' | 'encoder';

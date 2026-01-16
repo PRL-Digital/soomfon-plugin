@@ -70,6 +70,8 @@ function mapEncoderEventToTrigger(eventType: EncoderEventType): EncoderTrigger {
       return 'press';
     case EncoderEventType.RELEASE:
       return 'release';
+    case EncoderEventType.LONG_PRESS:
+      return 'longPress';
   }
 }
 

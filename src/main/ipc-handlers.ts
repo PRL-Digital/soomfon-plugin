@@ -291,7 +291,7 @@ function encoderConfigToBindings(encoder: EncoderConfig): ActionBinding[] {
       id: `encoder-${encoder.index}-longPress`,
       elementType: 'encoder',
       elementIndex: encoder.index,
-      trigger: 'press' as EncoderTrigger, // Note: EventBinder doesn't have longPress for encoder in EncoderTrigger type
+      trigger: 'longPress' as EncoderTrigger,
       action: encoder.longPressAction,
     });
   }

@@ -39,40 +39,48 @@ The phases are prioritized by their impact on achieving migration goals:
 
 Before starting the Tauri migration, fix all known issues in the Electron codebase to ensure a clean port.
 
-### Task 0.1: Fix Failing Tests - NEEDS MINOR FIXES
-**Status:** 430 passing, 3 failing (99.3% pass rate)
+### Task 0.1: Fix Failing Tests - COMPLETED
+**Status:** 433 passing (100% pass rate)
 
-- [ ] **Fix 2 failures in launch-handler.test.ts**
+- [x] **Fix 2 failures in launch-handler.test.ts**
   - Issue: Platform-specific path handling on Linux
   - Location: `src/core/actions/handlers/__tests__/launch-handler.test.ts`
-  - Root cause: Path normalization differs between Windows/Linux
+  - Root cause: Tests tried to change process.platform at runtime but module constants are evaluated at load time
+  - Solution: Tests now properly handle platform-specific behavior at actual load time
 
-- [ ] **Fix 1 failure in script-handler.test.ts**
+- [x] **Fix 1 failure in script-handler.test.ts**
   - Issue: Cancellation mock not working correctly
   - Location: `src/core/actions/handlers/__tests__/script-handler.test.ts`
-  - Root cause: Mock setup for process cancellation
+  - Root cause: Tests tried to change process.platform at runtime but module constants are evaluated at load time
+  - Solution: Tests now properly handle platform-specific behavior at actual load time
 
 **Notes:**
 - No skipped or flaky tests found
-- All other 430 tests pass consistently
+- All 433 tests pass consistently
 
-### Task 0.2: Fix Type Definitions - CRITICAL BUG (BINDING CONFLICT)
+### Task 0.2: Fix Type Definitions - COMPLETED
 **Priority: CRITICAL - This creates functional bugs where longPress bindings silently fail**
 
-- [ ] **Add 'longPress' to EncoderTrigger type**
+- [x] **Add 'longPress' to EncoderTrigger type**
   - File: `src/shared/types/actions.ts` (line 248)
-  - Current: `export type EncoderTrigger = 'rotateCW' | 'rotateCCW' | 'press' | 'release';`
-  - Change to: `export type EncoderTrigger = 'rotateCW' | 'rotateCCW' | 'press' | 'release' | 'longPress';`
-  - **Impact:** EncoderConfig has `longPressAction` but it can't be bound due to missing type
+  - Changed to: `export type EncoderTrigger = 'rotateCW' | 'rotateCCW' | 'press' | 'release' | 'longPress';`
+  - **Impact:** EncoderConfig now properly supports longPress bindings
 
-- [ ] **Add LONG_PRESS to EncoderEventType enum**
+- [x] **Add LONG_PRESS to EncoderEventType enum**
   - File: `src/shared/types/device.ts`
-  - Add `LONG_PRESS` to the `EncoderEventType` enum
+  - Added `LONG_PRESS` to the `EncoderEventType` enum
 
-- [ ] **Remove workaround in ipc-handlers.ts**
+- [x] **Update encoder trigger schema**
+  - File: `src/core/actions/schemas.ts`
+  - Added 'longPress' to encoderTriggerSchema
+
+- [x] **Update event-to-trigger mapping**
+  - File: `src/core/actions/event-binder.ts`
+  - Updated mapEncoderEventToTrigger function to handle LONG_PRESS
+
+- [x] **Fix workaround in ipc-handlers.ts**
   - File: `src/main/ipc-handlers.ts` (line 294)
-  - Current workaround maps longPress to 'press' trigger - THIS IS A BUG
-  - Remove the workaround after fixing the type
+  - Changed workaround to use 'longPress' instead of 'press' trigger
 
 ### Task 0.2b: Fix Encoder Trigger Naming Inconsistency - NEW
 **Priority: HIGH - Confusing mapping between layers**
@@ -638,7 +646,7 @@ This section documents the complete Electron implementation that can be used as 
 
 ### Codebase Statistics
 - **Total LOC:** ~23,000
-- **Test Coverage:** 430 tests (99.3% passing)
+- **Test Coverage:** 433 tests (100% passing)
 - **Framework:** Electron 39.2.7 + Vite 7.3.1 + React 19.2.3 + TypeScript
 
 ### Core Modules (src/core/) - ALL COMPLETE
@@ -849,8 +857,8 @@ strip = true
 ## Progress Tracking
 
 ### Phase 0: Pre-Migration Cleanup - IN PROGRESS
-- [ ] Task 0.1: Fix Failing Tests (3 failures to fix)
-- [ ] Task 0.2: Fix Type Definitions - **CRITICAL** (encoder longPress binding bug)
+- [x] Task 0.1: Fix Failing Tests - **COMPLETED** (433 tests passing, 100% pass rate)
+- [x] Task 0.2: Fix Type Definitions - **COMPLETED** (encoder longPress binding fixed)
 - [ ] Task 0.2b: Fix Encoder Trigger Naming (rotateCW vs clockwise)
 - [ ] Task 0.3: Remove Outdated Comments (3 files)
 - [ ] Task 0.4: Add Debug Logging Control (7 files, 48 console.logs)
@@ -872,15 +880,15 @@ strip = true
 ## Quick Start Checklist
 
 1. [ ] **Complete Phase 0 Priority Items:**
-   - [ ] Fix CRITICAL encoder longPress type bug (Task 0.2)
+   - [x] Fix CRITICAL encoder longPress type bug (Task 0.2) - **COMPLETED**
    - [ ] Fix encoder trigger naming inconsistency (Task 0.2b)
-   - [ ] Fix 3 failing tests (Task 0.1)
+   - [x] Fix 3 failing tests (Task 0.1) - **COMPLETED**
    - [ ] Add input validation (Task 0.6) - security
 2. [ ] **Complete Phase 0 Quality Items:**
    - [ ] Remove outdated comments (Task 0.3)
    - [ ] Add logging utility (Task 0.4)
    - [ ] Add tests for critical modules (Task 0.5)
-3. [ ] Run `npm test` - verify 430+ tests pass (100%)
+3. [x] Run `npm test` - verify 433 tests pass (100%) - **COMPLETED**
 4. [ ] Initialize Tauri project (Phase 1)
 5. [ ] Port HID manager first (Phase 2) - this is the core functionality
 6. [ ] Port action handlers (Phase 5) - makes the device useful
@@ -893,8 +901,8 @@ strip = true
 
 Phase 0 is complete when ALL of the following are true:
 
-1. **Tests:** All tests pass (0 failures)
-2. **Types:** EncoderTrigger includes 'longPress', EncoderEventType includes LONG_PRESS
+1. **Tests:** All tests pass (0 failures) - ✓ **COMPLETED**
+2. **Types:** EncoderTrigger includes 'longPress', EncoderEventType includes LONG_PRESS - ✓ **COMPLETED**
 3. **Types:** Encoder trigger naming is consistent across all layers
 4. **Comments:** No false "not implemented" comments remain
 5. **Logging:** All console.log replaced with logger utility

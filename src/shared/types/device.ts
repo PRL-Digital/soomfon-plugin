@@ -41,6 +41,7 @@ export enum EncoderEventType {
   ROTATE_CCW = 'rotateCCW',
   PRESS = 'press',
   RELEASE = 'release',
+  LONG_PRESS = 'longPress',
 }
 
 /** Button event */

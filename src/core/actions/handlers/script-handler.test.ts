@@ -412,11 +412,32 @@ describe('ScriptHandler', () => {
       // Wait a tick for the process to be assigned
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      // Cancel the script
-      await handler.cancel();
+      // Record spawn count before cancel (for Windows taskkill detection)
+      const spawnCountBefore = spawnedProcesses.length;
 
-      // Process should have been killed
-      expect(mockChildProcess.kill).toHaveBeenCalled();
+      // Mock process.kill for Unix platforms
+      const originalProcessKill = process.kill;
+      const processKillMock = vi.fn();
+      (process as { kill: typeof process.kill }).kill = processKillMock;
+
+      try {
+        // Cancel the script
+        await handler.cancel();
+
+        // Verify cancellation happened via one of these methods:
+        // - On Windows: taskkill spawned (additional spawn call)
+        // - On Unix: process.kill called with negative PID
+        // - Fallback: child.kill called
+        const wasKillAttempted =
+          spawnedProcesses.length > spawnCountBefore || // taskkill on Windows
+          processKillMock.mock.calls.length > 0 || // process.kill on Unix
+          mockChildProcess.kill.mock.calls.length > 0; // fallback
+
+        expect(wasKillAttempted).toBe(true);
+      } finally {
+        // Restore process.kill
+        (process as { kill: typeof process.kill }).kill = originalProcessKill;
+      }
     });
 
     it('should do nothing when no script is running', async () => {

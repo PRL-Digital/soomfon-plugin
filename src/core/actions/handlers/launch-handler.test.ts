@@ -84,13 +84,19 @@ describe('LaunchHandler', () => {
   });
 
   describe('escapeWindowsPath', () => {
-    it('should return path unchanged on non-Windows', () => {
-      setPlatform('linux');
-      // Need to re-import due to module caching
-      // For now test with the current platform behavior
+    // Note: isWindows is evaluated at module load time, so these tests verify
+    // the actual platform behavior rather than trying to mock the platform.
+    // On Windows Node: paths with spaces get quoted
+    // On non-Windows Node: paths are returned unchanged
+    const actualIsWindows = originalPlatform === 'win32';
+
+    it('should handle paths with spaces based on actual platform', () => {
       const result = escapeWindowsPath('/path with spaces/file');
-      // On non-Windows, should not modify
-      if (process.platform !== 'win32') {
+      if (actualIsWindows) {
+        // On Windows, paths with spaces get quoted
+        expect(result).toBe('"/path with spaces/file"');
+      } else {
+        // On non-Windows, paths are unchanged
         expect(result).toBe('/path with spaces/file');
       }
     });
@@ -274,11 +280,12 @@ describe('LaunchHandler', () => {
     });
 
     describe('platform-specific behavior', () => {
-      it('should use xdg-open on Linux with useShell', async () => {
-        setPlatform('linux');
-        // Re-create handler to pick up platform change
-        // Note: The handler captures isWindows at module load, so this tests
-        // the getOpenCommand logic paths
+      // Note: isWindows is evaluated at module load time, so useShell behavior
+      // is determined by the actual platform when the module was loaded, not
+      // the runtime process.platform value.
+      const actualIsWindows = originalPlatform === 'win32';
+
+      it('should use platform-appropriate command with useShell', async () => {
         const action = createMockLaunchAction({
           path: '/path/to/file.pdf',
           useShell: true,
@@ -288,8 +295,12 @@ describe('LaunchHandler', () => {
         vi.advanceTimersByTime(100);
         await executePromise;
 
-        // On Linux (current platform), should use xdg-open
-        if (process.platform === 'linux') {
+        // Verify the command matches the actual platform behavior
+        if (actualIsWindows) {
+          expect(spawnedProcesses[0].command).toBe('start');
+        } else if (originalPlatform === 'darwin') {
+          expect(spawnedProcesses[0].command).toBe('open');
+        } else {
           expect(spawnedProcesses[0].command).toBe('xdg-open');
         }
       });
