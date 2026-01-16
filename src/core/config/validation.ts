@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import { actionSchema } from '../actions/schemas';
+import { validateImageInput, MAX_BASE64_STRING_LENGTH } from '../../shared/utils/validation';
 
 // ============================================================================
 // Constants for validation
@@ -25,6 +26,32 @@ export const MAX_BRIGHTNESS = 100;
 /** Default long press threshold in milliseconds */
 export const DEFAULT_LONG_PRESS_THRESHOLD = 500;
 
+/** Maximum label length */
+const MAX_LABEL_LENGTH = 255;
+
+// ============================================================================
+// Image Validation Schema
+// ============================================================================
+
+/**
+ * Image data schema with format validation
+ * Accepts either base64-encoded image data (with optional data URL prefix)
+ * or a file path to an image file
+ */
+export const imageDataSchema = z.string()
+  .max(MAX_BASE64_STRING_LENGTH, `Image data too large (max ${MAX_BASE64_STRING_LENGTH} characters)`)
+  .refine(
+    (value) => {
+      const result = validateImageInput(value);
+      return result.isValid;
+    },
+    (value) => {
+      const result = validateImageInput(value);
+      return { message: 'error' in result ? result.error : 'warnings' in result ? result.warnings.join('; ') : 'Invalid image data' };
+    }
+  )
+  .optional();
+
 // ============================================================================
 // Button Configuration Schema
 // ============================================================================
@@ -40,9 +67,9 @@ export const buttonConfigSchema = z.object({
     .min(0, 'Button index must be at least 0')
     .max(MAX_BUTTON_INDEX, `Button index must be at most ${MAX_BUTTON_INDEX}`),
   /** Base64-encoded image data or path to image file */
-  image: z.string().optional(),
+  image: imageDataSchema,
   /** Text label displayed on the button */
-  label: z.string().optional(),
+  label: z.string().max(MAX_LABEL_LENGTH, `Label too long (max ${MAX_LABEL_LENGTH} characters)`).optional(),
   /** Action executed on button press */
   action: actionSchema.optional(),
   /** Action executed on long press */

@@ -43,6 +43,7 @@ import { DeviceEventParser } from '../core/device/device-events';
 import { EventBinder, createEventBinder } from '../core/actions/event-binder';
 import type { ActionBinding, ElementType, ButtonTrigger, EncoderTrigger } from '../shared/types/actions';
 import type { ButtonConfig, EncoderConfig } from '../shared/types/config';
+import { validateBase64, extractBase64Data, MAX_IMAGE_SIZE_BYTES } from '../shared/utils/validation';
 
 // Import action handlers
 import { KeyboardHandler } from '../core/actions/handlers/keyboard-handler';
@@ -451,8 +452,20 @@ export function registerIpcHandlers(): void {
       throw new Error('Button index must be between 0 and 5 for LCD buttons');
     }
 
+    // Validate base64 image data format and size
+    const validation = validateBase64(request.imageData, MAX_IMAGE_SIZE_BYTES);
+    if (!validation.isValid) {
+      throw new Error(`Invalid image data: ${validation.error}`);
+    }
+
+    // Extract raw base64 data (handles data URLs)
+    const base64Data = extractBase64Data(request.imageData);
+    if (!base64Data) {
+      throw new Error('Failed to extract base64 data from image');
+    }
+
     // Decode Base64 image data to Buffer
-    const imageBuffer = Buffer.from(request.imageData, 'base64');
+    const imageBuffer = Buffer.from(base64Data, 'base64');
 
     // Process image to RGB565 format (72x72)
     const processedImage = await ImageProcessor.processImage(imageBuffer);
