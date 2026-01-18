@@ -333,10 +333,9 @@ describe('tauriAPI', () => {
   describe('configAPI', () => {
     it('should get full config by assembling from multiple calls', async () => {
       const { tauriAPI } = await import('./tauri-api');
+      // Implementation uses Promise.all([get_app_settings, get_profiles, get_active_profile])
       mockInvoke
-        .mockResolvedValueOnce({ brightness: 80 }) // get_device_settings
-        .mockResolvedValueOnce({ theme: 'dark' }) // get_app_settings
-        .mockResolvedValueOnce({ homeAssistant: { enabled: false } }) // get_integrations
+        .mockResolvedValueOnce({ brightness: 80, start_minimized: false, auto_launch: false, home_assistant: null, node_red: null }) // get_app_settings
         .mockResolvedValueOnce([{ id: '1', name: 'P1' }]) // get_profiles
         .mockResolvedValueOnce({ id: '1', name: 'P1' }); // get_active_profile
 
@@ -357,12 +356,16 @@ describe('tauriAPI', () => {
 
     it('should set app settings', async () => {
       const { tauriAPI } = await import('./tauri-api');
-      mockInvoke.mockResolvedValue(undefined);
+      // Implementation first gets current settings, then merges
+      mockInvoke
+        .mockResolvedValueOnce({ brightness: 80, start_minimized: false }) // get_app_settings
+        .mockResolvedValueOnce(undefined); // set_app_settings
 
       await tauriAPI.config.setAppSettings({ theme: 'dark', startMinimized: true });
 
+      // Only start_minimized is stored in backend, theme is frontend-only
       expect(mockInvoke).toHaveBeenCalledWith('set_app_settings', {
-        settings: { theme: 'dark', startMinimized: true },
+        settings: expect.objectContaining({ start_minimized: true }),
       });
     });
 
@@ -372,12 +375,14 @@ describe('tauriAPI', () => {
 
       await tauriAPI.config.reset();
 
+      // Implementation sends backend format (snake_case) with backend default values
       expect(mockInvoke).toHaveBeenCalledWith('set_app_settings', {
         settings: {
-          theme: 'system',
-          startMinimized: false,
-          minimizeToTray: true,
-          checkForUpdates: true,
+          brightness: 80,
+          start_minimized: false,
+          auto_launch: false,
+          home_assistant: null,
+          node_red: null,
         },
       });
     });

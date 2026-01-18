@@ -9,5 +9,5 @@
     "sourceMap": true
   },
   "include": ["src/core/**/*", "src/shared/**/*", "src/index.ts"],
-  "exclude": ["node_modules", "dist", "scripts", "src/main", "src/preload", "src/renderer"]
+  "exclude": ["node_modules", "dist", "scripts", "src/renderer"]
 }
