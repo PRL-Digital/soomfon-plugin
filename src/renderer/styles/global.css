@@ -434,6 +434,48 @@
     gap: var(--spacing-sm);
   }
 
+  /* New layout structure */
+  .device-main-section {
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: center;
+  }
+
+  .device-lcd-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    /* 3 buttons × 80px + 2 gaps × 16px = 272px */
+    width: 272px;
+  }
+
+  .device-main-dial {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-sm);
+  }
+
+  .device-controls-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-lg);
+  }
+
+  .device-workspace-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    /* Match width of LCD section: 3 buttons × 80px + 2 gaps × 16px = 272px */
+    width: 272px;
+    justify-content: center;
+  }
+
+  .device-side-dials {
+    display: flex;
+    gap: var(--spacing-sm);
+  }
+
   /* LCD Button */
   .lcd-button {
     position: relative;
@@ -583,6 +625,27 @@
     color: var(--color-text-muted);
     text-transform: uppercase;
     font-weight: 600;
+  }
+
+  /* Large Rotary Knob (main encoder) */
+  .rotary-knob--large {
+    width: 120px;
+    height: 140px;
+  }
+
+  .rotary-knob--large .rotary-knob__dial {
+    width: 100px;
+    height: 100px;
+  }
+
+  .rotary-knob--large .rotary-knob__indicator {
+    top: 10px;
+    width: 6px;
+    height: 16px;
+  }
+
+  .rotary-knob--large .rotary-knob__label {
+    font-size: 12px;
   }
 }
 

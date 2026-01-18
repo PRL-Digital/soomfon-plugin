@@ -28,31 +28,51 @@ pub async fn execute(config: &ScriptAction) -> ActionResult {
 }
 
 async fn execute_script(config: &ScriptAction) -> ActionResult {
+    // Get script content - try `script` field first, then `content` for backwards compatibility
+    let script_content = config.script.as_ref()
+        .or(config.content.as_ref())
+        .map(|s| s.as_str());
+
+    // Get script path if provided
+    let script_path = config.script_path.as_ref().map(|s| s.as_str());
+
     let result = match config.script_type {
         ScriptType::PowerShell => {
+            let content = match script_content {
+                Some(c) => c,
+                None => return ActionResult::failure("No script content provided".to_string(), 0),
+            };
             #[cfg(target_os = "windows")]
             {
                 Command::new("powershell")
-                    .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &config.content])
+                    .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", content])
                     .output()
             }
             #[cfg(not(target_os = "windows"))]
             {
                 Command::new("pwsh")
-                    .args(["-NoProfile", "-Command", &config.content])
+                    .args(["-NoProfile", "-Command", content])
                     .output()
             }
         }
         ScriptType::Bash => {
+            let content = match script_content {
+                Some(c) => c,
+                None => return ActionResult::failure("No script content provided".to_string(), 0),
+            };
             Command::new("bash")
-                .args(["-c", &config.content])
+                .args(["-c", content])
                 .output()
         }
         ScriptType::Cmd => {
+            let content = match script_content {
+                Some(c) => c,
+                None => return ActionResult::failure("No script content provided".to_string(), 0),
+            };
             #[cfg(target_os = "windows")]
             {
                 Command::new("cmd")
-                    .args(["/C", &config.content])
+                    .args(["/C", content])
                     .output()
             }
             #[cfg(not(target_os = "windows"))]
@@ -62,7 +82,11 @@ async fn execute_script(config: &ScriptAction) -> ActionResult {
         }
         ScriptType::File => {
             // Execute script file directly
-            Command::new(&config.content).output()
+            let path = match script_path.or(script_content) {
+                Some(p) => p,
+                None => return ActionResult::failure("No script path provided".to_string(), 0),
+            };
+            Command::new(path).output()
         }
     };
 

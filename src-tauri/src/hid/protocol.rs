@@ -2,10 +2,13 @@
 //!
 //! High-level protocol implementation for SOOMFON device communication.
 //! Provides a convenient API for device operations.
+//!
+//! Based on reverse-engineered protocol from usb-protocol-reverse-engineering.md
 
 use super::manager::HidManager;
 use super::packets::*;
 use super::types::*;
+use std::time::Duration;
 
 /// High-level protocol interface for SOOMFON devices
 pub struct SoomfonProtocol<'a> {
@@ -18,65 +21,86 @@ impl<'a> SoomfonProtocol<'a> {
         Self { manager }
     }
 
-    /// Wake the display from sleep
-    pub fn wake_display(&self) -> HidResult<()> {
-        let packet = build_wake_display_packet();
-        self.manager.write(&packet)?;
-        Ok(())
-    }
-
-    /// Clear the screen
-    /// If button_index is None, clears all buttons
-    pub fn clear_screen(&self, button_index: Option<u8>) -> HidResult<()> {
-        let packet = build_clear_screen_packet(button_index);
-        self.manager.write(&packet)?;
-        Ok(())
+    /// Check if the device is ready for commands
+    pub fn is_ready(&self) -> bool {
+        self.manager.is_initialized()
     }
 
     /// Set display brightness (0-100)
     pub fn set_brightness(&self, level: u8) -> HidResult<()> {
-        let packet = build_brightness_packet(level);
-        self.manager.write(&packet)?;
+        self.manager.set_brightness(level)
+    }
+
+    /// Send keepalive to maintain connection
+    pub fn send_keepalive(&self) -> HidResult<()> {
+        self.manager.send_keepalive()
+    }
+
+    /// Poll for a device event
+    pub fn poll_event(&self) -> HidResult<Option<DeviceEvent>> {
+        self.manager.poll_event()
+    }
+
+    /// Poll for a device event with timeout
+    pub fn poll_event_timeout(&self, timeout: Duration) -> HidResult<Option<DeviceEvent>> {
+        self.manager.poll_event_timeout(timeout)
+    }
+
+    /// Clear all LCD displays
+    pub fn clear_displays(&self) -> HidResult<()> {
+        self.manager.send_command(&build_clear_lcd_packet())?;
         Ok(())
     }
 
-    /// Refresh/sync the display
-    pub fn refresh_sync(&self) -> HidResult<()> {
-        let packet = build_refresh_sync_packet();
-        self.manager.write(&packet)?;
+    /// Clear all button states
+    pub fn clear_buttons(&self) -> HidResult<()> {
+        self.manager.send_command(&build_clear_buttons_packet())?;
         Ok(())
     }
 
-    /// Set button image from RGB565 data
+    /// Clear screen (clears LCD displays)
+    /// If button_index is Some, only that button is cleared (not implemented yet)
+    /// If button_index is None, all buttons are cleared
+    pub fn clear_screen(&self, _button_index: Option<u8>) -> HidResult<()> {
+        // Currently we only support clearing all displays
+        // Individual button clearing needs protocol reverse engineering
+        self.manager.send_command(&build_clear_lcd_packet())?;
+        Ok(())
+    }
+
+    /// Send a raw CRT command packet
+    pub fn send_raw_command(&self, packet: &[u8; CRT_PACKET_SIZE]) -> HidResult<usize> {
+        self.manager.send_command(packet)
+    }
+
+    /// Read raw response from device
+    pub fn read_raw_response(&self) -> HidResult<Option<Vec<u8>>> {
+        self.manager.read_response()
+    }
+
+    // =========================================================================
+    // Image Transfer (placeholder - needs more reverse engineering)
+    // =========================================================================
+
+    /// Set button image from JPEG data
+    ///
+    /// Note: Image transfer protocol is not fully reverse-engineered yet.
+    /// This is a placeholder implementation.
     ///
     /// # Arguments
     /// * `button_index` - Button index (0-5)
-    /// * `image_data` - RGB565 image data (must be 10368 bytes for 72x72)
-    pub fn set_button_image(&self, button_index: u8, image_data: &[u8]) -> HidResult<()> {
-        let data_length = image_data.len() as u32;
-
-        // Send header packet
-        let header = build_image_header_packet(
-            button_index,
-            data_length,
-            LCD_WIDTH as u16,
-            LCD_HEIGHT as u16,
-        );
-        self.manager.write(&header)?;
-
-        // Send data packets
-        let bytes_per_packet = REPORT_SIZE - 6;
-        let total_packets = calculate_packet_count(image_data.len());
-
-        for (i, chunk) in image_data.chunks(bytes_per_packet).enumerate() {
-            let is_last = i == total_packets - 1;
-            let packet = build_image_data_packet(i as u16, chunk, is_last);
-            self.manager.write(&packet)?;
-        }
-
-        // Refresh display
-        self.refresh_sync()?;
-
+    /// * `_jpeg_data` - JPEG image data
+    pub fn set_button_image(&self, _button_index: u8, _jpeg_data: &[u8]) -> HidResult<()> {
+        // TODO: Implement based on further reverse engineering
+        // The device accepts JPEG images with FF D8 FF E0 magic bytes
+        // Need to capture actual image transfer packets to understand the protocol
+        log::warn!("set_button_image not yet implemented - needs protocol reverse engineering");
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    // Protocol tests would require a connected device
+    // Unit tests are in the individual modules
 }

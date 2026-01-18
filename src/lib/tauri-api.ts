@@ -110,7 +110,7 @@ const deviceAPI: DeviceAPI = {
             interface: result.device_info.interface_number,
           }
         : null,
-      isConnected: result.state === 'connected',
+      isConnected: result.state === 'connected' || result.state === 'initialized',
     };
   },
 
@@ -207,68 +207,142 @@ const profileAPI: ProfileAPI = {
 
 const configAPI: ConfigAPI = {
   get: async (): Promise<AppConfig> => {
-    // Tauri doesn't have a single "get all config" command
-    // We need to assemble it from individual getters
-    const [deviceSettings, appSettings, integrations, profiles, activeProfile] =
-      await Promise.all([
-        invoke<DeviceSettings>('get_device_settings'),
-        invoke<AppSettings>('get_app_settings'),
-        invoke<IntegrationSettings>('get_integrations'),
-        invoke<Profile[]>('get_profiles'),
-        invoke<Profile>('get_active_profile'),
-      ]);
+    // Get all config from available Tauri commands
+    // Backend AppSettings contains device settings (brightness) and integrations (home_assistant, node_red)
+    const [backendSettings, profiles, activeProfile] = await Promise.all([
+      invoke<{
+        brightness: number;
+        start_minimized: boolean;
+        auto_launch: boolean;
+        home_assistant: { url: string; token: string } | null;
+        node_red: { url: string } | null;
+      }>('get_app_settings'),
+      invoke<Profile[]>('get_profiles'),
+      invoke<Profile | null>('get_active_profile'),
+    ]);
+
+    // Map backend settings to frontend types
+    const deviceSettings: DeviceSettings = {
+      brightness: backendSettings.brightness,
+    };
+
+    const appSettings: AppSettings = {
+      theme: 'system', // Not stored in backend, default
+      startMinimized: backendSettings.start_minimized,
+      minimizeToTray: true, // Not stored in backend, default
+      checkForUpdates: true, // Not stored in backend, default
+    };
+
+    const integrations: IntegrationSettings = {
+      homeAssistant: backendSettings.home_assistant
+        ? {
+            enabled: true,
+            url: backendSettings.home_assistant.url,
+            token: backendSettings.home_assistant.token,
+          }
+        : { enabled: false, url: '', token: '' },
+      nodeRed: backendSettings.node_red
+        ? {
+            enabled: true,
+            url: backendSettings.node_red.url,
+          }
+        : { enabled: false, url: '' },
+    };
 
     return {
-      version: 1, // Configuration schema version
+      version: 1,
       deviceSettings,
       appSettings,
       integrations,
       profiles,
-      activeProfileId: activeProfile.id,
+      activeProfileId: activeProfile?.id ?? '',
     };
   },
 
   set: async (config: AppConfig): Promise<void> => {
-    // Set individual config sections
-    await Promise.all([
-      invoke('set_app_settings', { settings: config.appSettings }),
-    ]);
+    // Map frontend config to backend format
+    const backendSettings = {
+      brightness: config.deviceSettings.brightness,
+      start_minimized: config.appSettings.startMinimized,
+      auto_launch: false,
+      home_assistant: config.integrations.homeAssistant?.enabled
+        ? { url: config.integrations.homeAssistant.url, token: config.integrations.homeAssistant.token }
+        : null,
+      node_red: config.integrations.nodeRed?.enabled
+        ? { url: config.integrations.nodeRed.url }
+        : null,
+    };
+    await invoke('set_app_settings', { settings: backendSettings });
   },
 
-  getDeviceSettings: (): Promise<DeviceSettings> => {
-    // Device settings are part of app settings in Tauri
-    return invoke('get_app_settings');
+  getDeviceSettings: async (): Promise<DeviceSettings> => {
+    const backend = await invoke<{ brightness: number }>('get_app_settings');
+    return { brightness: backend.brightness };
   },
 
-  setDeviceSettings: (settings: DeviceSettings): Promise<void> => {
-    return invoke('set_app_settings', { settings });
+  setDeviceSettings: async (settings: DeviceSettings): Promise<void> => {
+    const current = await invoke<Record<string, unknown>>('get_app_settings');
+    await invoke('set_app_settings', {
+      settings: { ...current, brightness: settings.brightness },
+    });
   },
 
-  getAppSettings: (): Promise<AppSettings> => {
-    return invoke('get_app_settings');
+  getAppSettings: async (): Promise<AppSettings> => {
+    const backend = await invoke<{ start_minimized: boolean }>('get_app_settings');
+    return {
+      theme: 'system',
+      startMinimized: backend.start_minimized,
+      minimizeToTray: true,
+      checkForUpdates: true,
+    };
   },
 
-  setAppSettings: (settings: AppSettings): Promise<void> => {
-    return invoke('set_app_settings', { settings });
+  setAppSettings: async (settings: AppSettings): Promise<void> => {
+    const current = await invoke<Record<string, unknown>>('get_app_settings');
+    await invoke('set_app_settings', {
+      settings: { ...current, start_minimized: settings.startMinimized },
+    });
   },
 
-  getIntegrations: (): Promise<IntegrationSettings> => {
-    // Integrations are part of app settings in Tauri
-    return invoke('get_app_settings');
+  getIntegrations: async (): Promise<IntegrationSettings> => {
+    const backend = await invoke<{
+      home_assistant: { url: string; token: string } | null;
+      node_red: { url: string } | null;
+    }>('get_app_settings');
+    return {
+      homeAssistant: backend.home_assistant
+        ? { enabled: true, url: backend.home_assistant.url, token: backend.home_assistant.token }
+        : { enabled: false, url: '', token: '' },
+      nodeRed: backend.node_red
+        ? { enabled: true, url: backend.node_red.url }
+        : { enabled: false, url: '' },
+    };
   },
 
-  setIntegrations: (settings: IntegrationSettings): Promise<void> => {
-    return invoke('set_app_settings', { settings });
-  },
-
-  reset: (): Promise<void> => {
-    // Reset by setting default values
-    return invoke('set_app_settings', {
+  setIntegrations: async (settings: IntegrationSettings): Promise<void> => {
+    const current = await invoke<Record<string, unknown>>('get_app_settings');
+    await invoke('set_app_settings', {
       settings: {
-        theme: 'system',
-        startMinimized: false,
-        minimizeToTray: true,
-        checkForUpdates: true,
+        ...current,
+        home_assistant: settings.homeAssistant?.enabled
+          ? { url: settings.homeAssistant.url, token: settings.homeAssistant.token }
+          : null,
+        node_red: settings.nodeRed?.enabled
+          ? { url: settings.nodeRed.url }
+          : null,
+      },
+    });
+  },
+
+  reset: async (): Promise<void> => {
+    // Reset to backend default values
+    await invoke('set_app_settings', {
+      settings: {
+        brightness: 80,
+        start_minimized: false,
+        auto_launch: false,
+        home_assistant: null,
+        node_red: null,
       },
     });
   },

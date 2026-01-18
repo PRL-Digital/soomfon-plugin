@@ -5,9 +5,12 @@
 
 use crate::actions::types::{ActionResult, KeyboardAction};
 
+#[cfg(target_os = "windows")]
+use windows::Win32::UI::Input::KeyboardAndMouse::INPUT;
+
 /// Execute a keyboard action
 pub async fn execute(config: &KeyboardAction) -> ActionResult {
-    log::debug!("Executing keyboard action: key={}, modifiers={:?}", config.key, config.modifiers);
+    log::debug!("Executing keyboard action: key={}, modifiers={:?}", config.keys, config.modifiers);
 
     #[cfg(target_os = "windows")]
     {
@@ -26,9 +29,9 @@ fn execute_windows(config: &KeyboardAction) -> ActionResult {
     use windows::Win32::UI::Input::KeyboardAndMouse::*;
 
     // Parse the key to a virtual key code
-    let vk = match parse_key(&config.key) {
+    let vk = match parse_key(&config.keys) {
         Some(vk) => vk,
-        None => return ActionResult::failure(format!("Unknown key: {}", config.key), 0),
+        None => return ActionResult::failure(format!("Unknown key: {}", config.keys), 0),
     };
 
     // Parse modifiers
@@ -301,9 +304,9 @@ fn parse_key(key: &str) -> Option<VIRTUAL_KEY> {
         "mute" | "volumemute" | "audiomute" => Some(VK_VOLUME_MUTE),
         "volumedown" | "voldown" | "audiovoldown" => Some(VK_VOLUME_DOWN),
         "volumeup" | "volup" | "audiovolup" => Some(VK_VOLUME_UP),
-        "playpause" | "play" | "pause" | "mediaplaypause" => Some(VK_MEDIA_PLAY_PAUSE),
+        "playpause" | "play" | "mediaplaypause" => Some(VK_MEDIA_PLAY_PAUSE),
         "stop" | "mediastop" => Some(VK_MEDIA_STOP),
-        "nexttrack" | "next" | "medianext" => Some(VK_MEDIA_NEXT_TRACK),
+        "nexttrack" | "medianext" => Some(VK_MEDIA_NEXT_TRACK),
         "previoustrack" | "prev" | "previous" | "mediaprev" => Some(VK_MEDIA_PREV_TRACK),
 
         // Browser keys

@@ -3,18 +3,15 @@
   "productName": "SOOMFON Controller",
   "version": "0.1.0",
   "identifier": "com.soomfon.controller",
-  "plugins": {
-    "dialog": {
-      "all": true
-    }
-  },
+  "plugins": {},
   "build": {
-    "beforeDevCommand": "npm run dev:vite",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "npm run build:renderer",
     "frontendDist": "../dist"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "SOOMFON Controller",

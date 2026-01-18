@@ -6,10 +6,53 @@ authors = [""]
 license = "MIT"
 repository = ""
 edition = "2021"
+default-run = "soomfon-controller"
 
 [lib]
 name = "soomfon_controller_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
+
+# Main Tauri application binary
+[[bin]]
+name = "soomfon-controller"
+path = "src/main.rs"
+
+# Test binaries
+[[bin]]
+name = "button_test"
+path = "src/bin/button_test.rs"
+
+[[bin]]
+name = "bulk_test"
+path = "src/bin/bulk_test.rs"
+
+[[bin]]
+name = "hid_protocol_test"
+path = "src/bin/hid_protocol_test.rs"
+
+[[bin]]
+name = "poll_test"
+path = "src/bin/poll_test.rs"
+
+[[bin]]
+name = "endpoint_test"
+path = "src/bin/endpoint_test.rs"
+
+[[bin]]
+name = "init_test"
+path = "src/bin/init_test.rs"
+
+[[bin]]
+name = "shutdown_test"
+path = "src/bin/shutdown_test.rs"
+
+[[bin]]
+name = "hidapi_test"
+path = "src/bin/hidapi_test.rs"
+
+[[bin]]
+name = "async_hid_test"
+path = "src/bin/async_hid_test.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -20,8 +63,11 @@ tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1", features = ["rt", "sync", "time", "macros"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }
 hidapi = "2.6"
+rusb = "0.9"
+async-hid = "0.4"
+futures-lite = "2"
 image = "0.25"
 reqwest = { version = "0.12", features = ["json"] }
 uuid = { version = "1", features = ["v4"] }

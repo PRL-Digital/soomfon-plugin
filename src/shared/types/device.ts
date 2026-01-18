@@ -65,6 +65,7 @@ export const ConnectionState = {
   DISCONNECTED: 'disconnected',
   CONNECTING: 'connecting',
   CONNECTED: 'connected',
+  INITIALIZED: 'initialized', // Backend uses this for connected + initialized state
   ERROR: 'error',
 } as const;
 

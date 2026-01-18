@@ -3,8 +3,8 @@
 //! Routes device events to their configured actions based on the active profile.
 
 use super::types::Action;
-use crate::config::types::{Profile, ButtonTrigger, EncoderTrigger};
-use crate::hid::types::DeviceEvent;
+use crate::config::types::Profile;
+use crate::hid::types::{DeviceEvent, EncoderType};
 
 /// Maps device events to actions based on profile configuration
 pub struct EventBinder {
@@ -35,29 +35,34 @@ impl EventBinder {
         let profile = self.profile.as_ref()?;
 
         match event {
-            DeviceEvent::Button { index, event_type } => {
-                let button_config = profile.buttons.get(*index as usize)?;
+            DeviceEvent::Button { index, event_type, .. } => {
+                // Find button config by index field (button_type is informational)
+                let button_config = profile.buttons.iter().find(|b| b.index == *index as usize)?;
 
-                let trigger = match event_type {
-                    crate::hid::types::ButtonEventType::Press => ButtonTrigger::Press,
-                    crate::hid::types::ButtonEventType::Release => ButtonTrigger::Release,
-                    crate::hid::types::ButtonEventType::LongPress => ButtonTrigger::LongPress,
-                };
-
-                button_config.actions.get(&trigger).cloned()
+                match event_type {
+                    crate::hid::types::ButtonEventType::Press => button_config.action.clone(),
+                    crate::hid::types::ButtonEventType::Release => None, // Release not supported as direct field
+                    crate::hid::types::ButtonEventType::LongPress => button_config.long_press_action.clone(),
+                }
             }
-            DeviceEvent::Encoder { index, event_type } => {
-                let encoder_config = profile.encoders.get(*index as usize)?;
-
-                let trigger = match event_type {
-                    crate::hid::types::EncoderEventType::RotateCW => EncoderTrigger::RotateCW,
-                    crate::hid::types::EncoderEventType::RotateCCW => EncoderTrigger::RotateCCW,
-                    crate::hid::types::EncoderEventType::Press => EncoderTrigger::Press,
-                    crate::hid::types::EncoderEventType::Release => EncoderTrigger::Release,
-                    crate::hid::types::EncoderEventType::LongPress => EncoderTrigger::LongPress,
+            DeviceEvent::Encoder { encoder_type, event_type } => {
+                // Map encoder_type to index: Main=0, Side1=1, Side2=2
+                let index = match encoder_type {
+                    EncoderType::Main => 0,
+                    EncoderType::Side1 => 1,
+                    EncoderType::Side2 => 2,
                 };
 
-                encoder_config.actions.get(&trigger).cloned()
+                // Find encoder config by index field
+                let encoder_config = profile.encoders.iter().find(|e| e.index == index)?;
+
+                match event_type {
+                    crate::hid::types::EncoderEventType::RotateCW => encoder_config.clockwise_action.clone(),
+                    crate::hid::types::EncoderEventType::RotateCCW => encoder_config.counter_clockwise_action.clone(),
+                    crate::hid::types::EncoderEventType::Press => encoder_config.press_action.clone(),
+                    crate::hid::types::EncoderEventType::Release => None, // Release not supported as direct field
+                    crate::hid::types::EncoderEventType::LongPress => encoder_config.long_press_action.clone(),
+                }
             }
         }
     }
@@ -84,87 +89,70 @@ mod tests {
     use super::*;
     use crate::actions::types::{Action, KeyboardAction, MediaAction, MediaActionType};
     use crate::config::types::{ButtonConfig, EncoderConfig, Profile};
-    use crate::hid::types::{ButtonEventType, EncoderEventType, DeviceEvent};
-    use std::collections::HashMap;
+    use crate::hid::types::{ButtonEventType, ButtonType, EncoderEventType, EncoderType, DeviceEvent};
 
     /// Create a test profile with specific button and encoder configurations
     fn create_test_profile() -> Profile {
-        let mut buttons = vec![ButtonConfig::default(); 6];
-        let mut encoders = vec![EncoderConfig::default(); 2];
-
-        // Configure button 0 with press action
-        let mut button0_actions = HashMap::new();
-        button0_actions.insert(
-            ButtonTrigger::Press,
-            Action::Keyboard(KeyboardAction {
+        // Configure button 0 with press and long press actions
+        let button0 = ButtonConfig {
+            index: 0,
+            label: None,
+            image: None,
+            action: Some(Action::Keyboard(KeyboardAction {
                 key: "A".to_string(),
                 modifiers: vec![],
-            }),
-        );
-        button0_actions.insert(
-            ButtonTrigger::Release,
-            Action::Keyboard(KeyboardAction {
-                key: "B".to_string(),
-                modifiers: vec![],
-            }),
-        );
-        button0_actions.insert(
-            ButtonTrigger::LongPress,
-            Action::Keyboard(KeyboardAction {
+            })),
+            long_press_action: Some(Action::Keyboard(KeyboardAction {
                 key: "C".to_string(),
                 modifiers: vec!["ctrl".to_string()],
-            }),
-        );
-        buttons[0].actions = button0_actions;
+            })),
+        };
 
         // Configure button 2 with only press action
-        let mut button2_actions = HashMap::new();
-        button2_actions.insert(
-            ButtonTrigger::Press,
-            Action::Media(MediaAction {
+        let button2 = ButtonConfig {
+            index: 2,
+            label: None,
+            image: None,
+            action: Some(Action::Media(MediaAction {
                 action: MediaActionType::PlayPause,
-            }),
-        );
-        buttons[2].actions = button2_actions;
+            })),
+            long_press_action: None,
+        };
 
-        // Configure encoder 0 with rotation actions
-        let mut encoder0_actions = HashMap::new();
-        encoder0_actions.insert(
-            EncoderTrigger::RotateCW,
-            Action::Media(MediaAction {
-                action: MediaActionType::VolumeUp,
-            }),
-        );
-        encoder0_actions.insert(
-            EncoderTrigger::RotateCCW,
-            Action::Media(MediaAction {
-                action: MediaActionType::VolumeDown,
-            }),
-        );
-        encoder0_actions.insert(
-            EncoderTrigger::Press,
-            Action::Media(MediaAction {
+        // Configure encoder 0 with rotation and press actions
+        let encoder0 = EncoderConfig {
+            index: 0,
+            label: None,
+            press_action: Some(Action::Media(MediaAction {
                 action: MediaActionType::VolumeMute,
-            }),
-        );
-        encoders[0].actions = encoder0_actions;
+            })),
+            long_press_action: None,
+            clockwise_action: Some(Action::Media(MediaAction {
+                action: MediaActionType::VolumeUp,
+            })),
+            counter_clockwise_action: Some(Action::Media(MediaAction {
+                action: MediaActionType::VolumeDown,
+            })),
+        };
 
         // Configure encoder 1 with long press
-        let mut encoder1_actions = HashMap::new();
-        encoder1_actions.insert(
-            EncoderTrigger::LongPress,
-            Action::Media(MediaAction {
+        let encoder1 = EncoderConfig {
+            index: 1,
+            label: None,
+            press_action: None,
+            long_press_action: Some(Action::Media(MediaAction {
                 action: MediaActionType::Stop,
-            }),
-        );
-        encoders[1].actions = encoder1_actions;
+            })),
+            clockwise_action: None,
+            counter_clockwise_action: None,
+        };
 
         Profile {
             id: "test-profile-id".to_string(),
             name: "Test Profile".to_string(),
             description: Some("A test profile".to_string()),
-            buttons,
-            encoders,
+            buttons: vec![button0, button2],
+            encoders: vec![encoder0, encoder1],
             created_at: 1700000000000,
             updated_at: 1700000000000,
         }
@@ -242,6 +230,7 @@ mod tests {
 
         let event = DeviceEvent::Button {
             index: 0,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Press,
         };
 
@@ -258,24 +247,18 @@ mod tests {
     }
 
     #[test]
-    fn test_button_release_returns_correct_action() {
+    fn test_button_release_returns_none() {
+        // Release events are not supported with direct action fields
         let mut binder = EventBinder::new();
         binder.bind_profile(create_test_profile());
 
         let event = DeviceEvent::Button {
             index: 0,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Release,
         };
 
-        let action = binder.get_action_for_event(&event);
-        assert!(action.is_some());
-
-        match action.unwrap() {
-            Action::Keyboard(ka) => {
-                assert_eq!(ka.key, "B");
-            }
-            _ => panic!("Expected Keyboard action"),
-        }
+        assert!(binder.get_action_for_event(&event).is_none());
     }
 
     #[test]
@@ -285,6 +268,7 @@ mod tests {
 
         let event = DeviceEvent::Button {
             index: 0,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::LongPress,
         };
 
@@ -307,6 +291,7 @@ mod tests {
 
         let event = DeviceEvent::Button {
             index: 2,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Press,
         };
 
@@ -329,6 +314,7 @@ mod tests {
         // Button 1 has no actions configured
         let event = DeviceEvent::Button {
             index: 1,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Press,
         };
 
@@ -343,6 +329,7 @@ mod tests {
         // Button 2 only has press, not release
         let event = DeviceEvent::Button {
             index: 2,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Release,
         };
 
@@ -357,6 +344,7 @@ mod tests {
         // Index 10 is beyond the 6 configured buttons
         let event = DeviceEvent::Button {
             index: 10,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Press,
         };
 
@@ -371,7 +359,7 @@ mod tests {
         binder.bind_profile(create_test_profile());
 
         let event = DeviceEvent::Encoder {
-            index: 0,
+            encoder_type: EncoderType::Main,  // Maps to index 0
             event_type: EncoderEventType::RotateCW,
         };
 
@@ -392,7 +380,7 @@ mod tests {
         binder.bind_profile(create_test_profile());
 
         let event = DeviceEvent::Encoder {
-            index: 0,
+            encoder_type: EncoderType::Main,  // Maps to index 0
             event_type: EncoderEventType::RotateCCW,
         };
 
@@ -413,7 +401,7 @@ mod tests {
         binder.bind_profile(create_test_profile());
 
         let event = DeviceEvent::Encoder {
-            index: 0,
+            encoder_type: EncoderType::Main,  // Maps to index 0
             event_type: EncoderEventType::Press,
         };
 
@@ -434,7 +422,7 @@ mod tests {
         binder.bind_profile(create_test_profile());
 
         let event = DeviceEvent::Encoder {
-            index: 1,
+            encoder_type: EncoderType::Side1,  // Maps to index 1
             event_type: EncoderEventType::LongPress,
         };
 
@@ -454,9 +442,9 @@ mod tests {
         let mut binder = EventBinder::new();
         binder.bind_profile(create_test_profile());
 
-        // Encoder 0 has no release action
+        // Encoder Main (index 0) has no release action
         let event = DeviceEvent::Encoder {
-            index: 0,
+            encoder_type: EncoderType::Main,
             event_type: EncoderEventType::Release,
         };
 
@@ -464,13 +452,13 @@ mod tests {
     }
 
     #[test]
-    fn test_encoder_index_out_of_range_returns_none() {
+    fn test_encoder_not_configured_returns_none() {
         let mut binder = EventBinder::new();
         binder.bind_profile(create_test_profile());
 
-        // Index 5 is beyond the 2 configured encoders
+        // Side2 encoder (index 2) is not configured in test profile
         let event = DeviceEvent::Encoder {
-            index: 5,
+            encoder_type: EncoderType::Side2,
             event_type: EncoderEventType::RotateCW,
         };
 
@@ -485,6 +473,7 @@ mod tests {
 
         let event = DeviceEvent::Button {
             index: 0,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Press,
         };
 
@@ -496,7 +485,7 @@ mod tests {
         let binder = EventBinder::new();
 
         let event = DeviceEvent::Encoder {
-            index: 0,
+            encoder_type: EncoderType::Main,
             event_type: EncoderEventType::RotateCW,
         };
 
@@ -513,6 +502,7 @@ mod tests {
         // Verify action exists
         let event = DeviceEvent::Button {
             index: 0,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Press,
         };
         assert!(binder.get_action_for_event(&event).is_some());
@@ -529,19 +519,21 @@ mod tests {
 
         // Create a different profile with different action
         let mut new_profile = Profile::new("New Profile".to_string());
-        let mut new_button_actions = HashMap::new();
-        new_button_actions.insert(
-            ButtonTrigger::Press,
-            Action::Media(MediaAction {
+        new_profile.buttons = vec![ButtonConfig {
+            index: 0,
+            label: None,
+            image: None,
+            action: Some(Action::Media(MediaAction {
                 action: MediaActionType::NextTrack,
-            }),
-        );
-        new_profile.buttons[0].actions = new_button_actions;
+            })),
+            long_press_action: None,
+        }];
 
         binder.bind_profile(new_profile);
 
         let event = DeviceEvent::Button {
             index: 0,
+            button_type: ButtonType::Lcd,
             event_type: ButtonEventType::Press,
         };
 

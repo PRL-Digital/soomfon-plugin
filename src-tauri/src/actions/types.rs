@@ -25,27 +25,56 @@ pub enum ActionType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyboardAction {
-    pub key: String,
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
+    /// Key or key combination to send (frontend uses "keys")
+    #[serde(alias = "key")]
+    pub keys: String,
     #[serde(default)]
     pub modifiers: Vec<String>,
+    #[serde(default)]
+    pub hold_duration: Option<u64>,
 }
 
 /// Media action configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaAction {
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
     pub action: MediaActionType,
+    #[serde(default)]
+    pub volume_amount: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub enum MediaActionType {
     PlayPause,
-    NextTrack,
-    PreviousTrack,
+    #[serde(alias = "nextTrack")]
+    Next,
+    #[serde(alias = "previousTrack")]
+    Previous,
     VolumeUp,
     VolumeDown,
-    VolumeMute,
+    #[serde(alias = "volumeMute")]
+    Mute,
     Stop,
 }
 
@@ -53,19 +82,51 @@ pub enum MediaActionType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LaunchAction {
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
     pub path: String,
     #[serde(default)]
     pub args: Vec<String>,
     #[serde(default)]
     pub working_directory: Option<String>,
+    #[serde(default)]
+    pub use_shell: Option<bool>,
 }
 
 /// Script action configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptAction {
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
     pub script_type: ScriptType,
-    pub content: String,
+    /// Inline script content
+    #[serde(default)]
+    pub script: Option<String>,
+    /// Legacy field name for script content
+    #[serde(default)]
+    pub content: Option<String>,
+    /// Path to script file
+    #[serde(default)]
+    pub script_path: Option<String>,
+    #[serde(default)]
+    pub timeout: Option<u64>,
     #[serde(default)]
     pub timeout_ms: Option<u64>,
 }
@@ -83,12 +144,26 @@ pub enum ScriptType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HttpAction {
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
     pub method: HttpMethod,
     pub url: String,
     #[serde(default)]
     pub headers: HashMap<String, String>,
     #[serde(default)]
-    pub body: Option<String>,
+    pub body_type: Option<String>,
+    #[serde(default)]
+    pub body: Option<serde_json::Value>,
+    #[serde(default)]
+    pub timeout: Option<u64>,
     #[serde(default)]
     pub timeout_ms: Option<u64>,
 }
@@ -119,6 +194,16 @@ impl std::fmt::Display for HttpMethod {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemAction {
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
     pub action: SystemActionType,
 }
 
@@ -154,7 +239,19 @@ pub enum SystemActionType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextAction {
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
     pub text: String,
+    #[serde(default)]
+    pub type_delay: Option<u64>,
     #[serde(default)]
     pub delay_ms: Option<u64>,
 }
@@ -163,6 +260,16 @@ pub struct TextAction {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileAction {
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
     #[serde(default)]
     pub profile_id: Option<String>,
     #[serde(default)]
@@ -173,36 +280,100 @@ pub struct ProfileAction {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HomeAssistantAction {
-    pub action_type: HomeAssistantActionType,
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
+    /// Operation type (frontend uses "operation")
+    #[serde(alias = "actionType")]
+    pub operation: HomeAssistantOperationType,
     pub entity_id: String,
+    #[serde(default)]
+    pub brightness: Option<u8>,
+    #[serde(default)]
+    pub custom_service: Option<HomeAssistantCustomService>,
+    // Legacy fields
     #[serde(default)]
     pub service: Option<String>,
     #[serde(default)]
     pub service_data: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+/// Custom service call definition for Home Assistant
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum HomeAssistantActionType {
-    CallService,
+pub struct HomeAssistantCustomService {
+    pub domain: String,
+    pub service: String,
+    #[serde(default)]
+    pub data: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum HomeAssistantOperationType {
     Toggle,
     TurnOn,
     TurnOff,
+    SetBrightness,
+    RunScript,
+    TriggerAutomation,
+    Custom,
+    // Legacy support
+    #[serde(alias = "callService")]
+    CallService,
+    #[serde(alias = "fireEvent")]
     FireEvent,
 }
+
+// Legacy alias
+pub type HomeAssistantActionType = HomeAssistantOperationType;
 
 /// Node-RED action configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeRedAction {
-    pub flow_id: String,
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
+    /// Operation type
+    pub operation: NodeRedOperationType,
+    /// Webhook endpoint path
+    pub endpoint: String,
+    /// Event name for send_event operation
+    #[serde(default)]
+    pub event_name: Option<String>,
     #[serde(default)]
     pub payload: Option<serde_json::Value>,
+    // Legacy field
+    #[serde(default)]
+    pub flow_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum NodeRedOperationType {
+    TriggerFlow,
+    SendEvent,
+    Custom,
 }
 
 /// Unified action configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum Action {
     Keyboard(KeyboardAction),
     Media(MediaAction),
@@ -212,7 +383,9 @@ pub enum Action {
     System(SystemAction),
     Text(TextAction),
     Profile(ProfileAction),
+    #[serde(alias = "homeAssistant")]
     HomeAssistant(HomeAssistantAction),
+    #[serde(alias = "nodeRed")]
     NodeRed(NodeRedAction),
 }
 

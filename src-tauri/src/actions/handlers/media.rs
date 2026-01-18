@@ -30,11 +30,11 @@ fn execute_windows(config: &MediaAction) -> ActionResult {
     // Map media action to virtual key code
     let vk = match config.action {
         MediaActionType::PlayPause => VK_MEDIA_PLAY_PAUSE,
-        MediaActionType::NextTrack => VK_MEDIA_NEXT_TRACK,
-        MediaActionType::PreviousTrack => VK_MEDIA_PREV_TRACK,
+        MediaActionType::Next => VK_MEDIA_NEXT_TRACK,
+        MediaActionType::Previous => VK_MEDIA_PREV_TRACK,
         MediaActionType::VolumeUp => VK_VOLUME_UP,
         MediaActionType::VolumeDown => VK_VOLUME_DOWN,
-        MediaActionType::VolumeMute => VK_VOLUME_MUTE,
+        MediaActionType::Mute => VK_VOLUME_MUTE,
         MediaActionType::Stop => VK_MEDIA_STOP,
     };
 

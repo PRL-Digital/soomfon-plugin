@@ -140,7 +140,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
   const isEncoderPressed = (index: number) =>
     pressedButtons.has(`encoder-press-${index}`);
 
-  const isDisconnected = connectionState !== ConnectionState.CONNECTED;
+  const isDisconnected = connectionState !== ConnectionState.CONNECTED && connectionState !== ConnectionState.INITIALIZED;
 
   return (
     <div
@@ -149,43 +149,62 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
     >
       {/* Device frame */}
       <div className="device-frame">
-        {/* Top row: 3 LCD buttons */}
-        <div className="device-row device-row--lcd-top">
-          {Array.from({ length: 3 }, (_, i) => (
-            <LCDButton
-              key={`lcd-${i}`}
-              index={i}
-              isSelected={isSelected('lcd', i)}
-              isPressed={isButtonPressed(ButtonType.LCD, i)}
-              imageUrl={lcdImages[i]}
-              label={lcdLabels[i]}
-              onClick={() => handleSelect('lcd', i)}
-            />
-          ))}
-        </div>
+        {/* Main section: LCD buttons + main dial */}
+        <div className="device-main-section">
+          {/* Left column: LCD buttons (2 rows of 3) */}
+          <div className="device-lcd-section">
+            {/* Top row: 3 LCD buttons */}
+            <div className="device-row device-row--lcd">
+              {Array.from({ length: 3 }, (_, i) => (
+                <LCDButton
+                  key={`lcd-${i}`}
+                  index={i}
+                  isSelected={isSelected('lcd', i)}
+                  isPressed={isButtonPressed(ButtonType.LCD, i)}
+                  imageUrl={lcdImages[i]}
+                  label={lcdLabels[i]}
+                  onClick={() => handleSelect('lcd', i)}
+                />
+              ))}
+            </div>
 
-        {/* Middle row: 3 LCD buttons */}
-        <div className="device-row device-row--lcd-bottom">
-          {Array.from({ length: 3 }, (_, i) => (
-            <LCDButton
-              key={`lcd-${i + 3}`}
-              index={i + 3}
-              isSelected={isSelected('lcd', i + 3)}
-              isPressed={isButtonPressed(ButtonType.LCD, i + 3)}
-              imageUrl={lcdImages[i + 3]}
-              label={lcdLabels[i + 3]}
-              onClick={() => handleSelect('lcd', i + 3)}
+            {/* Bottom row: 3 LCD buttons */}
+            <div className="device-row device-row--lcd">
+              {Array.from({ length: 3 }, (_, i) => (
+                <LCDButton
+                  key={`lcd-${i + 3}`}
+                  index={i + 3}
+                  isSelected={isSelected('lcd', i + 3)}
+                  isPressed={isButtonPressed(ButtonType.LCD, i + 3)}
+                  imageUrl={lcdImages[i + 3]}
+                  label={lcdLabels[i + 3]}
+                  onClick={() => handleSelect('lcd', i + 3)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Right column: Main dial (encoder 0) */}
+          <div className="device-main-dial">
+            <RotaryKnob
+              index={0}
+              size="large"
+              isSelected={isSelected('encoder', 0)}
+              isPressed={isEncoderPressed(0)}
+              rotationAngle={encoderRotations[0]}
+              label={encoderLabels[0]}
+              onClick={() => handleSelect('encoder', 0)}
             />
-          ))}
+          </div>
         </div>
 
         {/* Separator */}
         <div className="device-separator" />
 
-        {/* Bottom section: Normal buttons and encoders */}
-        <div className="device-row device-row--controls">
-          {/* Normal buttons */}
-          <div className="device-controls-group">
+        {/* Bottom section: Workspace buttons + side dials */}
+        <div className="device-controls-section">
+          {/* Left: Workspace toggle buttons */}
+          <div className="device-workspace-buttons">
             {Array.from({ length: NORMAL_BUTTON_COUNT }, (_, i) => (
               <NormalButton
                 key={`normal-${i}`}
@@ -198,19 +217,24 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
             ))}
           </div>
 
-          {/* Rotary encoders */}
-          <div className="device-controls-group">
-            {Array.from({ length: ENCODER_COUNT }, (_, i) => (
-              <RotaryKnob
-                key={`encoder-${i}`}
-                index={i}
-                isSelected={isSelected('encoder', i)}
-                isPressed={isEncoderPressed(i)}
-                rotationAngle={encoderRotations[i]}
-                label={encoderLabels[i]}
-                onClick={() => handleSelect('encoder', i)}
-              />
-            ))}
+          {/* Right: Side dials (encoders 1 and 2) */}
+          <div className="device-side-dials">
+            <RotaryKnob
+              index={1}
+              isSelected={isSelected('encoder', 1)}
+              isPressed={isEncoderPressed(1)}
+              rotationAngle={encoderRotations[1]}
+              label={encoderLabels[1]}
+              onClick={() => handleSelect('encoder', 1)}
+            />
+            <RotaryKnob
+              index={2}
+              isSelected={isSelected('encoder', 2)}
+              isPressed={isEncoderPressed(2)}
+              rotationAngle={encoderRotations[2]}
+              label={encoderLabels[2]}
+              onClick={() => handleSelect('encoder', 2)}
+            />
           </div>
         </div>
       </div>

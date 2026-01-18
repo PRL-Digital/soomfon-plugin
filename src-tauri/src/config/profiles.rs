@@ -176,27 +176,28 @@ mod tests {
         let mut profile = Profile::new(name.to_string());
 
         // Add an action to button 0
-        let mut button0 = ButtonConfig::default();
-        button0.label = Some("Volume".to_string());
-        button0.actions.insert(
-            crate::config::types::ButtonTrigger::Press,
-            Action::Media(MediaAction {
+        profile.buttons = vec![ButtonConfig {
+            index: 0,
+            label: Some("Volume".to_string()),
+            image: None,
+            action: Some(Action::Media(MediaAction {
                 action: MediaActionType::VolumeUp,
-            }),
-        );
-        profile.buttons[0] = button0;
+            })),
+            long_press_action: None,
+        }];
 
         // Add an action to encoder 0
-        let mut encoder0 = EncoderConfig::default();
-        encoder0.label = Some("Brightness".to_string());
-        encoder0.actions.insert(
-            crate::config::types::EncoderTrigger::RotateCW,
-            Action::Keyboard(KeyboardAction {
+        profile.encoders = vec![EncoderConfig {
+            index: 0,
+            label: Some("Brightness".to_string()),
+            press_action: None,
+            long_press_action: None,
+            clockwise_action: Some(Action::Keyboard(KeyboardAction {
                 key: "Up".to_string(),
                 modifiers: vec![],
-            }),
-        );
-        profile.encoders[0] = encoder0;
+            })),
+            counter_clockwise_action: None,
+        }];
 
         profile
     }
@@ -368,8 +369,9 @@ mod tests {
 
         let profile = manager.create("Button Profile".to_string()).unwrap();
 
-        assert_eq!(profile.buttons.len(), 6);
-        assert_eq!(profile.encoders.len(), 2);
+        // New profiles start with empty sparse arrays
+        assert!(profile.buttons.is_empty());
+        assert!(profile.encoders.is_empty());
     }
 
     #[test]
@@ -430,8 +432,13 @@ mod tests {
 
         let profile = manager.create("Profile".to_string()).unwrap();
 
-        let mut new_buttons = vec![ButtonConfig::default(); 6];
-        new_buttons[0].label = Some("Custom Label".to_string());
+        let new_buttons = vec![ButtonConfig {
+            index: 0,
+            label: Some("Custom Label".to_string()),
+            image: None,
+            action: None,
+            long_press_action: None,
+        }];
 
         let update = ProfileUpdate {
             name: None,
@@ -442,6 +449,7 @@ mod tests {
 
         let updated = manager.update(&profile.id, update).unwrap();
 
+        assert_eq!(updated.buttons.len(), 1);
         assert_eq!(updated.buttons[0].label, Some("Custom Label".to_string()));
     }
 
@@ -452,8 +460,14 @@ mod tests {
 
         let profile = manager.create("Profile".to_string()).unwrap();
 
-        let mut new_encoders = vec![EncoderConfig::default(); 2];
-        new_encoders[0].label = Some("Volume Knob".to_string());
+        let new_encoders = vec![EncoderConfig {
+            index: 0,
+            label: Some("Volume Knob".to_string()),
+            press_action: None,
+            long_press_action: None,
+            clockwise_action: None,
+            counter_clockwise_action: None,
+        }];
 
         let update = ProfileUpdate {
             name: None,
@@ -464,6 +478,7 @@ mod tests {
 
         let updated = manager.update(&profile.id, update).unwrap();
 
+        assert_eq!(updated.encoders.len(), 1);
         assert_eq!(updated.encoders[0].label, Some("Volume Knob".to_string()));
     }
 
@@ -693,8 +708,13 @@ mod tests {
         let profile = manager.create("Complete Profile".to_string()).unwrap();
 
         // Update with some data
-        let mut buttons = vec![ButtonConfig::default(); 6];
-        buttons[0].label = Some("Test Button".to_string());
+        let buttons = vec![ButtonConfig {
+            index: 0,
+            label: Some("Test Button".to_string()),
+            image: None,
+            action: None,
+            long_press_action: None,
+        }];
 
         let update = ProfileUpdate {
             name: None,
@@ -730,8 +750,13 @@ mod tests {
         // Create a profile with data
         let original = manager.create("Roundtrip Test".to_string()).unwrap();
 
-        let mut buttons = vec![ButtonConfig::default(); 6];
-        buttons[0].label = Some("Roundtrip Button".to_string());
+        let buttons = vec![ButtonConfig {
+            index: 0,
+            label: Some("Roundtrip Button".to_string()),
+            image: None,
+            action: None,
+            long_press_action: None,
+        }];
 
         let update = ProfileUpdate {
             name: None,
@@ -751,6 +776,7 @@ mod tests {
         assert_ne!(imported.id, original.id);
         assert_eq!(imported.name, "Roundtrip Test");
         assert_eq!(imported.description, Some("Roundtrip description".to_string()));
+        assert_eq!(imported.buttons.len(), 1);
         assert_eq!(imported.buttons[0].label, Some("Roundtrip Button".to_string()));
     }
 

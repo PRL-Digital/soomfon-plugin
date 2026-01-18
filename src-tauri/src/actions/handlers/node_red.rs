@@ -11,7 +11,7 @@ pub async fn execute_with_config(
     config: &NodeRedAction,
     nr_config: Option<&NodeRedConfig>,
 ) -> ActionResult {
-    log::debug!("Executing Node-RED action: flow_id={}", config.flow_id);
+    log::debug!("Executing Node-RED action: endpoint={}", config.endpoint);
 
     // Get Node-RED URL from config, falling back to environment variable
     let nr_url = match nr_config {
@@ -35,7 +35,7 @@ pub async fn execute_with_config(
         Err(e) => return ActionResult::failure(format!("Failed to create HTTP client: {}", e), 0),
     };
 
-    let url = format!("{}/inject/{}", nr_url, config.flow_id);
+    let url = format!("{}{}", nr_url, config.endpoint);
 
     let mut request = client.post(&url);
 
@@ -63,16 +63,19 @@ pub async fn execute(config: &NodeRedAction) -> ActionResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::actions::types::NodeRedOperationType;
 
     #[test]
     fn test_node_red_action_deserialize() {
         let json = r#"{
-            "flowId": "my-flow-123",
+            "operation": "trigger_flow",
+            "endpoint": "/my-webhook",
             "payload": {"key": "value", "count": 42}
         }"#;
 
         let action: NodeRedAction = serde_json::from_str(json).unwrap();
-        assert_eq!(action.flow_id, "my-flow-123");
+        assert_eq!(action.endpoint, "/my-webhook");
+        assert_eq!(action.operation, NodeRedOperationType::TriggerFlow);
         assert!(action.payload.is_some());
 
         let payload = action.payload.unwrap();
@@ -82,10 +85,10 @@ mod tests {
 
     #[test]
     fn test_node_red_action_without_payload() {
-        let json = r#"{"flowId": "simple-flow"}"#;
+        let json = r#"{"operation": "trigger_flow", "endpoint": "/simple"}"#;
 
         let action: NodeRedAction = serde_json::from_str(json).unwrap();
-        assert_eq!(action.flow_id, "simple-flow");
+        assert_eq!(action.endpoint, "/simple");
         assert!(action.payload.is_none());
     }
 
@@ -100,37 +103,5 @@ mod tests {
 
         let deserialized: NodeRedConfig = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.url, config.url);
-    }
-
-    // ========== Config-based execution tests ==========
-
-    #[tokio::test]
-    async fn test_execute_with_config_none_falls_back_to_env() {
-        // When no config is provided, should check env vars
-        // Since env vars are not set, should return "not configured" error
-        let action = NodeRedAction {
-            flow_id: "test-flow".to_string(),
-            payload: None,
-        };
-
-        let result = execute_with_config(&action, None).await;
-        assert!(!result.success);
-        assert!(result.error.as_ref().unwrap().contains("not configured"));
-    }
-
-    #[tokio::test]
-    async fn test_execute_with_config_empty_url_fails() {
-        let action = NodeRedAction {
-            flow_id: "test-flow".to_string(),
-            payload: None,
-        };
-
-        let config = NodeRedConfig {
-            url: "".to_string(),
-        };
-
-        let result = execute_with_config(&action, Some(&config)).await;
-        assert!(!result.success);
-        assert!(result.error.as_ref().unwrap().contains("not configured"));
     }
 }

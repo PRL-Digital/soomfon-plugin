@@ -13,6 +13,8 @@ export interface RotaryKnobProps {
   label?: string;
   /** Click handler for selection */
   onClick?: () => void;
+  /** Size variant: 'default' for side encoders, 'large' for main encoder */
+  size?: 'default' | 'large';
 }
 
 export const RotaryKnob: React.FC<RotaryKnobProps> = ({
@@ -22,12 +24,15 @@ export const RotaryKnob: React.FC<RotaryKnobProps> = ({
   rotationAngle = 0,
   label,
   onClick,
+  size = 'default',
 }) => {
+  const sizeClass = size === 'large' ? 'rotary-knob--large' : '';
+
   return (
     <button
       type="button"
       data-testid={`encoder-${index}`}
-      className={`rotary-knob ${isSelected ? 'rotary-knob--selected' : ''} ${isPressed ? 'rotary-knob--pressed' : ''}`}
+      className={`rotary-knob ${sizeClass} ${isSelected ? 'rotary-knob--selected' : ''} ${isPressed ? 'rotary-knob--pressed' : ''}`}
       onClick={onClick}
       aria-label={`Rotary Encoder ${index + 1}`}
       aria-pressed={isPressed}

@@ -38,7 +38,9 @@ pub async fn execute(config: &HttpAction) -> ActionResult {
 
     // Add body if present
     if let Some(ref body) = config.body {
-        request = request.body(body.clone());
+        // Convert JSON value to string for the request body
+        let body_str = serde_json::to_string(body).unwrap_or_default();
+        request = request.body(body_str);
     }
 
     match request.send().await {

@@ -50,20 +50,43 @@ export function useDevice(): UseDeviceReturn {
   const [lastButtonEvent, setLastButtonEvent] = useState<ButtonEvent | null>(null);
   const [lastEncoderEvent, setLastEncoderEvent] = useState<EncoderEvent | null>(null);
 
-  // Fetch initial status
+  // Fetch initial status and auto-connect
   useEffect(() => {
-    const fetchStatus = async () => {
+    const initializeDevice = async () => {
       try {
-        if (window.electronAPI?.device) {
-          const deviceStatus = await window.electronAPI.device.getStatus();
-          setStatus(deviceStatus);
+        if (!window.electronAPI?.device) return;
+
+        // Get current status
+        const deviceStatus = await window.electronAPI.device.getStatus();
+        setStatus(deviceStatus);
+
+        // Auto-connect if not already connected
+        if (!deviceStatus.isConnected) {
+          log.info('[RENDERER] Auto-connecting to device...');
+          setIsConnecting(true);
+          setStatus((prev) => ({
+            ...prev,
+            connectionState: ConnectionState.CONNECTING,
+          }));
+          try {
+            await window.electronAPI.device.connect();
+            // Status will be updated by the connected event
+          } catch (connectErr) {
+            log.warn('[RENDERER] Auto-connect failed:', connectErr);
+            setIsConnecting(false);
+            setStatus((prev) => ({
+              ...prev,
+              connectionState: ConnectionState.DISCONNECTED,
+            }));
+            // Don't set error for auto-connect failure - user can manually retry
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to get device status');
       }
     };
 
-    fetchStatus();
+    initializeDevice();
   }, []);
 
   // Subscribe to device events

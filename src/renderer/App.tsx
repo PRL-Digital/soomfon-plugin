@@ -165,7 +165,7 @@ const DeviceTab: React.FC<{
             <span className="text-text-muted text-sm">Connection</span>
             <div
               className={`status-badge ${
-                device.status.connectionState === ConnectionState.CONNECTED
+                device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
                   ? 'status-badge--connected'
                   : device.status.connectionState === ConnectionState.CONNECTING
                     ? 'status-badge--connecting'
@@ -176,7 +176,7 @@ const DeviceTab: React.FC<{
             >
               <span
                 className={`status-dot ${
-                  device.status.connectionState === ConnectionState.CONNECTED
+                  device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
                     ? 'status-dot--connected'
                     : device.status.connectionState === ConnectionState.CONNECTING
                       ? 'status-dot--connecting'
@@ -185,7 +185,7 @@ const DeviceTab: React.FC<{
                         : 'status-dot--disconnected'
                 }`}
               />
-              {device.status.connectionState === ConnectionState.CONNECTED
+              {device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
                 ? 'Connected'
                 : device.status.connectionState === ConnectionState.CONNECTING
                   ? 'Connecting...'
@@ -761,7 +761,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-2" data-testid="connection-status">
             <span
               className={`status-dot ${
-                device.status.connectionState === ConnectionState.CONNECTED
+                device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
                   ? 'status-dot--connected'
                   : device.status.connectionState === ConnectionState.CONNECTING
                     ? 'status-dot--connecting'
@@ -771,7 +771,7 @@ const App: React.FC = () => {
               }`}
             />
             <span className="text-sm text-text-secondary">
-              {device.status.connectionState === ConnectionState.CONNECTED
+              {device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
                 ? 'Connected'
                 : device.status.connectionState === ConnectionState.CONNECTING
                   ? 'Connecting...'

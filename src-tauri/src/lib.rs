@@ -20,9 +20,9 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            // Initialize logging
+            // Initialize logging (debug level to see device communication)
             env_logger::Builder::from_env(
-                env_logger::Env::default().default_filter_or("info")
+                env_logger::Env::default().default_filter_or("debug")
             ).init();
 
             log::info!("SOOMFON Controller starting...");

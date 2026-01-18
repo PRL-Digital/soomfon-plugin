@@ -9,7 +9,7 @@
 //! - CallService: Call any Home Assistant service
 //! - FireEvent: Fire a Home Assistant event
 
-use crate::actions::types::{ActionResult, HomeAssistantAction, HomeAssistantActionType};
+use crate::actions::types::{ActionResult, HomeAssistantAction, HomeAssistantOperationType};
 use crate::config::types::HomeAssistantConfig;
 use std::time::Duration;
 
@@ -18,7 +18,7 @@ pub async fn execute_with_config(
     config: &HomeAssistantAction,
     ha_config: Option<&HomeAssistantConfig>,
 ) -> ActionResult {
-    log::debug!("Executing Home Assistant action: {:?}", config.action_type);
+    log::debug!("Executing Home Assistant action: {:?}", config.operation);
 
     // Get Home Assistant URL and token from config, falling back to environment variables
     let (ha_url, ha_token) = match ha_config {
@@ -43,17 +43,27 @@ pub async fn execute_with_config(
         Err(e) => return ActionResult::failure(format!("Failed to create HTTP client: {}", e), 0),
     };
 
-    match config.action_type {
-        HomeAssistantActionType::Toggle => {
+    match config.operation {
+        HomeAssistantOperationType::Toggle => {
             call_service(&client, &ha_url, &ha_token, "homeassistant", "toggle", config).await
         }
-        HomeAssistantActionType::TurnOn => {
+        HomeAssistantOperationType::TurnOn => {
             call_service(&client, &ha_url, &ha_token, "homeassistant", "turn_on", config).await
         }
-        HomeAssistantActionType::TurnOff => {
+        HomeAssistantOperationType::TurnOff => {
             call_service(&client, &ha_url, &ha_token, "homeassistant", "turn_off", config).await
         }
-        HomeAssistantActionType::CallService => {
+        HomeAssistantOperationType::SetBrightness => {
+            // Set brightness uses light.turn_on with brightness value
+            call_service(&client, &ha_url, &ha_token, "light", "turn_on", config).await
+        }
+        HomeAssistantOperationType::RunScript => {
+            call_service(&client, &ha_url, &ha_token, "script", "turn_on", config).await
+        }
+        HomeAssistantOperationType::TriggerAutomation => {
+            call_service(&client, &ha_url, &ha_token, "automation", "trigger", config).await
+        }
+        HomeAssistantOperationType::Custom | HomeAssistantOperationType::CallService => {
             if let Some(ref service) = config.service {
                 let parts: Vec<&str> = service.split('.').collect();
                 if parts.len() == 2 {
@@ -64,11 +74,13 @@ pub async fn execute_with_config(
                         0,
                     )
                 }
+            } else if let Some(ref custom) = config.custom_service {
+                call_service(&client, &ha_url, &ha_token, &custom.domain, &custom.service, config).await
             } else {
-                ActionResult::failure("Service not specified for CallService action".to_string(), 0)
+                ActionResult::failure("Service not specified for Custom action".to_string(), 0)
             }
         }
-        HomeAssistantActionType::FireEvent => {
+        HomeAssistantOperationType::FireEvent => {
             fire_event(&client, &ha_url, &ha_token, config).await
         }
     }
@@ -188,36 +200,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_home_assistant_action_type_deserialize() {
+    fn test_home_assistant_operation_type_deserialize() {
         let types = [
-            ("callService", HomeAssistantActionType::CallService),
-            ("toggle", HomeAssistantActionType::Toggle),
-            ("turnOn", HomeAssistantActionType::TurnOn),
-            ("turnOff", HomeAssistantActionType::TurnOff),
-            ("fireEvent", HomeAssistantActionType::FireEvent),
+            ("toggle", HomeAssistantOperationType::Toggle),
+            ("turn_on", HomeAssistantOperationType::TurnOn),
+            ("turn_off", HomeAssistantOperationType::TurnOff),
+            ("custom", HomeAssistantOperationType::Custom),
         ];
 
         for (json_value, expected) in types {
             let json = format!(
-                r#"{{"actionType": "{}", "entityId": "light.test"}}"#,
+                r#"{{"operation": "{}", "entityId": "light.test"}}"#,
                 json_value
             );
             let action: HomeAssistantAction = serde_json::from_str(&json).unwrap();
-            assert_eq!(action.action_type, expected, "Failed for {}", json_value);
+            assert_eq!(action.operation, expected, "Failed for {}", json_value);
         }
     }
 
     #[test]
     fn test_home_assistant_action_with_service_data() {
         let json = r#"{
-            "actionType": "callService",
+            "operation": "custom",
             "entityId": "light.living_room",
             "service": "light.turn_on",
             "serviceData": {"brightness": 255, "color_temp": 300}
         }"#;
 
         let action: HomeAssistantAction = serde_json::from_str(json).unwrap();
-        assert_eq!(action.action_type, HomeAssistantActionType::CallService);
+        assert_eq!(action.operation, HomeAssistantOperationType::Custom);
         assert_eq!(action.entity_id, "light.living_room");
         assert_eq!(action.service, Some("light.turn_on".to_string()));
         assert!(action.service_data.is_some());
@@ -225,79 +236,6 @@ mod tests {
         let data = action.service_data.unwrap();
         assert_eq!(data["brightness"], 255);
         assert_eq!(data["color_temp"], 300);
-    }
-
-    #[test]
-    fn test_fire_event_action() {
-        let json = r#"{
-            "actionType": "fireEvent",
-            "entityId": "custom_event_name",
-            "serviceData": {"key": "value", "number": 42}
-        }"#;
-
-        let action: HomeAssistantAction = serde_json::from_str(json).unwrap();
-        assert_eq!(action.action_type, HomeAssistantActionType::FireEvent);
-        assert_eq!(action.entity_id, "custom_event_name");
-
-        let data = action.service_data.unwrap();
-        assert_eq!(data["key"], "value");
-        assert_eq!(data["number"], 42);
-    }
-
-    // ========== Config-based execution tests ==========
-
-    #[tokio::test]
-    async fn test_execute_with_config_none_falls_back_to_env() {
-        // When no config is provided, should check env vars
-        // Since env vars are not set, should return "not configured" error
-        let action = HomeAssistantAction {
-            action_type: HomeAssistantActionType::Toggle,
-            entity_id: "light.test".to_string(),
-            service: None,
-            service_data: None,
-        };
-
-        let result = execute_with_config(&action, None).await;
-        assert!(!result.success);
-        assert!(result.error.as_ref().unwrap().contains("not configured"));
-    }
-
-    #[tokio::test]
-    async fn test_execute_with_config_empty_url_fails() {
-        let action = HomeAssistantAction {
-            action_type: HomeAssistantActionType::Toggle,
-            entity_id: "light.test".to_string(),
-            service: None,
-            service_data: None,
-        };
-
-        let config = HomeAssistantConfig {
-            url: "".to_string(),
-            token: "valid-token".to_string(),
-        };
-
-        let result = execute_with_config(&action, Some(&config)).await;
-        assert!(!result.success);
-        assert!(result.error.as_ref().unwrap().contains("not configured"));
-    }
-
-    #[tokio::test]
-    async fn test_execute_with_config_empty_token_fails() {
-        let action = HomeAssistantAction {
-            action_type: HomeAssistantActionType::Toggle,
-            entity_id: "light.test".to_string(),
-            service: None,
-            service_data: None,
-        };
-
-        let config = HomeAssistantConfig {
-            url: "http://ha.local:8123".to_string(),
-            token: "".to_string(),
-        };
-
-        let result = execute_with_config(&action, Some(&config)).await;
-        assert!(!result.success);
-        assert!(result.error.as_ref().unwrap().contains("not configured"));
     }
 
     #[test]

@@ -23,8 +23,6 @@ pub async fn execute(config: &TextAction) -> ActionResult {
 
 #[cfg(target_os = "windows")]
 async fn execute_windows(config: &TextAction) -> ActionResult {
-    use windows::Win32::UI::Input::KeyboardAndMouse::*;
-
     let delay_ms = config.delay_ms.unwrap_or(0);
 
     // Type each character
@@ -64,7 +62,7 @@ fn send_unicode_char(c: char) -> Result<(), String> {
     let mut utf16_buf = [0u16; 2];
     let utf16 = c.encode_utf16(&mut utf16_buf);
 
-    for &code_unit in utf16 {
+    for code_unit in utf16.iter().copied() {
         // Key down
         inputs.push(INPUT {
             r#type: INPUT_KEYBOARD,

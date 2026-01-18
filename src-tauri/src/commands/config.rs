@@ -141,11 +141,11 @@ pub fn create_profile(
 pub fn update_profile(
     app: AppHandle,
     id: String,
-    update: ProfileUpdate,
+    updates: ProfileUpdate,
     manager: State<Arc<Mutex<ProfileManager>>>,
 ) -> Result<Profile, String> {
     let mut manager = manager.lock();
-    let profile = manager.update(&id, update)?;
+    let profile = manager.update(&id, updates)?;
 
     // Emit profile changed event
     let event = ProfileChangeEvent {

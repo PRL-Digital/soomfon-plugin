@@ -3,7 +3,6 @@
 //! Types for application settings, profiles, and button/encoder configurations.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use crate::actions::types::Action;
 
 /// Application settings
@@ -87,59 +86,57 @@ impl Profile {
             id: uuid::Uuid::new_v4().to_string(),
             name,
             description: None,
-            buttons: vec![ButtonConfig::default(); 6],
-            encoders: vec![EncoderConfig::default(); 2],
+            buttons: vec![], // Sparse array - only contains buttons with configurations
+            encoders: vec![], // Sparse array - only contains encoders with configurations
             created_at: now,
             updated_at: now,
         }
     }
 }
 
-/// Button trigger types
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum ButtonTrigger {
-    Press,
-    Release,
-    LongPress,
-}
-
-/// Encoder trigger types
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum EncoderTrigger {
-    RotateCW,
-    RotateCCW,
-    Press,
-    Release,
-    LongPress,
-}
-
 /// Configuration for a single button
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ButtonConfig {
+    /// Button index (0-based)
+    #[serde(default)]
+    pub index: usize,
     /// Button label
     #[serde(default)]
     pub label: Option<String>,
     /// Button image (base64 encoded)
     #[serde(default)]
     pub image: Option<String>,
-    /// Actions mapped to triggers
+    /// Action executed on button press
     #[serde(default)]
-    pub actions: HashMap<ButtonTrigger, Action>,
+    pub action: Option<Action>,
+    /// Action executed on long press
+    #[serde(default)]
+    pub long_press_action: Option<Action>,
 }
 
 /// Configuration for a single encoder
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EncoderConfig {
+    /// Encoder index (0-based)
+    #[serde(default)]
+    pub index: usize,
     /// Encoder label
     #[serde(default)]
     pub label: Option<String>,
-    /// Actions mapped to triggers
+    /// Action executed on encoder press
     #[serde(default)]
-    pub actions: HashMap<EncoderTrigger, Action>,
+    pub press_action: Option<Action>,
+    /// Action executed on long press
+    #[serde(default)]
+    pub long_press_action: Option<Action>,
+    /// Action executed on clockwise rotation
+    #[serde(default)]
+    pub clockwise_action: Option<Action>,
+    /// Action executed on counter-clockwise rotation
+    #[serde(default)]
+    pub counter_clockwise_action: Option<Action>,
 }
 
 /// Profile update request
