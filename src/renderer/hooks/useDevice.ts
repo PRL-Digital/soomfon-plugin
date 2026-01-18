@@ -5,8 +5,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { DeviceStatus } from '@shared/types/ipc';
-import type { ButtonEvent, EncoderEvent } from '@shared/types/device';
-import { ConnectionState } from '@shared/types/device';
+import type { ButtonEvent, EncoderEvent, ButtonEventType } from '@shared/types/device';
+import { ConnectionState, SHIFT_BUTTON_INDEX } from '@shared/types/device';
 import { createLogger } from '@shared/utils/logger';
 
 const log = createLogger('RENDERER');
@@ -32,6 +32,8 @@ export interface UseDeviceReturn {
   lastButtonEvent: ButtonEvent | null;
   /** Latest encoder event */
   lastEncoderEvent: EncoderEvent | null;
+  /** Whether shift button is currently held */
+  isShiftActive: boolean;
 }
 
 const initialStatus: DeviceStatus = {
@@ -49,6 +51,7 @@ export function useDevice(): UseDeviceReturn {
   const [error, setError] = useState<string | null>(null);
   const [lastButtonEvent, setLastButtonEvent] = useState<ButtonEvent | null>(null);
   const [lastEncoderEvent, setLastEncoderEvent] = useState<EncoderEvent | null>(null);
+  const [isShiftActive, setIsShiftActive] = useState(false);
 
   // Fetch initial status and auto-connect
   useEffect(() => {
@@ -118,15 +121,23 @@ export function useDevice(): UseDeviceReturn {
       setIsConnecting(false);
     });
 
-    // Button events
+    // Button events - track shift state when shift button is pressed/released
     const unsubButtonPress = device.onButtonPress((event) => {
       log.debug('[RENDERER] Button press received:', event);
       setLastButtonEvent(event);
+      // Track shift button state
+      if (event.buttonIndex === SHIFT_BUTTON_INDEX) {
+        setIsShiftActive(true);
+      }
     });
 
     const unsubButtonRelease = device.onButtonRelease((event) => {
       log.debug('[RENDERER] Button release received:', event);
       setLastButtonEvent(event);
+      // Track shift button state
+      if (event.buttonIndex === SHIFT_BUTTON_INDEX) {
+        setIsShiftActive(false);
+      }
     });
 
     // Encoder events
@@ -227,6 +238,7 @@ export function useDevice(): UseDeviceReturn {
     setButtonImage,
     lastButtonEvent,
     lastEncoderEvent,
+    isShiftActive,
   };
 }
 

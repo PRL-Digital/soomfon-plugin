@@ -19,7 +19,9 @@ import type {
 } from '@shared/types/actions';
 
 /** Encoder action type identifiers */
-export type EncoderActionType = 'press' | 'longPress' | 'rotateClockwise' | 'rotateCounterClockwise';
+export type EncoderActionType =
+  | 'press' | 'longPress' | 'rotateClockwise' | 'rotateCounterClockwise'
+  | 'shiftPress' | 'shiftLongPress' | 'shiftRotateClockwise' | 'shiftRotateCounterClockwise';
 
 /** Configuration for a single encoder action */
 export interface EncoderActionConfig {
@@ -28,46 +30,87 @@ export interface EncoderActionConfig {
   action: Partial<Action>;
 }
 
-/** Full encoder configuration with all 4 actions */
+/** Full encoder configuration with all 8 actions (4 normal + 4 shift) */
 export interface EncoderConfig {
   press: EncoderActionConfig;
   longPress: EncoderActionConfig;
   rotateClockwise: EncoderActionConfig;
   rotateCounterClockwise: EncoderActionConfig;
+  shiftPress: EncoderActionConfig;
+  shiftLongPress: EncoderActionConfig;
+  shiftRotateClockwise: EncoderActionConfig;
+  shiftRotateCounterClockwise: EncoderActionConfig;
 }
 
-/** Section metadata */
+/** Section group - either 'normal' or 'shift' */
+type SectionGroup = 'normal' | 'shift';
+
 interface SectionInfo {
   id: EncoderActionType;
   title: string;
   description: string;
   icon: string;
+  group: SectionGroup;
 }
 
 const SECTIONS: SectionInfo[] = [
+  // Normal actions
   {
     id: 'press',
-    title: 'Press Action',
-    description: 'Triggered on short press',
+    title: 'Press',
+    description: 'Short press',
     icon: '👆',
+    group: 'normal',
   },
   {
     id: 'longPress',
-    title: 'Long Press Action',
-    description: 'Triggered when held for 500ms+',
+    title: 'Long Press',
+    description: 'Hold 500ms+',
     icon: '✋',
+    group: 'normal',
   },
   {
     id: 'rotateClockwise',
-    title: 'Clockwise Rotation',
-    description: 'Triggered when turned right',
+    title: 'Clockwise',
+    description: 'Turn right',
     icon: '↻',
+    group: 'normal',
   },
   {
     id: 'rotateCounterClockwise',
-    title: 'Counter-Clockwise Rotation',
-    description: 'Triggered when turned left',
+    title: 'Counter-CW',
+    description: 'Turn left',
     icon: '↺',
+    group: 'normal',
+  },
+  // Shift actions
+  {
+    id: 'shiftPress',
+    title: 'Shift + Press',
+    description: 'With shift held',
+    icon: '⇧👆',
+    group: 'shift',
+  },
+  {
+    id: 'shiftLongPress',
+    title: 'Shift + Long',
+    description: 'Shift + hold',
+    icon: '⇧✋',
+    group: 'shift',
+  },
+  {
+    id: 'shiftRotateClockwise',
+    title: 'Shift + CW',
+    description: 'Shift + right',
+    icon: '⇧↻',
+    group: 'shift',
+  },
+  {
+    id: 'shiftRotateCounterClockwise',
+    title: 'Shift + CCW',
+    description: 'Shift + left',
+    icon: '⇧↺',
+    group: 'shift',
   },
 ];
 
@@ -104,6 +147,10 @@ const createDefaultEncoderConfig = (): EncoderConfig => ({
   longPress: { enabled: true, actionType: null, action: {} },
   rotateClockwise: { enabled: true, actionType: null, action: {} },
   rotateCounterClockwise: { enabled: true, actionType: null, action: {} },
+  shiftPress: { enabled: true, actionType: null, action: {} },
+  shiftLongPress: { enabled: true, actionType: null, action: {} },
+  shiftRotateClockwise: { enabled: true, actionType: null, action: {} },
+  shiftRotateCounterClockwise: { enabled: true, actionType: null, action: {} },
 });
 
 export interface EncoderEditorProps {
@@ -290,6 +337,10 @@ export const EncoderEditor: React.FC<EncoderEditorProps> = ({
           longPress: currentConfig.longPress ?? { enabled: true, actionType: null, action: {} },
           rotateClockwise: currentConfig.rotateClockwise ?? { enabled: true, actionType: null, action: {} },
           rotateCounterClockwise: currentConfig.rotateCounterClockwise ?? { enabled: true, actionType: null, action: {} },
+          shiftPress: currentConfig.shiftPress ?? { enabled: true, actionType: null, action: {} },
+          shiftLongPress: currentConfig.shiftLongPress ?? { enabled: true, actionType: null, action: {} },
+          shiftRotateClockwise: currentConfig.shiftRotateClockwise ?? { enabled: true, actionType: null, action: {} },
+          shiftRotateCounterClockwise: currentConfig.shiftRotateCounterClockwise ?? { enabled: true, actionType: null, action: {} },
         });
       } else {
         setConfig(createDefaultEncoderConfig());
@@ -345,6 +396,10 @@ export const EncoderEditor: React.FC<EncoderEditorProps> = ({
         longPress: currentConfig.longPress ?? { enabled: true, actionType: null, action: {} },
         rotateClockwise: currentConfig.rotateClockwise ?? { enabled: true, actionType: null, action: {} },
         rotateCounterClockwise: currentConfig.rotateCounterClockwise ?? { enabled: true, actionType: null, action: {} },
+        shiftPress: currentConfig.shiftPress ?? { enabled: true, actionType: null, action: {} },
+        shiftLongPress: currentConfig.shiftLongPress ?? { enabled: true, actionType: null, action: {} },
+        shiftRotateClockwise: currentConfig.shiftRotateClockwise ?? { enabled: true, actionType: null, action: {} },
+        shiftRotateCounterClockwise: currentConfig.shiftRotateCounterClockwise ?? { enabled: true, actionType: null, action: {} },
       });
     } else {
       setConfig(createDefaultEncoderConfig());
@@ -360,6 +415,10 @@ export const EncoderEditor: React.FC<EncoderEditorProps> = ({
 
   const encoderName = `Encoder ${selection.index + 1}`;
 
+  // Group sections by type
+  const normalSections = SECTIONS.filter(s => s.group === 'normal');
+  const shiftSections = SECTIONS.filter(s => s.group === 'shift');
+
   return (
     <div className="encoder-editor" data-testid="encoder-editor">
       {/* Header */}
@@ -370,18 +429,37 @@ export const EncoderEditor: React.FC<EncoderEditorProps> = ({
         )}
       </div>
 
-      {/* Content - Four Action Sections */}
+      {/* Content - Eight Action Sections grouped by normal/shift */}
       <div className="encoder-editor__content">
-        {SECTIONS.map((section) => (
-          <ActionSection
-            key={section.id}
-            section={section}
-            config={config[section.id]}
-            isExpanded={expandedSections.has(section.id)}
-            onToggleExpand={() => handleToggleSection(section.id)}
-            onChange={(sectionConfig) => handleSectionChange(section.id, sectionConfig)}
-          />
-        ))}
+        {/* Normal Actions */}
+        <div className="encoder-section-group">
+          <div className="encoder-section-group__header">Normal Actions</div>
+          {normalSections.map((section) => (
+            <ActionSection
+              key={section.id}
+              section={section}
+              config={config[section.id]}
+              isExpanded={expandedSections.has(section.id)}
+              onToggleExpand={() => handleToggleSection(section.id)}
+              onChange={(sectionConfig) => handleSectionChange(section.id, sectionConfig)}
+            />
+          ))}
+        </div>
+
+        {/* Shift Actions */}
+        <div className="encoder-section-group encoder-section-group--shift">
+          <div className="encoder-section-group__header">Shift Actions</div>
+          {shiftSections.map((section) => (
+            <ActionSection
+              key={section.id}
+              section={section}
+              config={config[section.id]}
+              isExpanded={expandedSections.has(section.id)}
+              onToggleExpand={() => handleToggleSection(section.id)}
+              onChange={(sectionConfig) => handleSectionChange(section.id, sectionConfig)}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Footer with buttons */}

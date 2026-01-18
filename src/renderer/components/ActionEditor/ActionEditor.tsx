@@ -28,6 +28,28 @@ import type {
   NodeRedAction,
 } from '@shared/types/actions';
 
+/**
+ * Button trigger mode - determines which action field to edit
+ * 'press' = action, 'longPress' = longPressAction, 'shiftPress' = shiftAction, 'shiftLongPress' = shiftLongPressAction
+ */
+export type ButtonTriggerMode = 'press' | 'longPress' | 'shiftPress' | 'shiftLongPress';
+
+/** Trigger mode option for the selector */
+interface TriggerModeOption {
+  value: ButtonTriggerMode;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+/** Available trigger modes for buttons */
+const TRIGGER_MODES: TriggerModeOption[] = [
+  { value: 'press', label: 'Press', description: 'Short press', icon: '👆' },
+  { value: 'longPress', label: 'Long Press', description: 'Hold 500ms+', icon: '✋' },
+  { value: 'shiftPress', label: 'Shift + Press', description: 'With shift held', icon: '⇧👆' },
+  { value: 'shiftLongPress', label: 'Shift + Long', description: 'Shift + hold', icon: '⇧✋' },
+];
+
 /** Get display name for selection type */
 const getSelectionName = (selection: Selection): string => {
   switch (selection.type) {
@@ -77,17 +99,25 @@ const createDefaultAction = (type: ActionType): Partial<Action> => {
   }
 };
 
+/** Actions for all trigger modes of a button */
+export interface ButtonActions {
+  action?: Partial<Action> | null;
+  longPressAction?: Partial<Action> | null;
+  shiftAction?: Partial<Action> | null;
+  shiftLongPressAction?: Partial<Action> | null;
+}
+
 export interface ActionEditorProps {
   /** Currently selected element */
   selection: Selection | null;
-  /** Current action configuration for the selection */
-  currentAction?: Partial<Action> | null;
+  /** All actions for the selected button (for all trigger modes) */
+  buttonActions?: ButtonActions;
   /** Current image URL for the selection (LCD buttons only) */
   currentImage?: string;
   /** Callback when action is saved */
-  onSave?: (action: Partial<Action>, imageUrl?: string) => void;
+  onSave?: (action: Partial<Action>, triggerMode: ButtonTriggerMode, imageUrl?: string) => void;
   /** Callback when action is cleared */
-  onClear?: () => void;
+  onClear?: (triggerMode: ButtonTriggerMode) => void;
   /** Callback when editing is cancelled */
   onCancel?: () => void;
   /** Whether a save operation is in progress (includes image upload) */
@@ -96,7 +126,7 @@ export interface ActionEditorProps {
 
 export const ActionEditor: React.FC<ActionEditorProps> = ({
   selection,
-  currentAction,
+  buttonActions,
   currentImage,
   onSave,
   onClear,
@@ -104,14 +134,29 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   isSaving = false,
 }) => {
   // State for the current action being edited
+  const [triggerMode, setTriggerMode] = useState<ButtonTriggerMode>('press');
   const [actionType, setActionType] = useState<ActionTypeOption | null>(null);
   const [actionConfig, setActionConfig] = useState<Partial<Action>>({});
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Get action for the current trigger mode
+  const getActionForMode = useCallback((mode: ButtonTriggerMode, actions?: ButtonActions): Partial<Action> | null | undefined => {
+    if (!actions) return undefined;
+    switch (mode) {
+      case 'press': return actions.action;
+      case 'longPress': return actions.longPressAction;
+      case 'shiftPress': return actions.shiftAction;
+      case 'shiftLongPress': return actions.shiftLongPressAction;
+    }
+  }, []);
+
   // Reset state when selection changes
   useEffect(() => {
     if (selection) {
+      // Reset to press mode when selection changes
+      setTriggerMode('press');
+      const currentAction = getActionForMode('press', buttonActions);
       if (currentAction?.type) {
         setActionType(currentAction.type as ActionTypeOption);
         setActionConfig(currentAction);
@@ -122,7 +167,22 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       setImageUrl(currentImage);
       setHasChanges(false);
     }
-  }, [selection, currentAction, currentImage]);
+  }, [selection, buttonActions, currentImage, getActionForMode]);
+
+  // Update action config when trigger mode changes
+  const handleTriggerModeChange = useCallback((mode: ButtonTriggerMode) => {
+    // Save isn't needed here - user can switch modes freely and save when ready
+    setTriggerMode(mode);
+    const currentAction = getActionForMode(mode, buttonActions);
+    if (currentAction?.type) {
+      setActionType(currentAction.type as ActionTypeOption);
+      setActionConfig(currentAction);
+    } else {
+      setActionType(null);
+      setActionConfig({});
+    }
+    setHasChanges(false);
+  }, [buttonActions, getActionForMode]);
 
   // Handle action type change
   const handleTypeChange = useCallback((type: ActionTypeOption | null) => {
@@ -150,22 +210,26 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   // Handle save
   const handleSave = useCallback(() => {
     if (onSave && actionType) {
-      onSave(actionConfig, imageUrl);
+      onSave(actionConfig, triggerMode, imageUrl);
       setHasChanges(false);
     }
-  }, [onSave, actionType, actionConfig, imageUrl]);
+  }, [onSave, actionType, actionConfig, triggerMode, imageUrl]);
 
   // Handle clear
   const handleClear = useCallback(() => {
     setActionType(null);
     setActionConfig({});
-    setImageUrl(undefined);
+    // Only clear image for press mode (primary action)
+    if (triggerMode === 'press') {
+      setImageUrl(undefined);
+    }
     setHasChanges(true);
-    onClear?.();
-  }, [onClear]);
+    onClear?.(triggerMode);
+  }, [onClear, triggerMode]);
 
   // Handle cancel
   const handleCancel = useCallback(() => {
+    const currentAction = getActionForMode(triggerMode, buttonActions);
     if (currentAction?.type) {
       setActionType(currentAction.type as ActionTypeOption);
       setActionConfig(currentAction);
@@ -176,7 +240,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
     setImageUrl(currentImage);
     setHasChanges(false);
     onCancel?.();
-  }, [currentAction, currentImage, onCancel]);
+  }, [buttonActions, triggerMode, currentImage, onCancel, getActionForMode]);
 
   // Don't render if nothing is selected
   if (!selection) {
@@ -194,6 +258,12 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
 
   const showImagePicker = selection.type === 'lcd';
 
+  // Check if any mode has an action configured (for badge indicators)
+  const getModeHasAction = (mode: ButtonTriggerMode): boolean => {
+    const action = getActionForMode(mode, buttonActions);
+    return action?.type !== undefined;
+  };
+
   return (
     <div className="action-editor" data-testid="action-editor">
       {/* Header */}
@@ -206,8 +276,31 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
 
       {/* Content */}
       <div className="action-editor__content">
-        {/* Image Picker (LCD buttons only) */}
-        {showImagePicker && (
+        {/* Trigger Mode Selector */}
+        <div className="action-editor__section">
+          <label className="action-editor__label">Trigger</label>
+          <div className="trigger-mode-selector" data-testid="trigger-mode-selector">
+            {TRIGGER_MODES.map((mode) => (
+              <button
+                key={mode.value}
+                type="button"
+                className={`trigger-mode-btn ${triggerMode === mode.value ? 'trigger-mode-btn--active' : ''} ${getModeHasAction(mode.value) ? 'trigger-mode-btn--configured' : ''}`}
+                onClick={() => handleTriggerModeChange(mode.value)}
+                title={mode.description}
+                data-testid={`trigger-mode-${mode.value}`}
+              >
+                <span className="trigger-mode-btn__icon">{mode.icon}</span>
+                <span className="trigger-mode-btn__label">{mode.label}</span>
+                {getModeHasAction(mode.value) && triggerMode !== mode.value && (
+                  <span className="trigger-mode-btn__dot" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Image Picker (LCD buttons only, shown only for press mode) */}
+        {showImagePicker && triggerMode === 'press' && (
           <div className="action-editor__section">
             <label className="action-editor__label">Button Image</label>
             <ImagePicker

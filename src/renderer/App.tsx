@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useDevice, useProfiles, useConfig } from './hooks';
 import { Header, TabNav, TabId } from './components/Layout';
 import { DeviceView, Selection } from './components/DeviceView';
-import { ActionEditor, EncoderEditor, EncoderConfig, ActionTypeOption } from './components/ActionEditor';
+import { ActionEditor, EncoderEditor, EncoderConfig, ActionTypeOption, ButtonTriggerMode, ButtonActions } from './components/ActionEditor';
 import { ProfileSelector, ProfileList, ProfileEditor, ProfileDialogMode } from './components/ProfileManager';
 import { SettingsPanel } from './components/Settings';
 import { useToast, Spinner } from './components/common';
@@ -63,8 +63,8 @@ const DeviceTab: React.FC<{
   profiles: ReturnType<typeof useProfiles>;
   selection: Selection | null;
   onSelectionChange: (selection: Selection | null) => void;
-  onActionSave: (action: Partial<Action>, imageUrl?: string) => void;
-  onActionClear: () => void;
+  onActionSave: (action: Partial<Action>, triggerMode: ButtonTriggerMode, imageUrl?: string) => void;
+  onActionClear: (triggerMode: ButtonTriggerMode) => void;
   onEncoderSave: (config: EncoderConfig) => void;
   onEncoderClear: () => void;
   isSaving?: boolean;
@@ -72,9 +72,9 @@ const DeviceTab: React.FC<{
   // Determine if we should show the encoder editor
   const isEncoderSelected = selection?.type === 'encoder';
 
-  // Get current action and image for the selected button from active profile
-  const getCurrentButtonConfig = () => {
-    if (!selection || !profiles.activeProfile) return { action: undefined, image: undefined };
+  // Get all actions and image for the selected button from active profile
+  const getCurrentButtonConfig = (): { buttonActions: ButtonActions | undefined; image: string | undefined } => {
+    if (!selection || !profiles.activeProfile) return { buttonActions: undefined, image: undefined };
 
     // Map selection to button index in profile
     // LCD buttons: index 0-5, Normal buttons: index 6-8
@@ -84,16 +84,21 @@ const DeviceTab: React.FC<{
         ? 6 + selection.index
         : -1;
 
-    if (buttonIndex < 0) return { action: undefined, image: undefined };
+    if (buttonIndex < 0) return { buttonActions: undefined, image: undefined };
 
     const buttonConfig = profiles.activeProfile.buttons.find(b => b.index === buttonIndex);
     return {
-      action: buttonConfig?.action,
+      buttonActions: buttonConfig ? {
+        action: buttonConfig.action,
+        longPressAction: buttonConfig.longPressAction,
+        shiftAction: buttonConfig.shiftAction,
+        shiftLongPressAction: buttonConfig.shiftLongPressAction,
+      } : undefined,
       image: buttonConfig?.image,
     };
   };
 
-  const { action: currentAction, image: currentImage } = getCurrentButtonConfig();
+  const { buttonActions, image: currentImage } = getCurrentButtonConfig();
 
   // Get current encoder config for the selected encoder from active profile
   const getCurrentEncoderConfig = (): Partial<EncoderConfig> | undefined => {
@@ -113,6 +118,10 @@ const DeviceTab: React.FC<{
       longPress: mapActionToEditorConfig(encoderConfig.longPressAction),
       rotateClockwise: mapActionToEditorConfig(encoderConfig.clockwiseAction),
       rotateCounterClockwise: mapActionToEditorConfig(encoderConfig.counterClockwiseAction),
+      shiftPress: mapActionToEditorConfig(encoderConfig.shiftPressAction),
+      shiftLongPress: mapActionToEditorConfig(encoderConfig.shiftLongPressAction),
+      shiftRotateClockwise: mapActionToEditorConfig(encoderConfig.shiftClockwiseAction),
+      shiftRotateCounterClockwise: mapActionToEditorConfig(encoderConfig.shiftCounterClockwiseAction),
     };
   };
 
@@ -130,6 +139,7 @@ const DeviceTab: React.FC<{
             onSelectionChange={onSelectionChange}
             lastButtonEvent={device.lastButtonEvent}
             lastEncoderEvent={device.lastEncoderEvent}
+            isShiftActive={device.isShiftActive}
           />
         </section>
       </div>
@@ -146,7 +156,7 @@ const DeviceTab: React.FC<{
         ) : (
           <ActionEditor
             selection={selection}
-            currentAction={currentAction}
+            buttonActions={buttonActions}
             currentImage={currentImage}
             onSave={onActionSave}
             onClear={onActionClear}
@@ -469,7 +479,7 @@ const App: React.FC = () => {
   }, []);
 
   // Handle action save from ActionEditor
-  const handleActionSave = useCallback(async (action: Partial<Action>, imageUrl?: string) => {
+  const handleActionSave = useCallback(async (action: Partial<Action>, triggerMode: ButtonTriggerMode, imageUrl?: string) => {
     if (!selection || !profiles.activeProfile) return;
 
     // Map selection to button index in profile
@@ -497,27 +507,41 @@ const App: React.FC = () => {
       // Find existing button config or create new one
       let buttonConfigIndex = updatedButtons.findIndex(b => b.index === buttonIndex);
 
+      // Map trigger mode to the appropriate action field
+      const actionFieldMap: Record<ButtonTriggerMode, string> = {
+        press: 'action',
+        longPress: 'longPressAction',
+        shiftPress: 'shiftAction',
+        shiftLongPress: 'shiftLongPressAction',
+      };
+      const actionField = actionFieldMap[triggerMode];
+
       if (buttonConfigIndex === -1) {
         // Create new button config
-        updatedButtons.push({
+        const newConfig: import('@shared/types/config').ButtonConfig = {
           index: buttonIndex,
-          action: completeAction,
-          image: imageUrl,
-        });
+          [actionField]: completeAction,
+        };
+        // Only add image for press trigger mode
+        if (triggerMode === 'press' && imageUrl) {
+          newConfig.image = imageUrl;
+        }
+        updatedButtons.push(newConfig);
       } else {
         // Update existing config
         updatedButtons[buttonConfigIndex] = {
           ...updatedButtons[buttonConfigIndex],
-          action: completeAction,
-          ...(imageUrl !== undefined && { image: imageUrl }),
+          [actionField]: completeAction,
+          // Only update image for press trigger mode
+          ...(triggerMode === 'press' && imageUrl !== undefined && { image: imageUrl }),
         };
       }
 
       // Save to profile - this triggers auto-reload of bindings
       await profiles.update(profiles.activeProfile.id, { buttons: updatedButtons });
 
-      // For LCD buttons (0-5), upload image to device if provided
-      if (selection.type === 'lcd' && imageUrl && window.electronAPI?.device?.setButtonImage) {
+      // For LCD buttons (0-5), upload image to device if provided (only for press trigger)
+      if (selection.type === 'lcd' && triggerMode === 'press' && imageUrl && window.electronAPI?.device?.setButtonImage) {
         try {
           await window.electronAPI.device.setButtonImage(selection.index, imageUrl);
         } catch (err) {
@@ -535,7 +559,7 @@ const App: React.FC = () => {
   }, [selection, profiles, toast]);
 
   // Handle action clear from ActionEditor
-  const handleActionClear = useCallback(async () => {
+  const handleActionClear = useCallback(async (triggerMode: ButtonTriggerMode) => {
     if (!selection || !profiles.activeProfile) return;
 
     // Map selection to button index in profile
@@ -547,17 +571,31 @@ const App: React.FC = () => {
 
     if (buttonIndex < 0) return; // Not a button
 
+    // Map trigger mode to the appropriate action field
+    const actionFieldMap: Record<ButtonTriggerMode, string> = {
+      press: 'action',
+      longPress: 'longPressAction',
+      shiftPress: 'shiftAction',
+      shiftLongPress: 'shiftLongPressAction',
+    };
+    const actionField = actionFieldMap[triggerMode];
+
     try {
-      // Clone the buttons array and remove/clear the config for this button
+      // Clone the buttons array and clear the specific action for this button
       const updatedButtons = profiles.activeProfile.buttons
         .map(b => {
           if (b.index === buttonIndex) {
-            // Remove action and image but keep the index
-            return { index: b.index };
+            // Clear the specific action field, and image only for press trigger
+            const updated = { ...b, [actionField]: undefined };
+            if (triggerMode === 'press') {
+              updated.image = undefined;
+            }
+            return updated;
           }
           return b;
         })
-        .filter(b => b.action || b.longPressAction || b.image || b.label);
+        // Filter out buttons that have no meaningful config left
+        .filter(b => b.action || b.longPressAction || b.shiftAction || b.shiftLongPressAction || b.image || b.label);
 
       // Save to profile - this triggers auto-reload of bindings
       await profiles.update(profiles.activeProfile.id, { buttons: updatedButtons });
@@ -584,10 +622,11 @@ const App: React.FC = () => {
 
     try {
       // Convert EncoderEditor's EncoderConfig to Profile's EncoderConfig format
-      // EncoderEditor has: { press, longPress, rotateClockwise, rotateCounterClockwise }
-      // Profile has: { index, pressAction, longPressAction, clockwiseAction, counterClockwiseAction }
+      // EncoderEditor has: { press, longPress, rotateClockwise, rotateCounterClockwise, shift* }
+      // Profile has: { index, pressAction, longPressAction, clockwiseAction, counterClockwiseAction, shift* }
       const profileEncoderConfig: import('@shared/types/config').EncoderConfig = {
         index: selection.index,
+        // Normal actions
         pressAction: encoderConfig.press.enabled && encoderConfig.press.actionType
           ? completeEncoderAction(encoderConfig.press.action)
           : undefined,
@@ -599,6 +638,19 @@ const App: React.FC = () => {
           : undefined,
         counterClockwiseAction: encoderConfig.rotateCounterClockwise.enabled && encoderConfig.rotateCounterClockwise.actionType
           ? completeEncoderAction(encoderConfig.rotateCounterClockwise.action)
+          : undefined,
+        // Shift actions
+        shiftPressAction: encoderConfig.shiftPress.enabled && encoderConfig.shiftPress.actionType
+          ? completeEncoderAction(encoderConfig.shiftPress.action)
+          : undefined,
+        shiftLongPressAction: encoderConfig.shiftLongPress.enabled && encoderConfig.shiftLongPress.actionType
+          ? completeEncoderAction(encoderConfig.shiftLongPress.action)
+          : undefined,
+        shiftClockwiseAction: encoderConfig.shiftRotateClockwise.enabled && encoderConfig.shiftRotateClockwise.actionType
+          ? completeEncoderAction(encoderConfig.shiftRotateClockwise.action)
+          : undefined,
+        shiftCounterClockwiseAction: encoderConfig.shiftRotateCounterClockwise.enabled && encoderConfig.shiftRotateCounterClockwise.actionType
+          ? completeEncoderAction(encoderConfig.shiftRotateCounterClockwise.action)
           : undefined,
       };
 

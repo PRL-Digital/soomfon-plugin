@@ -87,21 +87,29 @@ Implemented shift button functionality where small button 0 (left) acts as a mod
 - `src/core/actions/schemas.ts` - Zod schemas updated with shift trigger values
 - `src-tauri/src/config/types.rs` - Rust ButtonConfig and EncoderConfig shift action fields
 
+### Shift Button UI Implementation (Completed)
+Implemented comprehensive UI for shift button configuration and shift state visualization.
+
+**Features Implemented:**
+
+1. **ActionEditor Trigger Mode Selector** - Added a 4-button selector (Press, Long Press, Shift+Press, Shift+Long Press) that lets users edit different action trigger modes for buttons
+
+2. **EncoderEditor Shift Actions** - Added 4 new sections for shift variants (Shift+Press, Shift+Long Press, Shift+CW, Shift+CCW) with visual grouping of normal vs shift sections
+
+3. **Shift State Visual Indicator** - Added a "⇧ SHIFT" badge that appears when the shift button is held, plus a subtle glow on the device frame
+
+**Files Changed:**
+- `src/renderer/components/ActionEditor/ActionEditor.tsx` - Added ButtonTriggerMode type, trigger mode selector UI, updated props to use buttonActions instead of currentAction
+- `src/renderer/components/ActionEditor/EncoderEditor.tsx` - Extended EncoderConfig and EncoderActionType to include shift variants, added section grouping
+- `src/renderer/components/ActionEditor/index.ts` - Exported new types
+- `src/renderer/components/DeviceView/DeviceView.tsx` - Added isShiftActive prop and shift indicator component
+- `src/renderer/hooks/useDevice.ts` - Added isShiftActive state tracking based on shift button press/release
+- `src/renderer/styles/global.css` - Added styles for trigger mode selector, encoder section groups, and shift indicator
+- `src/renderer/App.tsx` - Updated to use new ActionEditor props and pass shift actions to EncoderEditor
+
 ---
 
 ## Remaining Work
-
-### Adding "Shift" Button (UI Remaining)
-Core shift button functionality is complete. UI work remains.
-
-**Completed:**
-- ✅ Shift state management (track if shift is held)
-- ✅ Extended `ButtonConfig` and `EncoderConfig` with shift action fields
-- ✅ Updated `EventBinder` to check shift state when resolving bindings
-
-**Remaining Tasks:**
-- Create UI for shift button configuration (secondary action editing)
-- Add visual indicator when shift is active (e.g., status bar or button highlight)
 
 ### Navigate "Workspaces"
 Middle and right small buttons navigate between "workspaces". A workspace is a complete set of button/dial configurations.

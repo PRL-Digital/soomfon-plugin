@@ -42,6 +42,8 @@ export interface DeviceViewProps {
   normalLabels?: Record<number, string>;
   /** Labels for encoders (indexed by encoder index) */
   encoderLabels?: Record<number, string>;
+  /** Whether shift button is currently held */
+  isShiftActive?: boolean;
 }
 
 export const DeviceView: React.FC<DeviceViewProps> = ({
@@ -54,6 +56,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
   lcdLabels = {},
   normalLabels = {},
   encoderLabels = {},
+  isShiftActive = false,
 }) => {
   // Track pressed states for animation
   const [pressedButtons, setPressedButtons] = useState<Set<string>>(new Set());
@@ -144,9 +147,17 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
 
   return (
     <div
-      className={`device-view ${isDisconnected ? 'device-view--disconnected' : ''}`}
+      className={`device-view ${isDisconnected ? 'device-view--disconnected' : ''} ${isShiftActive ? 'device-view--shift-active' : ''}`}
       data-testid="device-view"
     >
+      {/* Shift indicator */}
+      {isShiftActive && (
+        <div className="device-shift-indicator" data-testid="shift-indicator">
+          <span className="device-shift-indicator__icon">⇧</span>
+          <span className="device-shift-indicator__text">SHIFT</span>
+        </div>
+      )}
+
       {/* Device frame */}
       <div className="device-frame">
         {/* Main section: LCD buttons + main dial */}

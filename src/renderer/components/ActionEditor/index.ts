@@ -4,7 +4,7 @@
  */
 
 // Named exports
-export { ActionEditor, type ActionEditorProps } from './ActionEditor';
+export { ActionEditor, type ActionEditorProps, type ButtonTriggerMode, type ButtonActions } from './ActionEditor';
 export {
   EncoderEditor,
   type EncoderEditorProps,

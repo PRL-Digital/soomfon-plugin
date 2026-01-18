@@ -380,6 +380,45 @@
     pointer-events: none;
   }
 
+  /* Shift active state - subtle glow on the frame */
+  .device-view--shift-active .device-frame {
+    box-shadow: 0 0 20px rgba(0, 120, 212, 0.3);
+    border-color: var(--color-accent);
+  }
+
+  /* Shift indicator badge */
+  .device-shift-indicator {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-accent);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 10;
+    animation: shiftPulse 1.5s ease-in-out infinite;
+  }
+
+  .device-shift-indicator__icon {
+    font-size: 14px;
+  }
+
+  .device-shift-indicator__text {
+    letter-spacing: 1px;
+  }
+
+  @keyframes shiftPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+
   .device-view__overlay {
     position: absolute;
     inset: 0;
@@ -1461,6 +1500,66 @@
   .image-picker__hints {
     margin-top: var(--spacing-xs);
   }
+
+  /* Trigger Mode Selector */
+  .trigger-mode-selector {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xs);
+  }
+
+  .trigger-mode-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--spacing-sm) var(--spacing-xs);
+    background-color: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast) ease;
+  }
+
+  .trigger-mode-btn:hover {
+    background-color: var(--color-bg-hover);
+    border-color: var(--color-text-muted);
+  }
+
+  .trigger-mode-btn--active {
+    background-color: rgba(0, 120, 212, 0.2);
+    border-color: var(--color-accent);
+  }
+
+  .trigger-mode-btn--configured:not(.trigger-mode-btn--active) {
+    border-color: rgba(76, 175, 80, 0.5);
+  }
+
+  .trigger-mode-btn__icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .trigger-mode-btn__label {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+  }
+
+  .trigger-mode-btn--active .trigger-mode-btn__label {
+    color: var(--color-accent);
+  }
+
+  .trigger-mode-btn__dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    background-color: var(--color-success);
+    border-radius: 50%;
+  }
 }
 
 /* EncoderEditor Components */
@@ -1480,6 +1579,29 @@
     flex: 1;
     overflow-y: auto;
     padding: var(--spacing-sm);
+  }
+
+  /* Encoder Section Group */
+  .encoder-section-group {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .encoder-section-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .encoder-section-group__header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-xs);
+  }
+
+  .encoder-section-group--shift .encoder-section-group__header {
+    color: var(--color-accent);
   }
 
   /* Encoder Action Section */
