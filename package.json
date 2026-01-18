@@ -40,7 +40,6 @@
     "@vitejs/plugin-react": "^5.1.2",
     "@vitest/coverage-v8": "^4.0.17",
     "autoprefixer": "^10.4.23",
-    "electron-store": "^8.2.0",
     "happy-dom": "^20.3.0",
     "node-hid": "^3.2.0",
     "postcss": "^8.5.6",

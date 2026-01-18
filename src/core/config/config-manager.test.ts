@@ -14,49 +14,13 @@
  * The ConfigManager is the central source of truth for all application settings.
  * Bugs here could cause data loss, settings corruption, or application crashes.
  * These tests ensure configuration is persisted correctly and validated properly.
+ *
+ * Note: ConfigManager is now an in-memory store used for testing.
+ * Production config is handled by the Tauri Rust backend.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { AppConfig, DeviceSettings, AppSettings, IntegrationSettings, Profile } from '../../shared/types/config';
-
-// Mock store state that persists across tests
-let mockStoreState: AppConfig = {} as AppConfig;
-const mockPath = '/mock/config/path/config.json';
-
-// Mock electron-store before importing ConfigManager
-vi.mock('electron-store', () => {
-  return {
-    default: class MockStore {
-      public path: string;
-
-      constructor(options: { defaults: AppConfig }) {
-        // Only initialize if mockStoreState is empty (first time or after reset)
-        if (!mockStoreState.profiles || mockStoreState.profiles.length === 0) {
-          mockStoreState = { ...options.defaults };
-        }
-        this.path = mockPath;
-      }
-
-      get store(): AppConfig {
-        return mockStoreState;
-      }
-
-      set store(value: AppConfig) {
-        mockStoreState = value;
-      }
-
-      get<K extends keyof AppConfig>(key: K): AppConfig[K] {
-        return mockStoreState[key];
-      }
-
-      set(key: string | AppConfig, value?: unknown): void {
-        if (typeof key === 'string' && value !== undefined) {
-          (mockStoreState as unknown as Record<string, unknown>)[key] = value;
-        }
-      }
-    },
-  };
-});
 
 // Mock migrations module
 vi.mock('./migrations', () => ({
@@ -115,12 +79,16 @@ const createValidConfig = (overrides: Partial<AppConfig> = {}): AppConfig => ({
 
 describe('ConfigManager', () => {
   let configManager: ConfigManager;
+  let testConfig: AppConfig;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mock store state - this will be overwritten by constructor
-    mockStoreState = createValidConfig();
-    configManager = new ConfigManager();
+    // Create test config and ConfigManager with that initial config
+    testConfig = createValidConfig();
+    configManager = new ConfigManager({
+      initialConfig: testConfig,
+      skipMigration: true, // Skip migration in tests for simplicity
+    });
   });
 
   afterEach(() => {
@@ -133,6 +101,7 @@ describe('ConfigManager', () => {
     });
 
     it('should initialize with default options', () => {
+      // Create without skipMigration to test migration flow
       const cm = new ConfigManager();
       expect(cm).toBeDefined();
     });
@@ -141,19 +110,30 @@ describe('ConfigManager', () => {
       const cm = new ConfigManager({
         name: 'custom-config',
         cwd: '/custom/path',
-        fileExtension: 'json5',
       });
       expect(cm).toBeDefined();
+      expect(cm.getConfigPath()).toBe('/custom/path/custom-config.json');
     });
 
     it('should run migration check on initialization', () => {
-      new ConfigManager();
+      new ConfigManager(); // Will run migration
       expect(checkAndMigrate).toHaveBeenCalled();
     });
 
     it('should create migrator on initialization', () => {
       new ConfigManager();
       expect(createConfigMigrator).toHaveBeenCalled();
+    });
+
+    it('should use initial config when provided', () => {
+      const customConfig = createValidConfig({
+        deviceSettings: { brightness: 42, sleepTimeout: 10, screensaverEnabled: true },
+      });
+      const cm = new ConfigManager({
+        initialConfig: customConfig,
+        skipMigration: true,
+      });
+      expect(cm.getDeviceSettings().brightness).toBe(42);
     });
   });
 
@@ -183,7 +163,7 @@ describe('ConfigManager', () => {
 
       configManager.setConfig(newConfig);
 
-      expect(mockStoreState).toEqual(newConfig);
+      expect(configManager.getConfig()).toEqual(newConfig);
     });
 
     it('should throw error when setting invalid configuration', () => {
@@ -242,7 +222,7 @@ describe('ConfigManager', () => {
 
       configManager.setDeviceSettings(newSettings);
 
-      expect(mockStoreState.deviceSettings).toEqual(newSettings);
+      expect(configManager.getDeviceSettings()).toEqual(newSettings);
     });
 
     it('should throw error for invalid device settings', () => {
@@ -256,16 +236,10 @@ describe('ConfigManager', () => {
     });
 
     it('should update partial device settings', () => {
-      mockStoreState.deviceSettings = {
-        brightness: 75,
-        sleepTimeout: 5,
-        screensaverEnabled: false,
-      };
-
       configManager.updateDeviceSettings({ brightness: 50 });
 
-      expect(mockStoreState.deviceSettings.brightness).toBe(50);
-      expect(mockStoreState.deviceSettings.sleepTimeout).toBe(5);
+      expect(configManager.getDeviceSettings().brightness).toBe(50);
+      expect(configManager.getDeviceSettings().sleepTimeout).toBe(5);
     });
 
     it('should notify listeners when device settings change', () => {
@@ -309,7 +283,7 @@ describe('ConfigManager', () => {
 
       configManager.setAppSettings(newSettings);
 
-      expect(mockStoreState.appSettings).toEqual(newSettings);
+      expect(configManager.getAppSettings()).toEqual(newSettings);
     });
 
     it('should throw error for invalid app settings', () => {
@@ -325,18 +299,10 @@ describe('ConfigManager', () => {
     });
 
     it('should update partial app settings', () => {
-      mockStoreState.appSettings = {
-        launchOnStartup: false,
-        minimizeToTray: true,
-        closeToTray: true,
-        theme: 'system',
-        language: 'en',
-      };
-
       configManager.updateAppSettings({ theme: 'dark' });
 
-      expect(mockStoreState.appSettings.theme).toBe('dark');
-      expect(mockStoreState.appSettings.launchOnStartup).toBe(false);
+      expect(configManager.getAppSettings().theme).toBe('dark');
+      expect(configManager.getAppSettings().launchOnStartup).toBe(false);
     });
 
     it('should notify listeners when app settings change', () => {
@@ -385,22 +351,17 @@ describe('ConfigManager', () => {
 
       configManager.setIntegrations(newSettings);
 
-      expect(mockStoreState.integrations).toEqual(newSettings);
+      expect(configManager.getIntegrations()).toEqual(newSettings);
     });
 
     it('should update partial integration settings', () => {
-      mockStoreState.integrations = {
-        homeAssistant: { enabled: false },
-        nodeRed: { enabled: false },
-      };
-
       configManager.updateIntegrations({
         homeAssistant: { enabled: true, url: 'http://localhost:8123', accessToken: 'test-token' },
       });
 
-      expect(mockStoreState.integrations.homeAssistant.enabled).toBe(true);
-      expect(mockStoreState.integrations.homeAssistant.url).toBe('http://localhost:8123');
-      expect(mockStoreState.integrations.nodeRed.enabled).toBe(false);
+      expect(configManager.getIntegrations().homeAssistant.enabled).toBe(true);
+      expect(configManager.getIntegrations().homeAssistant.url).toBe('http://localhost:8123');
+      expect(configManager.getIntegrations().nodeRed.enabled).toBe(false);
     });
 
     it('should notify listeners when integration settings change', () => {
@@ -419,11 +380,17 @@ describe('ConfigManager', () => {
 
   describe('Profile Access', () => {
     beforeEach(() => {
-      mockStoreState.profiles = [
-        createValidProfile({ id: 'profile-1', name: 'Profile 1', isDefault: true }),
-        createValidProfile({ id: 'profile-2', name: 'Profile 2', isDefault: false }),
-      ];
-      mockStoreState.activeProfileId = 'profile-1';
+      const config = createValidConfig({
+        profiles: [
+          createValidProfile({ id: 'profile-1', name: 'Profile 1', isDefault: true }),
+          createValidProfile({ id: 'profile-2', name: 'Profile 2', isDefault: false }),
+        ],
+        activeProfileId: 'profile-1',
+      });
+      configManager = new ConfigManager({
+        initialConfig: config,
+        skipMigration: true,
+      });
     });
 
     it('should get all profiles', () => {
@@ -457,15 +424,32 @@ describe('ConfigManager', () => {
     });
 
     it('should fallback to first profile if active profile is missing', () => {
-      mockStoreState.activeProfileId = 'non-existent';
-      const activeProfile = configManager.getActiveProfile();
+      // Set an invalid active profile ID directly via setConfig
+      const config = configManager.getConfig();
+      config.activeProfileId = 'non-existent';
+      // We can't use setConfig because validation would fail,
+      // so we test the getActiveProfile fallback logic by creating a new manager
+      const cmWithBadActiveId = new ConfigManager({
+        initialConfig: {
+          ...config,
+          activeProfileId: 'non-existent',
+        },
+        skipMigration: true,
+      });
+      const activeProfile = cmWithBadActiveId.getActiveProfile();
       expect(activeProfile.id).toBe('profile-1');
     });
 
     it('should throw error if no profiles exist', () => {
-      mockStoreState.profiles = [];
-      mockStoreState.activeProfileId = 'non-existent';
-      expect(() => configManager.getActiveProfile()).toThrow('No profiles found');
+      // Create a manager and manually clear profiles (bypassing validation)
+      const cm = new ConfigManager({
+        initialConfig: createValidConfig(),
+        skipMigration: true,
+      });
+      // Access private field to clear profiles for this test
+      (cm as unknown as { config: AppConfig }).config.profiles = [];
+      (cm as unknown as { config: AppConfig }).config.activeProfileId = 'non-existent';
+      expect(() => cm.getActiveProfile()).toThrow('No profiles found');
     });
 
     it('should get active profile ID', () => {
@@ -475,7 +459,7 @@ describe('ConfigManager', () => {
 
     it('should set active profile ID', () => {
       configManager.setActiveProfileId('profile-2');
-      expect(mockStoreState.activeProfileId).toBe('profile-2');
+      expect(configManager.getActiveProfileId()).toBe('profile-2');
     });
 
     it('should throw error when setting non-existent profile as active', () => {
@@ -494,21 +478,27 @@ describe('ConfigManager', () => {
 
   describe('Utility Methods', () => {
     beforeEach(() => {
-      mockStoreState.profiles = [
-        createValidProfile({ id: 'profile-1' }),
-        createValidProfile({ id: 'profile-2', isDefault: false }),
-      ];
+      const config = createValidConfig({
+        profiles: [
+          createValidProfile({ id: 'profile-1' }),
+          createValidProfile({ id: 'profile-2', isDefault: false }),
+        ],
+      });
+      configManager = new ConfigManager({
+        initialConfig: config,
+        skipMigration: true,
+      });
     });
 
     it('should return config version', () => {
-      mockStoreState.version = 1;
       expect(configManager.getVersion()).toBe(1);
     });
 
     it('should check if profiles exist', () => {
       expect(configManager.hasProfiles()).toBe(true);
 
-      mockStoreState.profiles = [];
+      // Clear profiles manually
+      (configManager as unknown as { config: AppConfig }).config.profiles = [];
       expect(configManager.hasProfiles()).toBe(false);
     });
 
@@ -522,7 +512,12 @@ describe('ConfigManager', () => {
     });
 
     it('should get config path', () => {
-      expect(configManager.getConfigPath()).toBe('/mock/config/path/config.json');
+      const cm = new ConfigManager({
+        name: 'test-config',
+        cwd: '/test/path',
+        skipMigration: true,
+      });
+      expect(cm.getConfigPath()).toBe('/test/path/test-config.json');
     });
   });
 
@@ -534,16 +529,18 @@ describe('ConfigManager', () => {
       configManager.reset();
 
       // Should have created new default config with new profile
-      expect(mockStoreState).toBeDefined();
-      expect(mockStoreState.profiles).toHaveLength(1);
-      expect(mockStoreState.profiles[0].name).toBe('Default Profile');
+      const config = configManager.getConfig();
+      expect(config).toBeDefined();
+      expect(config.profiles).toHaveLength(1);
+      expect(config.profiles[0].name).toBe('Default Profile');
       expect(listener).toHaveBeenCalledWith('full', expect.anything(), expect.anything());
     });
 
     it('should clear configuration (alias for reset)', () => {
       configManager.clear();
-      expect(mockStoreState.profiles).toHaveLength(1);
-      expect(mockStoreState.profiles[0].name).toBe('Default Profile');
+      const config = configManager.getConfig();
+      expect(config.profiles).toHaveLength(1);
+      expect(config.profiles[0].name).toBe('Default Profile');
     });
   });
 
@@ -636,7 +633,7 @@ describe('ConfigManager', () => {
 
     it('should return error when migrator not initialized', () => {
       // Create a manager and forcefully set migrator to null
-      const cm = new ConfigManager();
+      const cm = new ConfigManager({ skipMigration: true });
       (cm as unknown as { migrator: null }).migrator = null;
 
       const result = cm.createBackup();
@@ -650,7 +647,7 @@ describe('ConfigManager', () => {
     });
 
     it('should return empty array if migrator not initialized', () => {
-      const cm = new ConfigManager();
+      const cm = new ConfigManager({ skipMigration: true });
       (cm as unknown as { migrator: null }).migrator = null;
 
       const backups = cm.listBackups();
@@ -663,7 +660,7 @@ describe('ConfigManager', () => {
     });
 
     it('should return error when restoring without migrator', () => {
-      const cm = new ConfigManager();
+      const cm = new ConfigManager({ skipMigration: true });
       (cm as unknown as { migrator: null }).migrator = null;
 
       const result = cm.restoreFromBackup('/mock/backup/1.json');
@@ -674,7 +671,7 @@ describe('ConfigManager', () => {
 
   describe('Factory Function', () => {
     it('should create ConfigManager via factory function', () => {
-      const cm = createConfigManager();
+      const cm = createConfigManager({ skipMigration: true });
       expect(cm).toBeInstanceOf(ConfigManager);
     });
 
@@ -682,8 +679,10 @@ describe('ConfigManager', () => {
       const cm = createConfigManager({
         name: 'custom-config',
         cwd: '/custom/path',
+        skipMigration: true,
       });
       expect(cm).toBeInstanceOf(ConfigManager);
+      expect(cm.getConfigPath()).toBe('/custom/path/custom-config.json');
     });
   });
 });

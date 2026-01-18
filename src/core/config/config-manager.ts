@@ -1,9 +1,17 @@
 /**
  * Configuration Manager
- * Manages application configuration using electron-store with type-safe getters and setters
+ *
+ * In-memory configuration store for test environments.
+ * Production code uses the Tauri Rust backend for config storage.
+ *
+ * This module exists to support:
+ * - Unit tests that need a ConfigManager instance
+ * - Shared business logic that operates on config data
+ *
+ * The interface matches the original electron-store-based implementation
+ * so existing code (ProfileManager, handlers) continues to work.
  */
 
-import Store from 'electron-store';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   AppConfig,
@@ -11,10 +19,6 @@ import type {
   AppSettings,
   IntegrationSettings,
   Profile,
-  DEFAULT_DEVICE_SETTINGS,
-  DEFAULT_APP_SETTINGS,
-  DEFAULT_INTEGRATION_SETTINGS,
-  CONFIG_VERSION,
 } from '../../shared/types/config';
 import {
   configSchema,
@@ -25,7 +29,7 @@ import {
 } from './validation';
 import { checkAndMigrate, createConfigMigrator, type ConfigMigrator } from './migrations';
 
-// Re-import defaults as values (not types)
+// Import defaults as values
 import {
   DEFAULT_DEVICE_SETTINGS as defaultDeviceSettings,
   DEFAULT_APP_SETTINGS as defaultAppSettings,
@@ -37,12 +41,14 @@ import {
  * Configuration manager options
  */
 export interface ConfigManagerOptions {
-  /** Custom config file name (without extension) */
+  /** Custom config file name (for path simulation, not used for storage) */
   name?: string;
-  /** Custom config directory path */
+  /** Custom config directory path (for path simulation, not used for storage) */
   cwd?: string;
-  /** File extension (default: 'json') */
-  fileExtension?: string;
+  /** Initial config data (for testing) */
+  initialConfig?: AppConfig;
+  /** Skip migration check (for testing) */
+  skipMigration?: boolean;
 }
 
 /**
@@ -99,32 +105,35 @@ function createDefaultConfig(): AppConfig {
 
 /**
  * ConfigManager class
- * Provides type-safe access to application configuration with validation
+ * In-memory configuration store with type-safe access and validation.
+ *
+ * This is used for testing and shared business logic.
+ * Production config is handled by the Tauri Rust backend.
  */
 export class ConfigManager {
-  private store: Store<AppConfig>;
+  private config: AppConfig;
   private listeners: Set<ConfigChangeListener> = new Set();
   private migrator: ConfigMigrator | null = null;
+  private configPath: string;
 
   constructor(options: ConfigManagerOptions = {}) {
-    const defaults = createDefaultConfig();
+    // Use initial config or create defaults
+    this.config = options.initialConfig
+      ? { ...options.initialConfig }
+      : createDefaultConfig();
 
-    this.store = new Store<AppConfig>({
-      name: options.name ?? 'config',
-      cwd: options.cwd,
-      fileExtension: options.fileExtension ?? 'json',
-      defaults,
-      // Validate config on load using beforeEachMigration
-      beforeEachMigration: (store, context) => {
-        // Validation happens during migration
-      },
-    });
+    // Simulate a config path for compatibility
+    const configDir = options.cwd ?? '/mock/config';
+    const configName = options.name ?? 'config';
+    this.configPath = `${configDir}/${configName}.json`;
 
-    // Initialize migrator with config path
-    this.migrator = createConfigMigrator(this.store.path);
+    // Initialize migrator (may be null in test environments)
+    this.migrator = createConfigMigrator(this.configPath);
 
-    // Run migration check and validate config on initialization
-    this.checkMigrationAndValidate();
+    // Run migration check unless skipped
+    if (!options.skipMigration) {
+      this.checkMigrationAndValidate();
+    }
   }
 
   /**
@@ -133,13 +142,12 @@ export class ConfigManager {
    */
   private checkMigrationAndValidate(): void {
     try {
-      const data = this.store.store;
-      const result = checkAndMigrate(data, this.store.path);
+      const result = checkAndMigrate(this.config, this.configPath);
 
       if (result.migrated) {
         // Config was migrated, update the store
         console.info(`Configuration migrated from backup at: ${result.backupPath}`);
-        this.store.store = result.config;
+        this.config = result.config;
       }
     } catch (error) {
       // Migration failed, fall back to validation
@@ -153,8 +161,7 @@ export class ConfigManager {
    * @private
    */
   private validateAndFixConfig(): void {
-    const data = this.store.store;
-    const result = configSchema.safeParse(data);
+    const result = configSchema.safeParse(this.config);
 
     if (!result.success) {
       // If config is invalid, reset to defaults
@@ -172,7 +179,7 @@ export class ConfigManager {
    * @returns The full AppConfig object
    */
   getConfig(): AppConfig {
-    return { ...this.store.store };
+    return { ...this.config };
   }
 
   /**
@@ -187,8 +194,8 @@ export class ConfigManager {
       throw new Error(`Invalid configuration: ${result.error.message}`);
     }
 
-    const oldConfig = this.store.store;
-    this.store.store = result.data;
+    const oldConfig = this.config;
+    this.config = result.data;
     this.notifyListeners('full', result.data, oldConfig);
   }
 
@@ -201,7 +208,7 @@ export class ConfigManager {
    * @returns DeviceSettings object
    */
   getDeviceSettings(): DeviceSettings {
-    return { ...this.store.get('deviceSettings') };
+    return { ...this.config.deviceSettings };
   }
 
   /**
@@ -216,8 +223,8 @@ export class ConfigManager {
       throw new Error(`Invalid device settings: ${result.error.message}`);
     }
 
-    const oldSettings = this.store.get('deviceSettings');
-    this.store.set('deviceSettings', result.data);
+    const oldSettings = this.config.deviceSettings;
+    this.config.deviceSettings = result.data;
     this.notifyListeners('deviceSettings', result.data, oldSettings);
   }
 
@@ -240,7 +247,7 @@ export class ConfigManager {
    * @returns AppSettings object
    */
   getAppSettings(): AppSettings {
-    return { ...this.store.get('appSettings') };
+    return { ...this.config.appSettings };
   }
 
   /**
@@ -255,8 +262,8 @@ export class ConfigManager {
       throw new Error(`Invalid app settings: ${result.error.message}`);
     }
 
-    const oldSettings = this.store.get('appSettings');
-    this.store.set('appSettings', result.data);
+    const oldSettings = this.config.appSettings;
+    this.config.appSettings = result.data;
     this.notifyListeners('appSettings', result.data, oldSettings);
   }
 
@@ -279,7 +286,7 @@ export class ConfigManager {
    * @returns IntegrationSettings object
    */
   getIntegrations(): IntegrationSettings {
-    const integrations = this.store.get('integrations');
+    const integrations = this.config.integrations;
     return {
       homeAssistant: { ...integrations.homeAssistant },
       nodeRed: { ...integrations.nodeRed },
@@ -298,8 +305,8 @@ export class ConfigManager {
       throw new Error(`Invalid integration settings: ${result.error.message}`);
     }
 
-    const oldSettings = this.store.get('integrations');
-    this.store.set('integrations', result.data);
+    const oldSettings = this.config.integrations;
+    this.config.integrations = result.data;
     this.notifyListeners('integrations', result.data, oldSettings);
   }
 
@@ -330,7 +337,7 @@ export class ConfigManager {
    * @returns Array of Profile objects
    */
   getProfiles(): Profile[] {
-    return this.store.get('profiles').map(p => ({ ...p }));
+    return this.config.profiles.map(p => ({ ...p }));
   }
 
   /**
@@ -339,8 +346,7 @@ export class ConfigManager {
    * @returns The profile or undefined if not found
    */
   getProfile(id: string): Profile | undefined {
-    const profiles = this.store.get('profiles');
-    const profile = profiles.find(p => p.id === id);
+    const profile = this.config.profiles.find(p => p.id === id);
     return profile ? { ...profile } : undefined;
   }
 
@@ -349,7 +355,7 @@ export class ConfigManager {
    * @returns The active Profile object
    */
   getActiveProfile(): Profile {
-    const activeId = this.store.get('activeProfileId');
+    const activeId = this.config.activeProfileId;
     const profile = this.getProfile(activeId);
     if (!profile) {
       // Fallback to first profile if active profile is missing
@@ -367,7 +373,7 @@ export class ConfigManager {
    * @returns The active profile ID string
    */
   getActiveProfileId(): string {
-    return this.store.get('activeProfileId');
+    return this.config.activeProfileId;
   }
 
   /**
@@ -376,13 +382,12 @@ export class ConfigManager {
    * @throws Error if profile doesn't exist
    */
   setActiveProfileId(id: string): void {
-    const profiles = this.store.get('profiles');
-    if (!profiles.some(p => p.id === id)) {
+    if (!this.config.profiles.some(p => p.id === id)) {
       throw new Error(`Profile with ID "${id}" not found`);
     }
 
-    const oldId = this.store.get('activeProfileId');
-    this.store.set('activeProfileId', id);
+    const oldId = this.config.activeProfileId;
+    this.config.activeProfileId = id;
     this.notifyListeners('activeProfile', id, oldId);
   }
 
@@ -391,7 +396,7 @@ export class ConfigManager {
    * @returns The configuration version number
    */
   getVersion(): number {
-    return this.store.get('version');
+    return this.config.version;
   }
 
   // ============================================================================
@@ -403,9 +408,9 @@ export class ConfigManager {
    * Creates a new default profile
    */
   reset(): void {
-    const oldConfig = this.store.store;
+    const oldConfig = this.config;
     const newConfig = createDefaultConfig();
-    this.store.store = newConfig;
+    this.config = newConfig;
     this.notifyListeners('full', newConfig, oldConfig);
   }
 
@@ -422,10 +427,10 @@ export class ConfigManager {
 
   /**
    * Gets the path to the configuration file
-   * @returns The absolute path to the config file
+   * @returns The simulated path (for compatibility)
    */
   getConfigPath(): string {
-    return this.store.path;
+    return this.configPath;
   }
 
   // ============================================================================
@@ -479,7 +484,7 @@ export class ConfigManager {
    * @returns True if at least one profile exists
    */
   hasProfiles(): boolean {
-    return this.store.get('profiles').length > 0;
+    return this.config.profiles.length > 0;
   }
 
   /**
@@ -487,7 +492,7 @@ export class ConfigManager {
    * @returns The profile count
    */
   getProfileCount(): number {
-    return this.store.get('profiles').length;
+    return this.config.profiles.length;
   }
 
   /**
@@ -496,7 +501,7 @@ export class ConfigManager {
    * @returns True if the profile exists
    */
   hasProfile(id: string): boolean {
-    return this.store.get('profiles').some(p => p.id === id);
+    return this.config.profiles.some(p => p.id === id);
   }
 
   // ============================================================================
@@ -545,9 +550,7 @@ export class ConfigManager {
 
     const result = this.migrator.restore(backupPath);
     if (result.success) {
-      // Reload the store after restore
-      // electron-store doesn't have a built-in reload, so we need to re-read
-      // The store should automatically pick up changes on next read
+      // Validate config after restore
       this.validateAndFixConfig();
     }
     return result;
