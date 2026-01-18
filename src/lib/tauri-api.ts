@@ -224,13 +224,16 @@ const configAPI: ConfigAPI = {
     // Map backend settings to frontend types
     const deviceSettings: DeviceSettings = {
       brightness: backendSettings.brightness,
+      sleepTimeout: 5, // Default value, not stored in backend
+      screensaverEnabled: false, // Default value, not stored in backend
     };
 
     const appSettings: AppSettings = {
-      theme: 'system', // Not stored in backend, default
-      startMinimized: backendSettings.start_minimized,
-      minimizeToTray: true, // Not stored in backend, default
-      checkForUpdates: true, // Not stored in backend, default
+      launchOnStartup: backendSettings.auto_launch,
+      minimizeToTray: true, // Default, not stored in backend
+      closeToTray: true, // Default, not stored in backend
+      theme: 'system', // Default, not stored in backend
+      language: 'en', // Default, not stored in backend
     };
 
     const integrations: IntegrationSettings = {
@@ -238,15 +241,15 @@ const configAPI: ConfigAPI = {
         ? {
             enabled: true,
             url: backendSettings.home_assistant.url,
-            token: backendSettings.home_assistant.token,
+            accessToken: backendSettings.home_assistant.token,
           }
-        : { enabled: false, url: '', token: '' },
+        : { enabled: false },
       nodeRed: backendSettings.node_red
         ? {
             enabled: true,
             url: backendSettings.node_red.url,
           }
-        : { enabled: false, url: '' },
+        : { enabled: false },
     };
 
     return {
@@ -263,13 +266,13 @@ const configAPI: ConfigAPI = {
     // Map frontend config to backend format
     const backendSettings = {
       brightness: config.deviceSettings.brightness,
-      start_minimized: config.appSettings.startMinimized,
-      auto_launch: false,
+      start_minimized: false, // Not directly mapped from frontend
+      auto_launch: config.appSettings.launchOnStartup,
       home_assistant: config.integrations.homeAssistant?.enabled
-        ? { url: config.integrations.homeAssistant.url, token: config.integrations.homeAssistant.token }
+        ? { url: config.integrations.homeAssistant.url ?? '', token: config.integrations.homeAssistant.accessToken ?? '' }
         : null,
       node_red: config.integrations.nodeRed?.enabled
-        ? { url: config.integrations.nodeRed.url }
+        ? { url: config.integrations.nodeRed.url ?? '' }
         : null,
     };
     await invoke('set_app_settings', { settings: backendSettings });
@@ -277,7 +280,11 @@ const configAPI: ConfigAPI = {
 
   getDeviceSettings: async (): Promise<DeviceSettings> => {
     const backend = await invoke<{ brightness: number }>('get_app_settings');
-    return { brightness: backend.brightness };
+    return {
+      brightness: backend.brightness,
+      sleepTimeout: 5, // Default, not stored in backend
+      screensaverEnabled: false, // Default, not stored in backend
+    };
   },
 
   setDeviceSettings: async (settings: DeviceSettings): Promise<void> => {
@@ -288,19 +295,20 @@ const configAPI: ConfigAPI = {
   },
 
   getAppSettings: async (): Promise<AppSettings> => {
-    const backend = await invoke<{ start_minimized: boolean }>('get_app_settings');
+    const backend = await invoke<{ auto_launch: boolean }>('get_app_settings');
     return {
-      theme: 'system',
-      startMinimized: backend.start_minimized,
-      minimizeToTray: true,
-      checkForUpdates: true,
+      launchOnStartup: backend.auto_launch,
+      minimizeToTray: true, // Default, not stored in backend
+      closeToTray: true, // Default, not stored in backend
+      theme: 'system', // Default, not stored in backend
+      language: 'en', // Default, not stored in backend
     };
   },
 
   setAppSettings: async (settings: AppSettings): Promise<void> => {
     const current = await invoke<Record<string, unknown>>('get_app_settings');
     await invoke('set_app_settings', {
-      settings: { ...current, start_minimized: settings.startMinimized },
+      settings: { ...current, auto_launch: settings.launchOnStartup },
     });
   },
 
@@ -311,11 +319,11 @@ const configAPI: ConfigAPI = {
     }>('get_app_settings');
     return {
       homeAssistant: backend.home_assistant
-        ? { enabled: true, url: backend.home_assistant.url, token: backend.home_assistant.token }
-        : { enabled: false, url: '', token: '' },
+        ? { enabled: true, url: backend.home_assistant.url, accessToken: backend.home_assistant.token }
+        : { enabled: false },
       nodeRed: backend.node_red
         ? { enabled: true, url: backend.node_red.url }
-        : { enabled: false, url: '' },
+        : { enabled: false },
     };
   },
 
@@ -325,10 +333,10 @@ const configAPI: ConfigAPI = {
       settings: {
         ...current,
         home_assistant: settings.homeAssistant?.enabled
-          ? { url: settings.homeAssistant.url, token: settings.homeAssistant.token }
+          ? { url: settings.homeAssistant.url ?? '', token: settings.homeAssistant.accessToken ?? '' }
           : null,
         node_red: settings.nodeRed?.enabled
-          ? { url: settings.nodeRed.url }
+          ? { url: settings.nodeRed.url ?? '' }
           : null,
       },
     });

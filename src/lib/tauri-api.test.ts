@@ -358,14 +358,20 @@ describe('tauriAPI', () => {
       const { tauriAPI } = await import('./tauri-api');
       // Implementation first gets current settings, then merges
       mockInvoke
-        .mockResolvedValueOnce({ brightness: 80, start_minimized: false }) // get_app_settings
+        .mockResolvedValueOnce({ brightness: 80, auto_launch: false }) // get_app_settings
         .mockResolvedValueOnce(undefined); // set_app_settings
 
-      await tauriAPI.config.setAppSettings({ theme: 'dark', startMinimized: true });
+      await tauriAPI.config.setAppSettings({
+        launchOnStartup: true,
+        minimizeToTray: true,
+        closeToTray: true,
+        theme: 'dark',
+        language: 'en',
+      });
 
-      // Only start_minimized is stored in backend, theme is frontend-only
+      // Only auto_launch is stored in backend, other settings are frontend-only
       expect(mockInvoke).toHaveBeenCalledWith('set_app_settings', {
-        settings: expect.objectContaining({ start_minimized: true }),
+        settings: expect.objectContaining({ auto_launch: true }),
       });
     });
 

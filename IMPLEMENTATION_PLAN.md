@@ -34,6 +34,20 @@ Implemented image transfer protocol based on mirajazz library reverse engineerin
 2. Send image data in 1024-byte chunks
 3. Send STP (stop/commit) packet: `CRT..STP`
 
+### TypeScript Type Fixes (Completed)
+Fixed TypeScript errors and type mismatches to ensure full type safety:
+
+**Mock type casting in integration tests:**
+- `src/core/integrations/node-red.test.ts` - Changed `(axios.isAxiosError as ReturnType<typeof vi.fn>)` to `vi.mocked(axios.isAxiosError)` for proper mock typing (11 occurrences)
+- `src/core/integrations/home-assistant.test.ts` - Same fix (10 occurrences)
+
+**Tauri API adapter type alignment:**
+- `src/lib/tauri-api.ts` - Updated to match frontend type definitions in `src/shared/types/config.ts`:
+  - `DeviceSettings`: Added `sleepTimeout` and `screensaverEnabled` with default values
+  - `AppSettings`: Changed from `startMinimized` to `launchOnStartup`, added `closeToTray`, `language`
+  - `HomeAssistantSettings`: Changed from `token` to `accessToken`
+- `src/lib/tauri-api.test.ts` - Updated test to use correct `AppSettings` type
+
 ### Architecture Notes
 - **Rust backend** (`src-tauri/`) is the production runtime for device communication and config
 - **TypeScript `src/core/`** is legacy backend code used only for tests and shared business logic

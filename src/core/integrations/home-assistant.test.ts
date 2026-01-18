@@ -143,7 +143,7 @@ describe('HomeAssistantClient', () => {
         response: { status: 401, statusText: 'Unauthorized' },
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -161,7 +161,7 @@ describe('HomeAssistantClient', () => {
         message: 'connect ECONNREFUSED',
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -179,7 +179,7 @@ describe('HomeAssistantClient', () => {
         message: 'getaddrinfo ENOTFOUND',
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -197,7 +197,7 @@ describe('HomeAssistantClient', () => {
         message: 'timeout',
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -236,7 +236,7 @@ describe('HomeAssistantClient', () => {
         response: { status: 500, statusText: 'Internal Server Error' },
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       await expect(client.getStates()).rejects.toThrow(
         'Failed to get states: HTTP 500: Internal Server Error'
@@ -273,7 +273,7 @@ describe('HomeAssistantClient', () => {
         response: { status: 404, statusText: 'Not Found' },
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       await expect(client.getState('light.nonexistent')).rejects.toThrow(
         'Failed to get state for light.nonexistent: Entity or endpoint not found'
@@ -348,7 +348,7 @@ describe('HomeAssistantClient', () => {
         response: { status: 400, statusText: 'Bad Request' },
       };
       mockAxiosInstance.post.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.callService({
         domain: 'light',
@@ -519,7 +519,7 @@ describe('HomeAssistantClient', () => {
     it('should format standard Error objects', async () => {
       client.configure('http://ha.local:8123', 'token');
       mockAxiosInstance.get.mockRejectedValue(new Error('Something went wrong'));
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      vi.mocked(axios.isAxiosError).mockReturnValue(false);
 
       const result = await client.checkConnection();
 
@@ -529,7 +529,7 @@ describe('HomeAssistantClient', () => {
     it('should format non-Error values', async () => {
       client.configure('http://ha.local:8123', 'token');
       mockAxiosInstance.get.mockRejectedValue('string error');
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      vi.mocked(axios.isAxiosError).mockReturnValue(false);
 
       const result = await client.checkConnection();
 
@@ -543,7 +543,7 @@ describe('HomeAssistantClient', () => {
         message: 'Request failed',
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 

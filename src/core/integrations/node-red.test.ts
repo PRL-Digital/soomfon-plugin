@@ -188,7 +188,7 @@ describe('NodeRedClient', () => {
         response: { status: 401, statusText: 'Unauthorized' },
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -206,7 +206,7 @@ describe('NodeRedClient', () => {
         message: 'connect ECONNREFUSED',
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -224,7 +224,7 @@ describe('NodeRedClient', () => {
         message: 'getaddrinfo ENOTFOUND',
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -242,7 +242,7 @@ describe('NodeRedClient', () => {
         message: 'timeout',
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -299,7 +299,7 @@ describe('NodeRedClient', () => {
         response: { status: 404, statusText: 'Not Found' },
       };
       mockAxiosInstance.post.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.triggerWebhook('/nonexistent');
 
@@ -318,7 +318,7 @@ describe('NodeRedClient', () => {
         message: 'Connection refused',
       };
       mockAxiosInstance.post.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.triggerWebhook('/test');
 
@@ -335,7 +335,7 @@ describe('NodeRedClient', () => {
         response: { status: 500, statusText: 'Internal Server Error' },
       };
       mockAxiosInstance.post.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.triggerWebhook('/test');
 
@@ -560,7 +560,7 @@ describe('NodeRedClient', () => {
     it('should format standard Error objects', async () => {
       client.configure('http://localhost:1880');
       mockAxiosInstance.get.mockRejectedValue(new Error('Something went wrong'));
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      vi.mocked(axios.isAxiosError).mockReturnValue(false);
 
       const result = await client.checkConnection();
 
@@ -570,7 +570,7 @@ describe('NodeRedClient', () => {
     it('should format non-Error values', async () => {
       client.configure('http://localhost:1880');
       mockAxiosInstance.get.mockRejectedValue('string error');
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      vi.mocked(axios.isAxiosError).mockReturnValue(false);
 
       const result = await client.checkConnection();
 
@@ -584,7 +584,7 @@ describe('NodeRedClient', () => {
         response: { status: 418, statusText: "I'm a teapot" },
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
@@ -598,7 +598,7 @@ describe('NodeRedClient', () => {
         message: 'Network Error',
       };
       mockAxiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       const result = await client.checkConnection();
 
