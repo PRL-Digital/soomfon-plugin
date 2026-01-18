@@ -206,22 +206,57 @@ pub fn is_crt_response(data: &[u8]) -> bool {
 }
 
 // =============================================================================
-// Image Transfer (placeholder - needs more reverse engineering)
+// Image Transfer (based on mirajazz library reverse engineering)
 // =============================================================================
 
-/// Build an image transfer header packet
+/// Build an image transfer BAT (batch) command packet
 ///
-/// Note: Image transfer protocol is not fully reverse-engineered yet.
-/// The device accepts JPEG images, but the exact command format needs verification.
-pub fn build_image_header_packet(
-    _button_index: u8,
-    _data_length: u32,
-    _width: u16,
-    _height: u16,
-) -> [u8; CRT_PACKET_SIZE] {
-    // TODO: Implement based on further reverse engineering
-    // The device accepts JPEG images with FF D8 FF E0 magic bytes
-    [0u8; CRT_PACKET_SIZE]
+/// Protocol based on mirajazz library:
+/// - Header: ['C', 'R', 'T', 0x00, 0x00, 'B', 'A', 'T', 0x00, 0x00, size_hi, size_lo, key+1]
+/// - Format matches other CRT packets (no explicit Report ID - handled by USB layer)
+///
+/// # Arguments
+/// * `button_index` - Button index (0-5)
+/// * `data_length` - Total JPEG data length in bytes
+pub fn build_image_bat_packet(button_index: u8, data_length: u32) -> [u8; CRT_PACKET_SIZE] {
+    let mut packet = [0u8; CRT_PACKET_SIZE];
+
+    // Header: CRT + 2 null bytes (same format as other CRT packets)
+    packet[0..3].copy_from_slice(b"CRT");
+    // packet[3..5] are already 0x00
+
+    // Command: BAT
+    packet[5..8].copy_from_slice(b"BAT");
+    // packet[8..10] are already 0x00
+
+    // Image size (big-endian, 2 bytes)
+    // Note: data_length is truncated to u16 for protocol compatibility
+    let size = (data_length as u16).min(u16::MAX);
+    packet[10] = (size >> 8) as u8;  // High byte
+    packet[11] = (size & 0xFF) as u8; // Low byte
+
+    // Button index + 1 (buttons are 1-indexed in protocol)
+    packet[12] = button_index + 1;
+
+    packet
+}
+
+/// Build an image data chunk packet
+///
+/// Image data is sent in chunks after the BAT header.
+/// Each chunk is a 1024-byte packet with the data padded to fill.
+///
+/// # Arguments
+/// * `data` - Slice of JPEG data for this chunk (will be padded if < 1024 bytes)
+/// * `offset` - Offset of this chunk (for logging/verification)
+pub fn build_image_data_packet(data: &[u8], _offset: usize) -> [u8; CRT_PACKET_SIZE] {
+    let mut packet = [0u8; CRT_PACKET_SIZE];
+
+    // Copy data into packet (pad with zeros if less than packet size)
+    let copy_len = data.len().min(CRT_PACKET_SIZE);
+    packet[..copy_len].copy_from_slice(&data[..copy_len]);
+
+    packet
 }
 
 // =============================================================================
@@ -375,5 +410,58 @@ mod tests {
         assert_eq!(build_display_init_packet().len(), 1024);
         assert_eq!(build_brightness_packet(50).len(), 1024);
         assert_eq!(build_connect_packet().len(), 1024);
+    }
+
+    #[test]
+    fn test_image_bat_packet_format() {
+        let packet = build_image_bat_packet(0, 1234);
+
+        // Check header (same format as other CRT packets)
+        assert_eq!(&packet[0..3], b"CRT");
+        assert_eq!(packet[3], 0x00);
+        assert_eq!(packet[4], 0x00);
+
+        // Check BAT command
+        assert_eq!(&packet[5..8], b"BAT");
+        assert_eq!(packet[8], 0x00);
+        assert_eq!(packet[9], 0x00);
+
+        // Check size (big-endian)
+        // 1234 = 0x04D2
+        assert_eq!(packet[10], 0x04); // High byte
+        assert_eq!(packet[11], 0xD2); // Low byte
+
+        // Check button index (0 + 1 = 1)
+        assert_eq!(packet[12], 0x01);
+    }
+
+    #[test]
+    fn test_image_bat_packet_button_index() {
+        // Test button 5 (index 5 -> protocol value 6)
+        let packet = build_image_bat_packet(5, 100);
+        assert_eq!(packet[12], 0x06);
+    }
+
+    #[test]
+    fn test_image_data_packet_full() {
+        let data = vec![0xABu8; 1024];
+        let packet = build_image_data_packet(&data, 0);
+
+        // Check all bytes are copied
+        assert_eq!(packet[0], 0xAB);
+        assert_eq!(packet[1023], 0xAB);
+    }
+
+    #[test]
+    fn test_image_data_packet_partial() {
+        let data = vec![0xCDu8; 100];
+        let packet = build_image_data_packet(&data, 0);
+
+        // Check data bytes
+        assert_eq!(packet[0], 0xCD);
+        assert_eq!(packet[99], 0xCD);
+        // Check padding
+        assert_eq!(packet[100], 0x00);
+        assert_eq!(packet[1023], 0x00);
     }
 }

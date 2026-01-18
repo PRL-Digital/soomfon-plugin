@@ -3,17 +3,36 @@
 ## Completed Work
 
 ### Electron to Tauri Migration Cleanup (Completed)
-- ✅ Removed `/release/` directory containing old Electron build artifacts
-- ✅ Updated `tsconfig.json` to remove stale excludes (`src/main`, `src/preload` - directories don't exist)
-- ✅ Fixed 3 failing tauri-api tests (test mocks didn't match implementation behavior)
+- Removed `/release/` directory containing old Electron build artifacts
+- Updated `tsconfig.json` to remove stale excludes (`src/main`, `src/preload` - directories don't exist)
+- Fixed 3 failing tauri-api tests (test mocks didn't match implementation behavior)
 
 ### Electron Store Removal (Completed)
-- ✅ Removed `electron-store` from package.json devDependencies
-- ✅ Refactored ConfigManager (`src/core/config/config-manager.ts`) to be an in-memory store
-- ✅ ConfigManager is now used for testing and shared business logic only
-- ✅ Production config is handled by Tauri Rust backend (`src-tauri/src/config/`)
-- ✅ Updated `config-manager.test.ts` to work without electron-store mocks
-- ✅ All 1026 tests pass
+- Removed `electron-store` from package.json devDependencies
+- Refactored ConfigManager (`src/core/config/config-manager.ts`) to be an in-memory store
+- ConfigManager is now used for testing and shared business logic only
+- Production config is handled by Tauri Rust backend (`src-tauri/src/config/`)
+- Updated `config-manager.test.ts` to work without electron-store mocks
+- All 1026 tests pass
+
+### Image Transfer Protocol (Completed)
+Implemented image transfer protocol based on mirajazz library reverse engineering.
+
+**Protocol details (from https://github.com/4ndv/mirajazz):**
+- Device expects JPEG images at **60x60 pixels** (not 72x72 as previously assumed)
+- Images use JPEG compression at 90% quality
+- Protocol v2/v3 devices use 1024-byte packets
+
+**Implementation locations:**
+- `src-tauri/src/image/processor.rs` - Updated to output JPEG at 60x60 (was RGB565 at 72x72)
+- `src-tauri/src/hid/packets.rs` - Added `build_image_bat_packet()` and `build_image_data_packet()`
+- `src-tauri/src/hid/protocol.rs` - Implemented `set_button_image()` with BAT/STP protocol
+- `src-tauri/src/hid/types.rs` - Updated LCD dimensions to 60x60
+
+**Image transfer flow:**
+1. Send BAT (batch) header packet: `CRT..BAT` + size (2 bytes big-endian) + button_index+1
+2. Send image data in 1024-byte chunks
+3. Send STP (stop/commit) packet: `CRT..STP`
 
 ### Architecture Notes
 - **Rust backend** (`src-tauri/`) is the production runtime for device communication and config
@@ -22,22 +41,17 @@
 
 ## Remaining Work
 
-### Image Transfer Protocol (Requires Hardware/USB Capture)
-The image transfer protocol for setting button images is not yet implemented.
-
-**Location:** `src-tauri/src/hid/protocol.rs:93-99` and `src-tauri/src/hid/packets.rs:216-225`
-
-**Status:** Placeholder implementation exists. The device accepts JPEG images with `FF D8 FF E0` magic bytes, but the exact command format needs USB capture verification.
-
-Use https://github.com/4ndv/opendeck-akp03 to see how they hand this.
+None at this time. All major features are implemented.
 
 ## Notes for Future Development
 
 1. **Config Types Divergence**: Backend (`src-tauri/src/config/types.rs`) uses snake_case, frontend types use camelCase. The `tauri-api.ts` adapter handles mapping.
 
-2. **Test Infrastructure**: Tests in `src/core/` use in-memory ConfigManager for TypeScript business logic. This is separate from the Rust backend tests in `src-tauri/src/`.
+2. **Test Infrastructure**: Tests in `src/core/` use in-memory ConfigManager for TypeScript business logic. This is separate from the Rust backend tests in `src-tauri/src/`. Rust tests require `cargo test` in the `src-tauri/` directory with the Rust toolchain installed.
 
 3. **USB Protocol**: Device communication uses USB interrupt transfers on Interface 0 (0xFFA0 vendor protocol) with 512-byte ACK packets for button/encoder events.
 
-4. **Rust Environment**: The Rust toolchain may not be available in all development environments. TypeScript tests (`npm test`) can be run independently. Rust tests require `cargo test` in the `src-tauri/` directory with the Rust toolchain installed.
-
+4. **Image Protocol Reference**: The mirajazz library (https://github.com/4ndv/mirajazz) is the authoritative reference for the image transfer protocol. Key differences from Stream Deck:
+   - 60x60 pixel JPEG images (not BMP)
+   - BAT/STP command sequence for image transfer
+   - Buttons are 1-indexed in protocol (button 0 sends as key=1)

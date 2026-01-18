@@ -1,15 +1,20 @@
 //! Image Processor
 //!
-//! Processes images for display on LCD buttons (72x72, RGB565 format).
+//! Processes images for display on LCD buttons.
+//!
+//! Based on mirajazz library reverse engineering:
+//! - Device expects JPEG images at 60x60 pixels
+//! - Protocol v2/v3 devices use 1024-byte packet size
 
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgb, RgbImage};
+use std::io::Cursor;
 
-/// LCD button width in pixels
-pub const LCD_WIDTH: u32 = 72;
-/// LCD button height in pixels
-pub const LCD_HEIGHT: u32 = 72;
-/// Total bytes per LCD image (72 * 72 * 2 bytes per pixel)
-pub const LCD_IMAGE_SIZE: usize = (LCD_WIDTH * LCD_HEIGHT * 2) as usize;
+/// LCD button width in pixels (from mirajazz - device expects 60x60)
+pub const LCD_WIDTH: u32 = 60;
+/// LCD button height in pixels (from mirajazz - device expects 60x60)
+pub const LCD_HEIGHT: u32 = 60;
+/// JPEG quality for encoding (90% as per mirajazz)
+pub const JPEG_QUALITY: u8 = 90;
 
 /// Image processing options
 #[derive(Debug, Clone, Default)]
@@ -22,13 +27,13 @@ pub struct ImageOptions {
 
 /// Process an image for LCD display
 ///
-/// Resizes to 72x72 and converts to RGB565 format.
+/// Resizes to 60x60 and encodes as JPEG (device protocol requirement).
 pub fn process_image(image_data: &[u8], options: &ImageOptions) -> Result<Vec<u8>, String> {
     let img = image::load_from_memory(image_data)
         .map_err(|e| format!("Failed to load image: {}", e))?;
 
     let resized = resize_image(&img, options);
-    Ok(convert_to_rgb565(&resized))
+    convert_to_jpeg(&resized)
 }
 
 /// Process a base64-encoded image
@@ -46,17 +51,10 @@ pub fn process_base64_image(base64_data: &str, options: &ImageOptions) -> Result
     process_image(&decoded, options)
 }
 
-/// Create a solid color image
-pub fn create_solid_color(r: u8, g: u8, b: u8) -> Vec<u8> {
-    let rgb565 = rgb_to_rgb565(r, g, b);
-    let mut data = Vec::with_capacity(LCD_IMAGE_SIZE);
-
-    for _ in 0..(LCD_WIDTH * LCD_HEIGHT) {
-        data.push((rgb565 & 0xFF) as u8);
-        data.push((rgb565 >> 8) as u8);
-    }
-
-    data
+/// Create a solid color image as JPEG
+pub fn create_solid_color(r: u8, g: u8, b: u8) -> Result<Vec<u8>, String> {
+    let img: RgbImage = ImageBuffer::from_pixel(LCD_WIDTH, LCD_HEIGHT, Rgb([r, g, b]));
+    convert_to_jpeg(&img)
 }
 
 /// Resize image to LCD dimensions
@@ -93,27 +91,21 @@ fn resize_image(img: &DynamicImage, options: &ImageOptions) -> RgbImage {
     }
 }
 
-/// Convert RGB888 image to RGB565 byte array
-fn convert_to_rgb565(img: &RgbImage) -> Vec<u8> {
-    let mut data = Vec::with_capacity(LCD_IMAGE_SIZE);
+/// Convert RGB image to JPEG byte array
+///
+/// Uses 90% quality as specified by mirajazz library.
+fn convert_to_jpeg(img: &RgbImage) -> Result<Vec<u8>, String> {
+    let mut buffer = Cursor::new(Vec::new());
 
-    for pixel in img.pixels() {
-        let rgb565 = rgb_to_rgb565(pixel[0], pixel[1], pixel[2]);
-        // Little-endian byte order
-        data.push((rgb565 & 0xFF) as u8);
-        data.push((rgb565 >> 8) as u8);
-    }
+    let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, JPEG_QUALITY);
+    encoder.encode(
+        img.as_raw(),
+        img.width(),
+        img.height(),
+        image::ExtendedColorType::Rgb8,
+    ).map_err(|e| format!("Failed to encode JPEG: {}", e))?;
 
-    data
-}
-
-/// Convert RGB888 to RGB565
-#[inline]
-fn rgb_to_rgb565(r: u8, g: u8, b: u8) -> u16 {
-    let r5 = (r as u16 >> 3) & 0x1F;
-    let g6 = (g as u16 >> 2) & 0x3F;
-    let b5 = (b as u16 >> 3) & 0x1F;
-    (r5 << 11) | (g6 << 5) | b5
+    Ok(buffer.into_inner())
 }
 
 #[cfg(test)]
@@ -121,44 +113,43 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_rgb_to_rgb565_black() {
-        assert_eq!(rgb_to_rgb565(0, 0, 0), 0x0000);
+    fn test_lcd_dimensions() {
+        // Device expects 60x60 images per mirajazz protocol
+        assert_eq!(LCD_WIDTH, 60);
+        assert_eq!(LCD_HEIGHT, 60);
     }
 
     #[test]
-    fn test_rgb_to_rgb565_white() {
-        assert_eq!(rgb_to_rgb565(255, 255, 255), 0xFFFF);
+    fn test_jpeg_quality() {
+        // 90% quality as per mirajazz library
+        assert_eq!(JPEG_QUALITY, 90);
     }
 
     #[test]
-    fn test_rgb_to_rgb565_red() {
-        // Pure red: R=255, G=0, B=0 -> R5=31, G6=0, B5=0 -> 0xF800
-        assert_eq!(rgb_to_rgb565(255, 0, 0), 0xF800);
+    fn test_create_solid_color_is_jpeg() {
+        let data = create_solid_color(255, 0, 0).unwrap();
+        // JPEG files start with FF D8 FF magic bytes
+        assert!(data.len() >= 3);
+        assert_eq!(data[0], 0xFF);
+        assert_eq!(data[1], 0xD8);
+        assert_eq!(data[2], 0xFF);
     }
 
     #[test]
-    fn test_rgb_to_rgb565_green() {
-        // Pure green: R=0, G=255, B=0 -> R5=0, G6=63, B5=0 -> 0x07E0
-        assert_eq!(rgb_to_rgb565(0, 255, 0), 0x07E0);
+    fn test_create_solid_color_reasonable_size() {
+        let data = create_solid_color(255, 0, 0).unwrap();
+        // A 60x60 JPEG should be reasonably small (typically 500-2000 bytes for solid color)
+        assert!(data.len() > 100);
+        assert!(data.len() < 10000);
     }
 
     #[test]
-    fn test_rgb_to_rgb565_blue() {
-        // Pure blue: R=0, G=0, B=255 -> R5=0, G6=0, B5=31 -> 0x001F
-        assert_eq!(rgb_to_rgb565(0, 0, 255), 0x001F);
-    }
-
-    #[test]
-    fn test_create_solid_color_size() {
-        let data = create_solid_color(255, 0, 0);
-        assert_eq!(data.len(), LCD_IMAGE_SIZE);
-    }
-
-    #[test]
-    fn test_create_solid_color_content() {
-        let data = create_solid_color(255, 0, 0);
-        // Check first pixel (little-endian RGB565 for red)
-        assert_eq!(data[0], 0x00); // Low byte of 0xF800
-        assert_eq!(data[1], 0xF8); // High byte of 0xF800
+    fn test_convert_to_jpeg_valid() {
+        let img: RgbImage = ImageBuffer::from_pixel(60, 60, Rgb([128, 128, 128]));
+        let jpeg = convert_to_jpeg(&img).unwrap();
+        // Verify JPEG magic bytes
+        assert_eq!(jpeg[0], 0xFF);
+        assert_eq!(jpeg[1], 0xD8);
+        assert_eq!(jpeg[2], 0xFF);
     }
 }

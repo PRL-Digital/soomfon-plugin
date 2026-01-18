@@ -50,12 +50,12 @@ pub const VENDOR_INTERFACE: u8 = 0;
 pub const REPORT_SIZE: usize = 64;
 
 // =============================================================================
-// LCD Display Constants
+// LCD Display Constants (from mirajazz protocol reverse engineering)
 // =============================================================================
 
-/// LCD button dimensions (pixels)
-pub const LCD_WIDTH: u32 = 72;
-pub const LCD_HEIGHT: u32 = 72;
+/// LCD button dimensions (pixels) - device expects 60x60 JPEG images
+pub const LCD_WIDTH: u32 = 60;
+pub const LCD_HEIGHT: u32 = 60;
 
 // =============================================================================
 // Timing Constants
