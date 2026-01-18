@@ -13,6 +13,7 @@ import {
   ReportType,
   LCD_BUTTON_COUNT,
   ENCODER_COUNT,
+  SHIFT_BUTTON_INDEX,
 } from '../../shared/types/device';
 import { createLogger } from '../../shared/utils/logger';
 
@@ -46,6 +47,14 @@ export class DeviceEventParser extends EventEmitter {
 
   constructor() {
     super();
+  }
+
+  /**
+   * Check if the shift button (small button 0, index 6) is currently pressed
+   * This is used to determine if other button/encoder events should trigger shift actions
+   */
+  isShiftPressed(): boolean {
+    return this.buttonStates.get(SHIFT_BUTTON_INDEX) || false;
   }
 
   /** Configure long press threshold */
@@ -135,6 +144,7 @@ export class DeviceEventParser extends EventEmitter {
       type: eventType,
       encoderIndex,
       timestamp: Date.now(),
+      isShiftActive: this.isShiftPressed(),
     };
     this.emit('encoder', event);
   }
@@ -222,6 +232,10 @@ export class DeviceEventParser extends EventEmitter {
     this.buttonStates.set(buttonIndex, isPressed);
     const buttonType = buttonIndex < LCD_BUTTON_COUNT ? ButtonType.LCD : ButtonType.NORMAL;
 
+    // Check shift state for non-shift buttons
+    // For the shift button itself, isShiftActive is false (it IS the shift button)
+    const isShiftActive = buttonIndex !== SHIFT_BUTTON_INDEX && this.isShiftPressed();
+
     if (isPressed) {
       // Button pressed - emit press event and start long press timer
       const event: ButtonEvent = {
@@ -229,10 +243,12 @@ export class DeviceEventParser extends EventEmitter {
         buttonIndex,
         buttonType,
         timestamp: now,
+        isShiftActive,
       };
       this.emit('button', event);
 
-      // Start long press timer
+      // Start long press timer - capture shift state at press time
+      const shiftStateAtPress = isShiftActive;
       const timer = setTimeout(() => {
         if (this.buttonStates.get(buttonIndex)) {
           const longPressEvent: ButtonEvent = {
@@ -240,6 +256,7 @@ export class DeviceEventParser extends EventEmitter {
             buttonIndex,
             buttonType,
             timestamp: Date.now(),
+            isShiftActive: shiftStateAtPress,
           };
           this.emit('button', longPressEvent);
         }
@@ -260,6 +277,7 @@ export class DeviceEventParser extends EventEmitter {
         buttonIndex,
         buttonType,
         timestamp: now,
+        isShiftActive,
       };
       this.emit('button', event);
     }
@@ -301,6 +319,7 @@ export class DeviceEventParser extends EventEmitter {
       encoderIndex,
       delta: eventType === EncoderEventType.ROTATE_CW || eventType === EncoderEventType.ROTATE_CCW ? delta : undefined,
       timestamp: now,
+      isShiftActive: this.isShiftPressed(),
     };
 
     this.emit('encoder', event);

@@ -113,6 +113,12 @@ pub struct ButtonConfig {
     /// Action executed on long press
     #[serde(default)]
     pub long_press_action: Option<Action>,
+    /// Action executed on button press while shift is held
+    #[serde(default)]
+    pub shift_action: Option<Action>,
+    /// Action executed on long press while shift is held
+    #[serde(default)]
+    pub shift_long_press_action: Option<Action>,
 }
 
 /// Configuration for a single encoder
@@ -137,6 +143,18 @@ pub struct EncoderConfig {
     /// Action executed on counter-clockwise rotation
     #[serde(default)]
     pub counter_clockwise_action: Option<Action>,
+    /// Action executed on encoder press while shift is held
+    #[serde(default)]
+    pub shift_press_action: Option<Action>,
+    /// Action executed on long press while shift is held
+    #[serde(default)]
+    pub shift_long_press_action: Option<Action>,
+    /// Action executed on clockwise rotation while shift is held
+    #[serde(default)]
+    pub shift_clockwise_action: Option<Action>,
+    /// Action executed on counter-clockwise rotation while shift is held
+    #[serde(default)]
+    pub shift_counter_clockwise_action: Option<Action>,
 }
 
 /// Profile update request

@@ -45,33 +45,35 @@ function createBindingKey(
 
 /**
  * Map ButtonEventType to ButtonTrigger
+ * When isShiftActive is true, returns shift-prefixed triggers for press/longPress
  */
-function mapButtonEventToTrigger(eventType: ButtonEventType): ButtonTrigger {
+function mapButtonEventToTrigger(eventType: ButtonEventType, isShiftActive: boolean = false): ButtonTrigger {
   switch (eventType) {
     case ButtonEventType.PRESS:
-      return 'press';
+      return isShiftActive ? 'shiftPress' : 'press';
     case ButtonEventType.RELEASE:
-      return 'release';
+      return 'release'; // Release doesn't have a shift variant
     case ButtonEventType.LONG_PRESS:
-      return 'longPress';
+      return isShiftActive ? 'shiftLongPress' : 'longPress';
   }
 }
 
 /**
  * Map EncoderEventType to EncoderTrigger
+ * When isShiftActive is true, returns shift-prefixed triggers for rotation and press events
  */
-function mapEncoderEventToTrigger(eventType: EncoderEventType): EncoderTrigger {
+function mapEncoderEventToTrigger(eventType: EncoderEventType, isShiftActive: boolean = false): EncoderTrigger {
   switch (eventType) {
     case EncoderEventType.ROTATE_CW:
-      return 'rotateCW';
+      return isShiftActive ? 'shiftRotateCW' : 'rotateCW';
     case EncoderEventType.ROTATE_CCW:
-      return 'rotateCCW';
+      return isShiftActive ? 'shiftRotateCCW' : 'rotateCCW';
     case EncoderEventType.PRESS:
-      return 'press';
+      return isShiftActive ? 'shiftPress' : 'press';
     case EncoderEventType.RELEASE:
-      return 'release';
+      return 'release'; // Release doesn't have a shift variant
     case EncoderEventType.LONG_PRESS:
-      return 'longPress';
+      return isShiftActive ? 'shiftLongPress' : 'longPress';
   }
 }
 
@@ -189,10 +191,12 @@ export class EventBinder extends EventEmitter {
   /**
    * Handle a button event
    * Finds matching binding and executes the action
+   * If shift is active, looks for shift trigger first, then falls back to normal trigger
    */
   async handleButtonEvent(event: ButtonEvent): Promise<ActionExecutionResult | null> {
     const elementType = mapButtonTypeToElement(event.buttonType);
-    const trigger = mapButtonEventToTrigger(event.type);
+    const isShiftActive = event.isShiftActive || false;
+    const trigger = mapButtonEventToTrigger(event.type, isShiftActive);
 
     // For normal buttons, adjust index to be 0-based within normal button range
     let elementIndex = event.buttonIndex;
@@ -200,16 +204,37 @@ export class EventBinder extends EventEmitter {
       elementIndex = event.buttonIndex - LCD_BUTTON_COUNT;
     }
 
-    return this.executeBindingForElement(elementType, elementIndex, trigger, event);
+    // Try shift trigger first if shift is active
+    let result = await this.executeBindingForElement(elementType, elementIndex, trigger, event);
+
+    // If shift is active but no shift binding found, fall back to normal trigger
+    if (result === null && isShiftActive && event.type !== ButtonEventType.RELEASE) {
+      const normalTrigger = mapButtonEventToTrigger(event.type, false);
+      result = await this.executeBindingForElement(elementType, elementIndex, normalTrigger, event);
+    }
+
+    return result;
   }
 
   /**
    * Handle an encoder event
    * Finds matching binding and executes the action
+   * If shift is active, looks for shift trigger first, then falls back to normal trigger
    */
   async handleEncoderEvent(event: EncoderEvent): Promise<ActionExecutionResult | null> {
-    const trigger = mapEncoderEventToTrigger(event.type);
-    return this.executeBindingForElement('encoder', event.encoderIndex, trigger, event);
+    const isShiftActive = event.isShiftActive || false;
+    const trigger = mapEncoderEventToTrigger(event.type, isShiftActive);
+
+    // Try shift trigger first if shift is active
+    let result = await this.executeBindingForElement('encoder', event.encoderIndex, trigger, event);
+
+    // If shift is active but no shift binding found, fall back to normal trigger
+    if (result === null && isShiftActive && event.type !== EncoderEventType.RELEASE) {
+      const normalTrigger = mapEncoderEventToTrigger(event.type, false);
+      result = await this.executeBindingForElement('encoder', event.encoderIndex, normalTrigger, event);
+    }
+
+    return result;
   }
 
   /**

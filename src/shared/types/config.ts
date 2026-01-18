@@ -8,6 +8,7 @@ import type { Action } from './actions';
 /**
  * Button configuration for LCD buttons
  * LCD buttons can display images and have short and long press actions
+ * When the shift button (small button 0) is held, shift actions are used instead
  */
 export interface ButtonConfig {
   /** Button index (0-14 for 15-button layout) */
@@ -20,6 +21,10 @@ export interface ButtonConfig {
   action?: Action;
   /** Action executed on long press */
   longPressAction?: Action;
+  /** Action executed on button press while shift is held */
+  shiftAction?: Action;
+  /** Action executed on long press while shift is held */
+  shiftLongPressAction?: Action;
   /** Time in milliseconds to trigger long press (default: 500) */
   longPressThreshold?: number;
 }
@@ -27,6 +32,7 @@ export interface ButtonConfig {
 /**
  * Encoder configuration for rotary encoders
  * Encoders have press, long press, and rotation actions
+ * When the shift button (small button 0) is held, shift actions are used instead
  */
 export interface EncoderConfig {
   /** Encoder index (0-2 for 3-encoder layout) */
@@ -39,6 +45,14 @@ export interface EncoderConfig {
   clockwiseAction?: Action;
   /** Action executed on counter-clockwise rotation */
   counterClockwiseAction?: Action;
+  /** Action executed on encoder press while shift is held */
+  shiftPressAction?: Action;
+  /** Action executed on long press while shift is held */
+  shiftLongPressAction?: Action;
+  /** Action executed on clockwise rotation while shift is held */
+  shiftClockwiseAction?: Action;
+  /** Action executed on counter-clockwise rotation while shift is held */
+  shiftCounterClockwiseAction?: Action;
   /** Time in milliseconds to trigger long press (default: 500) */
   longPressThreshold?: number;
 }

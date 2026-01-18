@@ -50,6 +50,8 @@ export interface ButtonEvent {
   buttonIndex: number;
   buttonType: ButtonType;
   timestamp: number;
+  /** Whether the shift button (small button 0) was held when this event occurred */
+  isShiftActive?: boolean;
 }
 
 /** Encoder event */
@@ -58,7 +60,12 @@ export interface EncoderEvent {
   encoderIndex: number;
   delta?: number;
   timestamp: number;
+  /** Whether the shift button (small button 0) was held when this event occurred */
+  isShiftActive?: boolean;
 }
+
+/** Index of the shift button (small button 0, left-most) */
+export const SHIFT_BUTTON_INDEX = LCD_BUTTON_COUNT; // Index 6
 
 /** Device connection state */
 export const ConnectionState = {

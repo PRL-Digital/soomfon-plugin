@@ -245,10 +245,13 @@ export const actionExecutionResultSchema = z.object({
 });
 
 /** Button trigger schema */
-export const buttonTriggerSchema = z.enum(['press', 'release', 'longPress']);
+export const buttonTriggerSchema = z.enum(['press', 'release', 'longPress', 'shiftPress', 'shiftLongPress']);
 
 /** Encoder trigger schema */
-export const encoderTriggerSchema = z.enum(['rotateCW', 'rotateCCW', 'press', 'release', 'longPress']);
+export const encoderTriggerSchema = z.enum([
+  'rotateCW', 'rotateCCW', 'press', 'release', 'longPress',
+  'shiftRotateCW', 'shiftRotateCCW', 'shiftPress', 'shiftLongPress'
+]);
 
 /** Element type schema */
 export const elementTypeSchema = z.enum(['lcdButton', 'normalButton', 'encoder']);

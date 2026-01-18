@@ -61,29 +61,47 @@ Fixed TypeScript errors and type mismatches to ensure full type safety:
   - `HomeAssistantSettings`: Changed from `token` to `accessToken`
 - `src/lib/tauri-api.test.ts` - Updated test to use correct `AppSettings` type
 
+### Shift Button Core Implementation (Completed)
+Implemented shift button functionality where small button 0 (left) acts as a modifier key.
+
+**How it works:**
+- When the shift button (index 6, small button 0) is held down, other button/encoder events trigger their shift actions
+- Events include `isShiftActive` flag so consumers know the shift state at event time
+- EventBinder looks up shift-prefixed triggers first, then falls back to normal triggers if no shift binding exists
+- Long press shift state is captured at press time, so releasing shift mid-long-press won't change the action
+
+**Type Changes:**
+- `ButtonConfig` (TS & Rust): Added `shiftAction` and `shiftLongPressAction` fields
+- `EncoderConfig` (TS & Rust): Added `shiftPressAction`, `shiftLongPressAction`, `shiftClockwiseAction`, `shiftCounterClockwiseAction` fields
+- `ButtonEvent` & `EncoderEvent`: Added `isShiftActive?: boolean` field
+- `ButtonTrigger`: Added `'shiftPress'` and `'shiftLongPress'` values
+- `EncoderTrigger`: Added `'shiftRotateCW'`, `'shiftRotateCCW'`, `'shiftPress'`, `'shiftLongPress'` values
+- Added `SHIFT_BUTTON_INDEX` constant (value: 6)
+
+**Files Changed:**
+- `src/shared/types/config.ts` - ButtonConfig and EncoderConfig shift action fields
+- `src/shared/types/device.ts` - Event interfaces with isShiftActive, SHIFT_BUTTON_INDEX constant
+- `src/shared/types/actions.ts` - ButtonTrigger and EncoderTrigger shift variants
+- `src/core/device/device-events.ts` - DeviceEventParser.isShiftPressed(), shift state tracking in events
+- `src/core/actions/event-binder.ts` - Shift-aware trigger mapping and fallback logic
+- `src/core/actions/schemas.ts` - Zod schemas updated with shift trigger values
+- `src-tauri/src/config/types.rs` - Rust ButtonConfig and EncoderConfig shift action fields
+
 ---
 
 ## Remaining Work
 
-### Adding "Shift" Button
-Left hand side small button = shift. This makes all other buttons have a secondary purpose.
+### Adding "Shift" Button (UI Remaining)
+Core shift button functionality is complete. UI work remains.
 
-**Design:**
-- Small button 0 (left) acts as a shift modifier
-- When held, all other buttons execute their "shift action" instead of primary action
-- UI needs a "Shift Configuration" screen to set secondary actions for buttons/dials
+**Completed:**
+- ✅ Shift state management (track if shift is held)
+- ✅ Extended `ButtonConfig` and `EncoderConfig` with shift action fields
+- ✅ Updated `EventBinder` to check shift state when resolving bindings
 
-**Implementation Tasks:**
-1. Add shift state management (track if shift is held)
-2. Extend `ButtonConfig` and `EncoderConfig` with `shiftAction`, `shiftLongPressAction`, etc.
-3. Update `EventBinder` to check shift state when resolving bindings
-4. Create UI for shift button configuration
-5. Add visual indicator when shift is active
-
-**Current State:**
-- Hardware support exists: Small buttons are mapped (indices 6, 7, 8)
-- Event system can detect small button presses
-- No shift state management or secondary action support
+**Remaining Tasks:**
+- Create UI for shift button configuration (secondary action editing)
+- Add visual indicator when shift is active (e.g., status bar or button highlight)
 
 ### Navigate "Workspaces"
 Middle and right small buttons navigate between "workspaces". A workspace is a complete set of button/dial configurations.
