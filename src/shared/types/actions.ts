@@ -12,6 +12,7 @@ export type ActionType =
   | 'media'
   | 'system'
   | 'profile'
+  | 'workspace'
   | 'text'
   | 'home_assistant'
   | 'node_red';
@@ -136,6 +137,18 @@ export interface ProfileAction extends BaseAction {
   profileId: string;
 }
 
+/** Workspace navigation direction */
+export type WorkspaceDirection = 'next' | 'previous' | 'specific';
+
+/** Workspace action - navigates between workspaces within the current profile */
+export interface WorkspaceAction extends BaseAction {
+  type: 'workspace';
+  /** Navigation direction or specific workspace */
+  direction: WorkspaceDirection;
+  /** Workspace index when direction is 'specific' (0-based) */
+  workspaceIndex?: number;
+}
+
 /** Text action - types text strings */
 export interface TextAction extends BaseAction {
   type: 'text';
@@ -206,6 +219,7 @@ export type Action =
   | MediaAction
   | SystemAction
   | ProfileAction
+  | WorkspaceAction
   | TextAction
   | HomeAssistantAction
   | NodeRedAction;

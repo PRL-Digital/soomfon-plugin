@@ -14,6 +14,7 @@ export const actionTypeSchema = z.enum([
   'media',
   'system',
   'profile',
+  'workspace',
   'text',
   'home_assistant',
   'node_red',
@@ -125,6 +126,16 @@ export const profileActionSchema = baseActionSchema.extend({
   profileId: z.string().min(1),
 });
 
+/** Workspace direction schema */
+export const workspaceDirectionSchema = z.enum(['next', 'previous', 'specific']);
+
+/** Workspace action schema */
+export const workspaceActionSchema = baseActionSchema.extend({
+  type: z.literal('workspace'),
+  direction: workspaceDirectionSchema,
+  workspaceIndex: z.number().int().nonnegative().optional(),
+});
+
 /** Text action schema */
 export const textActionSchema = baseActionSchema.extend({
   type: z.literal('text'),
@@ -184,6 +195,7 @@ export const actionSchema = z.discriminatedUnion('type', [
   mediaActionSchema,
   systemActionSchema,
   profileActionSchema,
+  workspaceActionSchema,
   textActionSchema,
   homeAssistantActionSchema,
   nodeRedActionSchema,
@@ -225,6 +237,17 @@ export const actionSchema = z.discriminatedUnion('type', [
         code: z.ZodIssueCode.custom,
         message: 'eventName is required for send_event operation',
         path: ['eventName'],
+      });
+    }
+  }
+
+  // Workspace action validation: require workspaceIndex for specific direction
+  if (data.type === 'workspace') {
+    if (data.direction === 'specific' && data.workspaceIndex === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'workspaceIndex is required when direction is "specific"',
+        path: ['workspaceIndex'],
       });
     }
   }
@@ -276,6 +299,7 @@ export type HttpActionInput = z.input<typeof httpActionSchema>;
 export type MediaActionInput = z.input<typeof mediaActionSchema>;
 export type SystemActionInput = z.input<typeof systemActionSchema>;
 export type ProfileActionInput = z.input<typeof profileActionSchema>;
+export type WorkspaceActionInput = z.input<typeof workspaceActionSchema>;
 export type TextActionInput = z.input<typeof textActionSchema>;
 export type HomeAssistantActionInput = z.input<typeof homeAssistantActionSchema>;
 export type NodeRedActionInput = z.input<typeof nodeRedActionSchema>;
@@ -290,6 +314,7 @@ export type ValidatedHttpAction = z.output<typeof httpActionSchema>;
 export type ValidatedMediaAction = z.output<typeof mediaActionSchema>;
 export type ValidatedSystemAction = z.output<typeof systemActionSchema>;
 export type ValidatedProfileAction = z.output<typeof profileActionSchema>;
+export type ValidatedWorkspaceAction = z.output<typeof workspaceActionSchema>;
 export type ValidatedTextAction = z.output<typeof textActionSchema>;
 export type ValidatedHomeAssistantAction = z.output<typeof homeAssistantActionSchema>;
 export type ValidatedNodeRedAction = z.output<typeof nodeRedActionSchema>;

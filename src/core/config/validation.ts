@@ -113,6 +113,25 @@ export const encoderConfigSchema = z.object({
 });
 
 // ============================================================================
+// Workspace Schema
+// ============================================================================
+
+/**
+ * Workspace schema containing button and encoder configurations
+ * Workspaces allow quick switching between different configurations within a profile
+ */
+export const workspaceSchema = z.object({
+  /** Unique identifier for the workspace */
+  id: z.string().min(1, 'Workspace ID is required'),
+  /** Human-readable name */
+  name: z.string().min(1, 'Workspace name is required'),
+  /** Button configurations */
+  buttons: z.array(buttonConfigSchema),
+  /** Encoder configurations */
+  encoders: z.array(encoderConfigSchema),
+});
+
+// ============================================================================
 // Profile Schema
 // ============================================================================
 
@@ -123,7 +142,7 @@ const iso8601DateSchema = z.string().refine(
 );
 
 /**
- * Profile schema containing button and encoder configurations
+ * Profile schema containing workspaces with button and encoder configurations
  */
 export const profileSchema = z.object({
   /** Unique identifier for the profile */
@@ -134,15 +153,25 @@ export const profileSchema = z.object({
   description: z.string().optional(),
   /** Whether this is the default profile */
   isDefault: z.boolean(),
-  /** Button configurations */
-  buttons: z.array(buttonConfigSchema),
-  /** Encoder configurations */
-  encoders: z.array(encoderConfigSchema),
+  /** Workspaces containing button/encoder configurations */
+  workspaces: z.array(workspaceSchema).min(1, 'At least one workspace is required'),
+  /** Index of the currently active workspace (0-based) */
+  activeWorkspaceIndex: z.number().int().nonnegative(),
   /** Creation timestamp (ISO 8601) */
   createdAt: iso8601DateSchema,
   /** Last update timestamp (ISO 8601) */
   updatedAt: iso8601DateSchema,
-});
+  /** @deprecated Legacy button configurations for backward compatibility */
+  buttons: z.array(buttonConfigSchema).optional(),
+  /** @deprecated Legacy encoder configurations for backward compatibility */
+  encoders: z.array(encoderConfigSchema).optional(),
+}).refine(
+  (data) => {
+    // Validate that activeWorkspaceIndex is within bounds
+    return data.activeWorkspaceIndex < data.workspaces.length;
+  },
+  { message: 'Active workspace index must be within workspaces array bounds' }
+);
 
 // ============================================================================
 // Device Settings Schema
@@ -292,6 +321,7 @@ export const configSchema = z.object({
 /** Inferred types from schemas */
 export type ValidatedButtonConfig = z.output<typeof buttonConfigSchema>;
 export type ValidatedEncoderConfig = z.output<typeof encoderConfigSchema>;
+export type ValidatedWorkspace = z.output<typeof workspaceSchema>;
 export type ValidatedProfile = z.output<typeof profileSchema>;
 export type ValidatedDeviceSettings = z.output<typeof deviceSettingsSchema>;
 export type ValidatedAppSettings = z.output<typeof appSettingsSchema>;
@@ -303,6 +333,7 @@ export type ValidatedConfig = z.output<typeof configSchema>;
 /** Input types (before transformation) */
 export type ButtonConfigInput = z.input<typeof buttonConfigSchema>;
 export type EncoderConfigInput = z.input<typeof encoderConfigSchema>;
+export type WorkspaceInput = z.input<typeof workspaceSchema>;
 export type ProfileInput = z.input<typeof profileSchema>;
 export type ConfigInput = z.input<typeof configSchema>;
 

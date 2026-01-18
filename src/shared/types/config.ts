@@ -58,8 +58,25 @@ export interface EncoderConfig {
 }
 
 /**
- * Profile containing button and encoder configurations
+ * Workspace containing button and encoder configurations
+ * Workspaces allow quick switching between different configurations within a profile
+ * Navigation: Small button 1 (middle) = previous, Small button 2 (right) = next
+ */
+export interface Workspace {
+  /** Unique identifier for this workspace */
+  id: string;
+  /** Human-readable name */
+  name: string;
+  /** Button configurations indexed by button index */
+  buttons: ButtonConfig[];
+  /** Encoder configurations indexed by encoder index */
+  encoders: EncoderConfig[];
+}
+
+/**
+ * Profile containing workspaces with button and encoder configurations
  * Profiles allow users to switch between different configurations
+ * Each profile contains one or more workspaces that can be cycled through
  */
 export interface Profile {
   /** Unique identifier for the profile */
@@ -70,14 +87,24 @@ export interface Profile {
   description?: string;
   /** Whether this is the default profile */
   isDefault: boolean;
-  /** Button configurations indexed by button index */
-  buttons: ButtonConfig[];
-  /** Encoder configurations indexed by encoder index */
-  encoders: EncoderConfig[];
+  /** Workspaces containing button/encoder configurations */
+  workspaces: Workspace[];
+  /** Index of the currently active workspace (0-based) */
+  activeWorkspaceIndex: number;
   /** Creation timestamp (ISO 8601) */
   createdAt: string;
   /** Last update timestamp (ISO 8601) */
   updatedAt: string;
+  /**
+   * @deprecated Use workspaces[activeWorkspaceIndex].buttons instead
+   * Kept for backward compatibility during migration
+   */
+  buttons?: ButtonConfig[];
+  /**
+   * @deprecated Use workspaces[activeWorkspaceIndex].encoders instead
+   * Kept for backward compatibility during migration
+   */
+  encoders?: EncoderConfig[];
 }
 
 /**

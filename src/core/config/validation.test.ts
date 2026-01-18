@@ -45,8 +45,13 @@ const createValidProfile = (overrides = {}) => ({
   name: 'Default Profile',
   description: 'Test profile',
   isDefault: true,
-  buttons: [],
-  encoders: [],
+  workspaces: [{
+    id: 'workspace-1',
+    name: 'Workspace 1',
+    buttons: [],
+    encoders: [],
+  }],
+  activeWorkspaceIndex: 0,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   ...overrides,
@@ -192,10 +197,15 @@ describe('Profile Schema', () => {
 
   it('should validate nested button configs', () => {
     const profile = createValidProfile({
-      buttons: [
-        { index: 0, action: createValidAction() },
-        { index: 1, label: 'Button 2' },
-      ],
+      workspaces: [{
+        id: 'workspace-1',
+        name: 'Workspace 1',
+        buttons: [
+          { index: 0, action: createValidAction() },
+          { index: 1, label: 'Button 2' },
+        ],
+        encoders: [],
+      }],
     });
 
     const result = profileSchema.safeParse(profile);
@@ -204,7 +214,12 @@ describe('Profile Schema', () => {
 
   it('should reject invalid button config in profile', () => {
     const profile = createValidProfile({
-      buttons: [{ index: 999 }], // Invalid index
+      workspaces: [{
+        id: 'workspace-1',
+        name: 'Workspace 1',
+        buttons: [{ index: 999 }], // Invalid index
+        encoders: [],
+      }],
     });
 
     const result = profileSchema.safeParse(profile);
@@ -394,13 +409,17 @@ describe('Full Config Schema', () => {
       ...createValidConfig(),
       profiles: [
         createValidProfile({
-          buttons: [
-            { index: 0, action: createValidAction() },
-            { index: 5, label: 'Test' },
-          ],
-          encoders: [
-            { index: 0, clockwiseAction: createValidAction() },
-          ],
+          workspaces: [{
+            id: 'workspace-1',
+            name: 'Workspace 1',
+            buttons: [
+              { index: 0, action: createValidAction() },
+              { index: 5, label: 'Test' },
+            ],
+            encoders: [
+              { index: 0, clockwiseAction: createValidAction() },
+            ],
+          }],
         }),
       ],
     };

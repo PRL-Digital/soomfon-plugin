@@ -107,30 +107,93 @@ Implemented comprehensive UI for shift button configuration and shift state visu
 - `src/renderer/styles/global.css` - Added styles for trigger mode selector, encoder section groups, and shift indicator
 - `src/renderer/App.tsx` - Updated to use new ActionEditor props and pass shift actions to EncoderEditor
 
+### Workspace Core Implementation (Completed)
+Implemented workspace data structures for organizing multiple button/encoder configurations within a profile.
+
+**Key Concepts:**
+- **Workspace**: A complete set of button and encoder configurations (replaces direct buttons/encoders arrays on Profile)
+- **Profile**: Now contains `workspaces: Workspace[]` and `activeWorkspaceIndex` instead of flat buttons/encoders
+- **Navigation**: Small button 1 (middle) = previous, Small button 2 (right) = next workspace
+
+**Type Changes:**
+
+**TypeScript (`src/shared/types/config.ts`):**
+```typescript
+interface Workspace {
+  id: string;
+  name: string;
+  buttons: ButtonConfig[];
+  encoders: EncoderConfig[];
+}
+
+interface Profile {
+  // ... existing fields
+  workspaces: Workspace[];          // NEW: replaces buttons/encoders
+  activeWorkspaceIndex: number;     // NEW: 0-based index
+  buttons?: ButtonConfig[];         // DEPRECATED: for migration
+  encoders?: EncoderConfig[];       // DEPRECATED: for migration
+}
+```
+
+**Rust (`src-tauri/src/config/types.rs`):**
+- Added `Workspace` struct with `id`, `name`, `buttons`, `encoders`
+- Updated `Profile` with `workspaces: Vec<Workspace>`, `active_workspace_index: usize`
+- Added `active_workspace()` and `active_workspace_mut()` helper methods
+- Added `migrate_legacy_config()` for backward compatibility
+- Updated `ProfileUpdate` with `workspaces` and `active_workspace_index` fields
+
+**Workspace Action System:**
+
+**TypeScript (`src/shared/types/actions.ts`):**
+```typescript
+type WorkspaceDirection = 'next' | 'previous' | 'specific';
+
+interface WorkspaceAction extends BaseAction {
+  type: 'workspace';
+  direction: WorkspaceDirection;
+  workspaceIndex?: number;  // Required when direction='specific'
+}
+```
+
+**Handler (`src/core/actions/handlers/workspace-handler.ts`):**
+- `WorkspaceHandler` class implements workspace navigation
+- Supports `next`, `previous`, and `specific` directions
+- Circular navigation (wraps around at boundaries)
+- Returns `alreadyActive` data when already at target workspace
+
+**Files Changed:**
+- `src/shared/types/config.ts` - Added `Workspace` interface, updated `Profile`
+- `src/shared/types/actions.ts` - Added `WorkspaceAction`, `WorkspaceDirection`, updated `Action` union
+- `src/core/actions/schemas.ts` - Added `workspaceDirectionSchema`, `workspaceActionSchema`
+- `src/core/config/validation.ts` - Added `workspaceSchema`, updated `profileSchema`
+- `src/core/config/profile-manager.ts` - Updated `create()` and `duplicate()` to use workspaces
+- `src/core/actions/handlers/workspace-handler.ts` - NEW: WorkspaceHandler implementation
+- `src/core/actions/handlers/workspace-handler.test.ts` - NEW: 15 tests for workspace navigation
+- `src-tauri/src/config/types.rs` - Added Rust `Workspace`, updated `Profile`, `ProfileUpdate`
+- `src-tauri/src/actions/types.rs` - Added `WorkspaceDirection`, `WorkspaceAction`, updated `Action` enum
+
+**Test Updates:**
+Updated all test fixtures to use new workspace structure:
+- `src/core/config/config-manager.test.ts`
+- `src/core/config/profile-manager.test.ts`
+- `src/core/config/validation.test.ts`
+- `src/core/config/import-export.test.ts`
+- `src/core/actions/handlers/profile-handler.test.ts`
+
+All 1030 tests pass.
+
 ---
 
 ## Remaining Work
 
-### Navigate "Workspaces"
-Middle and right small buttons navigate between "workspaces". A workspace is a complete set of button/dial configurations.
-
-**Design:**
-- Small button 1 (middle) = previous workspace
-- Small button 2 (right) = next workspace
-- Each workspace has its own set of LCD button images, actions, and encoder configurations
-- Workspaces are contained within a Profile
+### Workspace UI Implementation
+UI components for workspace navigation and management.
 
 **Implementation Tasks:**
-1. Add `Workspace` type with buttons/encoders arrays
-2. Extend `Profile` to have `workspaces: Workspace[]` and `activeWorkspaceIndex`
-3. Create workspace navigation action handlers
-4. Add UI for workspace management (add/remove/duplicate workspaces)
-5. Display current workspace indicator in DeviceView
-6. Update LCD images when workspace changes
-
-**Current State:**
-- Profile system exists with single button/encoder configuration
-- No workspace concept or navigation logic
+1. Add workspace indicator to DeviceView (shows current workspace name/index)
+2. Wire small buttons 7/8 to workspace prev/next actions
+3. Add workspace management UI (add/remove/rename/duplicate workspaces)
+4. Update LCD images when workspace changes
 
 ### Image Upload Enhancements
 - Frontend preview of processed result before upload
@@ -155,7 +218,7 @@ Pre-existing test compilation errors in `src-tauri/src/actions/` tests. The test
 
 ### Development Environment
 - Rust tests require Tauri platform libraries (GTK, WebKit, etc.) for linking
-- TypeScript tests pass (1026 tests)
+- TypeScript tests pass (1030 tests)
 - Use `cargo check --lib` to verify library compilation without linking
 
 ---

@@ -46,8 +46,13 @@ const createTestProfile = (overrides: Partial<Profile> = {}): Profile => ({
   name: 'Test Profile',
   description: 'A test profile',
   isDefault: true,
-  buttons: [],
-  encoders: [],
+  workspaces: [{
+    id: 'workspace-1',
+    name: 'Workspace 1',
+    buttons: [],
+    encoders: [],
+  }],
+  activeWorkspaceIndex: 0,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   ...overrides,
@@ -136,10 +141,13 @@ describe('ProfileManager', () => {
     it('should create a new profile with name', () => {
       const profile = profileManager.create('New Profile');
 
-      expect(profile.id).toBe('mock-uuid-1');
+      // First UUID is for workspace, second for profile
+      expect(profile.id).toBe('mock-uuid-2');
       expect(profile.name).toBe('New Profile');
-      expect(profile.buttons).toEqual([]);
-      expect(profile.encoders).toEqual([]);
+      expect(profile.workspaces).toHaveLength(1);
+      expect(profile.workspaces[0].buttons).toEqual([]);
+      expect(profile.workspaces[0].encoders).toEqual([]);
+      expect(profile.activeWorkspaceIndex).toBe(0);
       expect(profile.isDefault).toBe(false);
     });
 
@@ -155,14 +163,16 @@ describe('ProfileManager', () => {
       const buttons: ButtonConfig[] = [{ index: 0 }, { index: 1 }];
       const profile = profileManager.create('New Profile', { buttons });
 
-      expect(profile.buttons).toEqual(buttons);
+      // Buttons go into the first workspace
+      expect(profile.workspaces[0].buttons).toEqual(buttons);
     });
 
     it('should create profile with initial encoders', () => {
       const encoders: EncoderConfig[] = [{ index: 0 }, { index: 1 }];
       const profile = profileManager.create('New Profile', { encoders });
 
-      expect(profile.encoders).toEqual(encoders);
+      // Encoders go into the first workspace
+      expect(profile.workspaces[0].encoders).toEqual(encoders);
     });
 
     it('should create profile as default when specified', () => {
@@ -426,36 +436,47 @@ describe('ProfileManager', () => {
     it('should generate new ID for duplicate', () => {
       const duplicate = profileManager.duplicate('profile-1', 'Duplicate');
 
-      expect(duplicate.id).toBe('mock-uuid-1');
+      // First UUID is for workspace, second for profile
+      expect(duplicate.id).toBe('mock-uuid-2');
     });
 
     it('should copy buttons from source profile', () => {
       const sourceWithButtons = createMockConfigManager([
         createTestProfile({
           id: 'source',
-          buttons: [{ index: 0, label: 'Button 1' }],
+          workspaces: [{
+            id: 'ws-source',
+            name: 'Workspace 1',
+            buttons: [{ index: 0, label: 'Button 1' }],
+            encoders: [],
+          }],
         }),
       ]);
       const pm = new ProfileManager(sourceWithButtons);
 
       const duplicate = pm.duplicate('source', 'Duplicate');
 
-      expect(duplicate.buttons).toHaveLength(1);
-      expect(duplicate.buttons[0].label).toBe('Button 1');
+      expect(duplicate.workspaces[0].buttons).toHaveLength(1);
+      expect(duplicate.workspaces[0].buttons[0].label).toBe('Button 1');
     });
 
     it('should copy encoders from source profile', () => {
       const sourceWithEncoders = createMockConfigManager([
         createTestProfile({
           id: 'source',
-          encoders: [{ index: 0 }],
+          workspaces: [{
+            id: 'ws-source',
+            name: 'Workspace 1',
+            buttons: [],
+            encoders: [{ index: 0 }],
+          }],
         }),
       ]);
       const pm = new ProfileManager(sourceWithEncoders);
 
       const duplicate = pm.duplicate('source', 'Duplicate');
 
-      expect(duplicate.encoders).toHaveLength(1);
+      expect(duplicate.workspaces[0].encoders).toHaveLength(1);
     });
 
     it('should set duplicate as non-default', () => {
@@ -489,7 +510,12 @@ describe('ProfileManager', () => {
       const sourceWithButtons = createMockConfigManager([
         createTestProfile({
           id: 'source',
-          buttons: [{ index: 0, action: { id: 'a1', type: 'keyboard', name: 'Test', keys: 'a', enabled: true } }],
+          workspaces: [{
+            id: 'ws-source',
+            name: 'Workspace 1',
+            buttons: [{ index: 0, action: { id: 'a1', type: 'keyboard', name: 'Test', keys: 'a', enabled: true } }],
+            encoders: [],
+          }],
         }),
       ]);
       const pm = new ProfileManager(sourceWithButtons);
@@ -497,13 +523,13 @@ describe('ProfileManager', () => {
       const duplicate = pm.duplicate('source', 'Duplicate');
 
       // Modify duplicate's button action
-      if (duplicate.buttons[0].action) {
-        duplicate.buttons[0].action.name = 'Modified';
+      if (duplicate.workspaces[0].buttons[0].action) {
+        duplicate.workspaces[0].buttons[0].action.name = 'Modified';
       }
 
       // Source should not be affected
       const source = sourceWithButtons.getProfile('source');
-      expect(source?.buttons[0].action?.name).toBe('Test');
+      expect(source?.workspaces[0].buttons[0].action?.name).toBe('Test');
     });
   });
 

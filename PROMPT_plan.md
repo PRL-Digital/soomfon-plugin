@@ -5,3 +5,5 @@ For reference, the application source code is in `src/*`.
 IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is missing; confirm with code search first. Treat `src/lib` as the project's standard library for shared utilities and components. Prefer consolidated, idiomatic implementations there over ad-hoc copies.
 
 ULTIMATE GOAL: We want to achieve a lightweight plugin for the Soomfon StreamDesk. migrating away from electron and to Tuari/Rust. Consider missing elements and plan accordingly. If an element is missing, search first to confirm it doesn't exist, then if needed author the specification at specs/FILENAME.md. If you create a new element then document the plan to implement it in @IMPLEMENTATION_PLAN.md using a subagent.
+
+Never install any modules or run any scripts. If this needs doing ask the user to do it.

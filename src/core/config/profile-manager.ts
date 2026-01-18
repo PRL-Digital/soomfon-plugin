@@ -4,7 +4,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { Profile, ButtonConfig, EncoderConfig } from '../../shared/types/config';
+import type { Profile, ButtonConfig, EncoderConfig, Workspace } from '../../shared/types/config';
 import { ConfigManager } from './config-manager';
 import { profileSchema } from './validation';
 
@@ -14,9 +14,11 @@ import { profileSchema } from './validation';
 export interface CreateProfileOptions {
   /** Optional description for the profile */
   description?: string;
-  /** Initial button configurations */
+  /** Initial workspaces (if not provided, a default workspace is created) */
+  workspaces?: Workspace[];
+  /** Initial button configurations (for first workspace if workspaces not provided) */
   buttons?: ButtonConfig[];
-  /** Initial encoder configurations */
+  /** Initial encoder configurations (for first workspace if workspaces not provided) */
   encoders?: EncoderConfig[];
   /** Whether this profile should be the default */
   isDefault?: boolean;
@@ -74,13 +76,22 @@ export class ProfileManager {
    */
   create(name: string, options: CreateProfileOptions = {}): Profile {
     const now = new Date().toISOString();
+
+    // Create default workspace if workspaces not provided
+    const workspaces: Workspace[] = options.workspaces ?? [{
+      id: uuidv4(),
+      name: 'Workspace 1',
+      buttons: options.buttons ?? [],
+      encoders: options.encoders ?? [],
+    }];
+
     const newProfile: Profile = {
       id: uuidv4(),
       name,
       description: options.description,
       isDefault: options.isDefault ?? false,
-      buttons: options.buttons ?? [],
-      encoders: options.encoders ?? [],
+      workspaces,
+      activeWorkspaceIndex: 0,
       createdAt: now,
       updatedAt: now,
     };
@@ -314,22 +325,40 @@ export class ProfileManager {
     }
 
     const now = new Date().toISOString();
-    const duplicatedProfile: Profile = {
-      ...sourceProfile,
+
+    // Deep clone workspaces with new IDs
+    const clonedWorkspaces: Workspace[] = sourceProfile.workspaces.map(w => ({
       id: uuidv4(),
-      name: newName,
-      isDefault: false, // Duplicates are never default
-      createdAt: now,
-      updatedAt: now,
-      // Deep clone buttons and encoders to avoid shared references
-      buttons: sourceProfile.buttons.map(b => ({ ...b, action: b.action ? { ...b.action } : undefined, longPressAction: b.longPressAction ? { ...b.longPressAction } : undefined })),
-      encoders: sourceProfile.encoders.map(e => ({
+      name: w.name,
+      buttons: w.buttons.map(b => ({
+        ...b,
+        action: b.action ? { ...b.action } : undefined,
+        longPressAction: b.longPressAction ? { ...b.longPressAction } : undefined,
+        shiftAction: b.shiftAction ? { ...b.shiftAction } : undefined,
+        shiftLongPressAction: b.shiftLongPressAction ? { ...b.shiftLongPressAction } : undefined,
+      })),
+      encoders: w.encoders.map(e => ({
         ...e,
         pressAction: e.pressAction ? { ...e.pressAction } : undefined,
         longPressAction: e.longPressAction ? { ...e.longPressAction } : undefined,
         clockwiseAction: e.clockwiseAction ? { ...e.clockwiseAction } : undefined,
         counterClockwiseAction: e.counterClockwiseAction ? { ...e.counterClockwiseAction } : undefined,
+        shiftPressAction: e.shiftPressAction ? { ...e.shiftPressAction } : undefined,
+        shiftLongPressAction: e.shiftLongPressAction ? { ...e.shiftLongPressAction } : undefined,
+        shiftClockwiseAction: e.shiftClockwiseAction ? { ...e.shiftClockwiseAction } : undefined,
+        shiftCounterClockwiseAction: e.shiftCounterClockwiseAction ? { ...e.shiftCounterClockwiseAction } : undefined,
       })),
+    }));
+
+    const duplicatedProfile: Profile = {
+      ...sourceProfile,
+      id: uuidv4(),
+      name: newName,
+      isDefault: false, // Duplicates are never default
+      workspaces: clonedWorkspaces,
+      activeWorkspaceIndex: sourceProfile.activeWorkspaceIndex,
+      createdAt: now,
+      updatedAt: now,
     };
 
     // Add to profiles

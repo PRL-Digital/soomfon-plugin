@@ -51,7 +51,42 @@ pub struct NodeRedConfig {
     pub url: String,
 }
 
-/// Device profile containing button and encoder configurations
+/// Workspace containing button and encoder configurations
+/// Workspaces allow quick switching between different configurations within a profile
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Workspace {
+    /// Unique workspace ID
+    pub id: String,
+    /// Workspace display name
+    pub name: String,
+    /// Button configurations (6 LCD buttons)
+    #[serde(default)]
+    pub buttons: Vec<ButtonConfig>,
+    /// Encoder configurations (2 encoders)
+    #[serde(default)]
+    pub encoders: Vec<EncoderConfig>,
+}
+
+impl Workspace {
+    /// Create a new empty workspace
+    pub fn new(name: String) -> Self {
+        Self {
+            id: uuid::Uuid::new_v4().to_string(),
+            name,
+            buttons: vec![],
+            encoders: vec![],
+        }
+    }
+}
+
+impl Default for Workspace {
+    fn default() -> Self {
+        Self::new("Workspace 1".to_string())
+    }
+}
+
+/// Device profile containing workspaces with button and encoder configurations
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Profile {
@@ -62,20 +97,30 @@ pub struct Profile {
     /// Profile description
     #[serde(default)]
     pub description: Option<String>,
-    /// Button configurations (6 buttons)
+    /// Workspaces containing button/encoder configurations
+    #[serde(default = "default_workspaces")]
+    pub workspaces: Vec<Workspace>,
+    /// Index of the currently active workspace (0-based)
     #[serde(default)]
-    pub buttons: Vec<ButtonConfig>,
-    /// Encoder configurations (2 encoders)
-    #[serde(default)]
-    pub encoders: Vec<EncoderConfig>,
+    pub active_workspace_index: usize,
     /// Creation timestamp
     pub created_at: u64,
     /// Last modified timestamp
     pub updated_at: u64,
+    /// Legacy button configurations (deprecated, for backward compatibility)
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub buttons: Vec<ButtonConfig>,
+    /// Legacy encoder configurations (deprecated, for backward compatibility)
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub encoders: Vec<EncoderConfig>,
+}
+
+fn default_workspaces() -> Vec<Workspace> {
+    vec![Workspace::default()]
 }
 
 impl Profile {
-    /// Create a new empty profile
+    /// Create a new empty profile with one default workspace
     pub fn new(name: String) -> Self {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -86,10 +131,39 @@ impl Profile {
             id: uuid::Uuid::new_v4().to_string(),
             name,
             description: None,
-            buttons: vec![], // Sparse array - only contains buttons with configurations
-            encoders: vec![], // Sparse array - only contains encoders with configurations
+            workspaces: vec![Workspace::default()],
+            active_workspace_index: 0,
             created_at: now,
             updated_at: now,
+            buttons: vec![],
+            encoders: vec![],
+        }
+    }
+
+    /// Get the currently active workspace
+    pub fn active_workspace(&self) -> Option<&Workspace> {
+        self.workspaces.get(self.active_workspace_index)
+    }
+
+    /// Get the currently active workspace mutably
+    pub fn active_workspace_mut(&mut self) -> Option<&mut Workspace> {
+        self.workspaces.get_mut(self.active_workspace_index)
+    }
+
+    /// Migrate legacy buttons/encoders to workspace format
+    pub fn migrate_legacy_config(&mut self) {
+        if !self.buttons.is_empty() || !self.encoders.is_empty() {
+            if self.workspaces.is_empty() {
+                self.workspaces.push(Workspace::default());
+            }
+            if let Some(workspace) = self.workspaces.get_mut(0) {
+                if workspace.buttons.is_empty() {
+                    workspace.buttons = std::mem::take(&mut self.buttons);
+                }
+                if workspace.encoders.is_empty() {
+                    workspace.encoders = std::mem::take(&mut self.encoders);
+                }
+            }
         }
     }
 }
@@ -165,6 +239,24 @@ pub struct ProfileUpdate {
     pub name: Option<String>,
     #[serde(default)]
     pub description: Option<String>,
+    #[serde(default)]
+    pub workspaces: Option<Vec<Workspace>>,
+    #[serde(default)]
+    pub active_workspace_index: Option<usize>,
+    /// Legacy field for backward compatibility
+    #[serde(default)]
+    pub buttons: Option<Vec<ButtonConfig>>,
+    /// Legacy field for backward compatibility
+    #[serde(default)]
+    pub encoders: Option<Vec<EncoderConfig>>,
+}
+
+/// Workspace update request
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceUpdate {
+    #[serde(default)]
+    pub name: Option<String>,
     #[serde(default)]
     pub buttons: Option<Vec<ButtonConfig>>,
     #[serde(default)]

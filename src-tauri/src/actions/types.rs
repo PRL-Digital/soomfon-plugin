@@ -17,6 +17,7 @@ pub enum ActionType {
     System,
     Text,
     Profile,
+    Workspace,
     HomeAssistant,
     NodeRed,
 }
@@ -276,6 +277,36 @@ pub struct ProfileAction {
     pub profile_name: Option<String>,
 }
 
+/// Workspace navigation direction
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum WorkspaceDirection {
+    Next,
+    Previous,
+    Specific,
+}
+
+/// Workspace action configuration - navigates between workspaces within current profile
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceAction {
+    // Common action fields from frontend BaseAction
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+
+    /// Navigation direction
+    pub direction: WorkspaceDirection,
+    /// Workspace index when direction is 'specific' (0-based)
+    #[serde(default)]
+    pub workspace_index: Option<usize>,
+}
+
 /// Home Assistant action configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -383,6 +414,7 @@ pub enum Action {
     System(SystemAction),
     Text(TextAction),
     Profile(ProfileAction),
+    Workspace(WorkspaceAction),
     #[serde(alias = "homeAssistant")]
     HomeAssistant(HomeAssistantAction),
     #[serde(alias = "nodeRed")]
