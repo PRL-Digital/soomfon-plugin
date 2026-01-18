@@ -51,6 +51,94 @@ pub fn process_base64_image(base64_data: &str, options: &ImageOptions) -> Result
     process_image(&decoded, options)
 }
 
+/// Process an image from a file path
+pub fn process_file_image(file_path: &str, options: &ImageOptions) -> Result<Vec<u8>, String> {
+    let image_data = std::fs::read(file_path)
+        .map_err(|e| format!("Failed to read image file '{}': {}", file_path, e))?;
+
+    process_image(&image_data, options)
+}
+
+/// Process image data from various sources:
+/// - File paths (file:// URLs or absolute paths)
+/// - Base64-encoded data (with or without data URL prefix)
+/// - HTTP/HTTPS URLs (not supported yet)
+pub fn process_image_source(source: &str, options: &ImageOptions) -> Result<Vec<u8>, String> {
+    // Handle file:// URLs
+    if source.starts_with("file://") {
+        // Strip file:// prefix and handle platform differences
+        let path = if cfg!(windows) {
+            // Windows: file:///C:/path/to/file -> C:/path/to/file
+            source.strip_prefix("file:///").unwrap_or(&source[7..])
+        } else {
+            // Unix: file:///path/to/file -> /path/to/file
+            source.strip_prefix("file://").unwrap_or(source)
+        };
+        // URL decode the path (handles %20 for spaces, etc.)
+        let decoded_path = urlencoding_decode(path);
+        return process_file_image(&decoded_path, options);
+    }
+
+    // Handle absolute file paths (Windows: C:\... or D:\..., Unix: /...)
+    if is_absolute_path(source) {
+        return process_file_image(source, options);
+    }
+
+    // Handle data URLs (data:image/png;base64,...)
+    if source.starts_with("data:") {
+        return process_base64_image(source, options);
+    }
+
+    // Assume base64 if none of the above
+    process_base64_image(source, options)
+}
+
+/// Simple URL decoding for file paths
+fn urlencoding_decode(input: &str) -> String {
+    let mut result = String::with_capacity(input.len());
+    let mut chars = input.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c == '%' {
+            // Try to decode %XX
+            let hex: String = chars.by_ref().take(2).collect();
+            if hex.len() == 2 {
+                if let Ok(byte) = u8::from_str_radix(&hex, 16) {
+                    result.push(byte as char);
+                    continue;
+                }
+            }
+            // If decoding failed, keep the original
+            result.push('%');
+            result.push_str(&hex);
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
+}
+
+/// Check if a path is an absolute file path
+fn is_absolute_path(path: &str) -> bool {
+    // Unix absolute path
+    if path.starts_with('/') {
+        return true;
+    }
+    // Windows absolute path (C:\, D:\, etc.)
+    if path.len() >= 3 {
+        let chars: Vec<char> = path.chars().take(3).collect();
+        if chars.len() >= 3
+            && chars[0].is_ascii_alphabetic()
+            && (chars[1] == ':')
+            && (chars[2] == '\\' || chars[2] == '/')
+        {
+            return true;
+        }
+    }
+    false
+}
+
 /// Create a solid color image as JPEG
 pub fn create_solid_color(r: u8, g: u8, b: u8) -> Result<Vec<u8>, String> {
     let img: RgbImage = ImageBuffer::from_pixel(LCD_WIDTH, LCD_HEIGHT, Rgb([r, g, b]));
@@ -97,7 +185,7 @@ fn resize_image(img: &DynamicImage, options: &ImageOptions) -> RgbImage {
 fn convert_to_jpeg(img: &RgbImage) -> Result<Vec<u8>, String> {
     let mut buffer = Cursor::new(Vec::new());
 
-    let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, JPEG_QUALITY);
+    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, JPEG_QUALITY);
     encoder.encode(
         img.as_raw(),
         img.width(),
@@ -151,5 +239,61 @@ mod tests {
         assert_eq!(jpeg[0], 0xFF);
         assert_eq!(jpeg[1], 0xD8);
         assert_eq!(jpeg[2], 0xFF);
+    }
+
+    #[test]
+    fn test_urlencoding_decode_basic() {
+        assert_eq!(urlencoding_decode("hello%20world"), "hello world");
+        assert_eq!(urlencoding_decode("no%encoding"), "no%encoding"); // Invalid %en
+        assert_eq!(urlencoding_decode("test"), "test");
+    }
+
+    #[test]
+    fn test_urlencoding_decode_special_chars() {
+        assert_eq!(urlencoding_decode("path%2Fto%2Ffile"), "path/to/file");
+        assert_eq!(urlencoding_decode("file%3A%2F%2Ftest"), "file://test");
+    }
+
+    #[test]
+    fn test_is_absolute_path_unix() {
+        assert!(is_absolute_path("/home/user/image.png"));
+        assert!(is_absolute_path("/tmp/test.jpg"));
+        assert!(!is_absolute_path("relative/path.png"));
+        assert!(!is_absolute_path("image.png"));
+    }
+
+    #[test]
+    fn test_is_absolute_path_windows() {
+        assert!(is_absolute_path("C:\\Users\\test.png"));
+        assert!(is_absolute_path("D:/images/photo.jpg"));
+        assert!(is_absolute_path("E:\\file.png"));
+        assert!(!is_absolute_path("relative\\path.png"));
+    }
+
+    #[test]
+    fn test_process_image_source_detects_file_url() {
+        // Should fail because file doesn't exist, but error message shows it tried to read a file
+        let result = process_image_source("file:///nonexistent/image.png", &ImageOptions::default());
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("Failed to read image file"), "Error was: {}", err);
+    }
+
+    #[test]
+    fn test_process_image_source_detects_absolute_path() {
+        // Should fail because file doesn't exist, but error shows it tried to read a file
+        let result = process_image_source("/nonexistent/image.png", &ImageOptions::default());
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("Failed to read image file"), "Error was: {}", err);
+    }
+
+    #[test]
+    fn test_process_image_source_handles_base64() {
+        // Invalid base64 should give base64 decode error, not file read error
+        let result = process_image_source("not-valid-base64!!!", &ImageOptions::default());
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("base64") || err.contains("Failed to load image"), "Error was: {}", err);
     }
 }

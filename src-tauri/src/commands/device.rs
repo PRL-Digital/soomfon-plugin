@@ -10,7 +10,7 @@ use crate::hid::types::{
     ButtonEventType, ButtonType, ConnectionState, DeviceEvent, DeviceInfo,
     EncoderEventType, EncoderType, EP_IN,
 };
-use crate::image::processor::{process_base64_image, ImageOptions};
+use crate::image::processor::{process_image_source, ImageOptions};
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -148,14 +148,7 @@ pub fn connect_device(
             Err(e) => log::warn!("Test read error: {}", e),
         }
 
-        let mut poll_count = 0u64;
         while POLLING_ACTIVE.load(Ordering::SeqCst) {
-            poll_count += 1;
-            // Log every 50 polls (~5 seconds) to show thread is alive
-            if poll_count % 50 == 0 {
-                log::info!("Polling thread alive, iteration {}", poll_count);
-            }
-
             // Direct USB read - no mutex needed
             match polling_handle.read_interrupt(EP_IN, &mut buf, Duration::from_millis(100)) {
                 Ok(n) if n > 0 => {
@@ -309,24 +302,39 @@ pub fn set_brightness(
     protocol.set_brightness(level).map_err(|e| e.to_string())
 }
 
-/// Set button image from base64 data
+/// Set button image from file path, URL, or base64 data
+///
+/// Accepts:
+/// - File paths: `file:///path/to/image.png` or `/path/to/image.png` or `C:\path\to\image.png`
+/// - Data URLs: `data:image/png;base64,...`
+/// - Raw base64: `iVBORw0KGgoAAAANS...`
 #[tauri::command]
 pub fn set_button_image(
     index: u8,
     image_data: String,
     manager: State<Arc<Mutex<HidManager>>>,
 ) -> Result<(), String> {
+    log::info!("set_button_image called for button {} with source type: {}",
+        index,
+        if image_data.starts_with("file://") { "file URL" }
+        else if image_data.starts_with("data:") { "data URL" }
+        else if image_data.starts_with("/") || (image_data.len() > 2 && image_data.chars().nth(1) == Some(':')) { "file path" }
+        else { "base64" }
+    );
+
     let mut manager = manager.lock();
     // Reopen handle if it was transferred to polling thread
     manager.reopen_for_commands().map_err(|e| e.to_string())?;
 
-    // Process image to RGB565
+    // Process image from any source (file path, URL, or base64)
     let options = ImageOptions::default();
-    let rgb565_data = process_base64_image(&image_data, &options)?;
+    let jpeg_data = process_image_source(&image_data, &options)?;
+
+    log::info!("Processed image: {} bytes JPEG for button {}", jpeg_data.len(), index);
 
     // Send to device
     let protocol = SoomfonProtocol::new(&manager);
-    protocol.set_button_image(index, &rgb565_data).map_err(|e| e.to_string())
+    protocol.set_button_image(index, &jpeg_data).map_err(|e| e.to_string())
 }
 
 /// Clear a button display
