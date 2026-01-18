@@ -12,3 +12,4 @@ pub mod text;
 pub mod profile;
 pub mod home_assistant;
 pub mod node_red;
+pub mod workspace;

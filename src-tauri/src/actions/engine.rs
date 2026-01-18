@@ -131,6 +131,9 @@ impl ActionEngine {
             Action::NodeRed(config) => {
                 super::handlers::node_red::execute(config).await
             }
+            Action::Workspace(config) => {
+                super::handlers::workspace::execute(config).await
+            }
         };
 
         let duration = start.elapsed().as_millis() as u64;
@@ -221,6 +224,7 @@ impl ActionEngine {
             Action::Profile(_) => "profile".to_string(),
             Action::HomeAssistant(_) => "homeAssistant".to_string(),
             Action::NodeRed(_) => "nodeRed".to_string(),
+            Action::Workspace(_) => "workspace".to_string(),
         }
     }
 }

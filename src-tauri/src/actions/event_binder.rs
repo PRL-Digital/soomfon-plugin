@@ -96,8 +96,6 @@ mod tests {
         // Configure button 0 with press and long press actions
         let button0 = ButtonConfig {
             index: 0,
-            label: None,
-            image: None,
             action: Some(Action::Keyboard(KeyboardAction {
                 key: "A".to_string(),
                 modifiers: vec![],
@@ -106,56 +104,55 @@ mod tests {
                 key: "C".to_string(),
                 modifiers: vec!["ctrl".to_string()],
             })),
+            ..Default::default()
         };
 
         // Configure button 2 with only press action
         let button2 = ButtonConfig {
             index: 2,
-            label: None,
-            image: None,
             action: Some(Action::Media(MediaAction {
                 action: MediaActionType::PlayPause,
             })),
-            long_press_action: None,
+            ..Default::default()
         };
 
         // Configure encoder 0 with rotation and press actions
         let encoder0 = EncoderConfig {
             index: 0,
-            label: None,
             press_action: Some(Action::Media(MediaAction {
                 action: MediaActionType::VolumeMute,
             })),
-            long_press_action: None,
             clockwise_action: Some(Action::Media(MediaAction {
                 action: MediaActionType::VolumeUp,
             })),
             counter_clockwise_action: Some(Action::Media(MediaAction {
                 action: MediaActionType::VolumeDown,
             })),
+            ..Default::default()
         };
 
         // Configure encoder 1 with long press
         let encoder1 = EncoderConfig {
             index: 1,
-            label: None,
-            press_action: None,
             long_press_action: Some(Action::Media(MediaAction {
                 action: MediaActionType::Stop,
             })),
-            clockwise_action: None,
-            counter_clockwise_action: None,
+            ..Default::default()
         };
 
-        Profile {
-            id: "test-profile-id".to_string(),
-            name: "Test Profile".to_string(),
-            description: Some("A test profile".to_string()),
-            buttons: vec![button0, button2],
-            encoders: vec![encoder0, encoder1],
-            created_at: 1700000000000,
-            updated_at: 1700000000000,
+        let mut profile = Profile::new("Test Profile".to_string());
+        profile.id = "test-profile-id".to_string();
+        profile.description = Some("A test profile".to_string());
+        profile.buttons = vec![button0.clone(), button2.clone()];
+        profile.encoders = vec![encoder0.clone(), encoder1.clone()];
+        profile.created_at = 1700000000000;
+        profile.updated_at = 1700000000000;
+        // Also populate the first workspace for consistency
+        if let Some(workspace) = profile.workspaces.get_mut(0) {
+            workspace.buttons = vec![button0, button2];
+            workspace.encoders = vec![encoder0, encoder1];
         }
+        profile
     }
 
     // ========== EventBinder Creation Tests ==========
@@ -521,12 +518,10 @@ mod tests {
         let mut new_profile = Profile::new("New Profile".to_string());
         new_profile.buttons = vec![ButtonConfig {
             index: 0,
-            label: None,
-            image: None,
             action: Some(Action::Media(MediaAction {
                 action: MediaActionType::NextTrack,
             })),
-            long_press_action: None,
+            ..Default::default()
         }];
 
         binder.bind_profile(new_profile);

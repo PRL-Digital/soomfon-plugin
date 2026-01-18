@@ -201,6 +201,8 @@ UI components for workspace navigation and management.
 - Image cropping/editing UI
 - Validation feedback (file size, format errors)
 
+## Look over the project and work out general clean up tasks
+
 ---
 
 ## Known Issues

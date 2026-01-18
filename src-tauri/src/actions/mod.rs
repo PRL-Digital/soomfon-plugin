@@ -62,6 +62,9 @@ pub async fn execute_action_with_config(
                 integrations.node_red.as_ref(),
             ).await
         }
+        Action::Workspace(config) => {
+            handlers::workspace::execute(config).await
+        }
     };
 
     let duration = start.elapsed().as_millis() as u64;

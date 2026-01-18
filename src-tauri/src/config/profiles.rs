@@ -179,24 +179,21 @@ mod tests {
         profile.buttons = vec![ButtonConfig {
             index: 0,
             label: Some("Volume".to_string()),
-            image: None,
             action: Some(Action::Media(MediaAction {
                 action: MediaActionType::VolumeUp,
             })),
-            long_press_action: None,
+            ..Default::default()
         }];
 
         // Add an action to encoder 0
         profile.encoders = vec![EncoderConfig {
             index: 0,
             label: Some("Brightness".to_string()),
-            press_action: None,
-            long_press_action: None,
             clockwise_action: Some(Action::Keyboard(KeyboardAction {
                 key: "Up".to_string(),
                 modifiers: vec![],
             })),
-            counter_clockwise_action: None,
+            ..Default::default()
         }];
 
         profile
@@ -397,6 +394,8 @@ mod tests {
         let update = ProfileUpdate {
             name: Some("Updated Name".to_string()),
             description: None,
+            workspaces: None,
+            active_workspace_index: None,
             buttons: None,
             encoders: None,
         };
@@ -416,6 +415,8 @@ mod tests {
         let update = ProfileUpdate {
             name: None,
             description: Some("New description".to_string()),
+            workspaces: None,
+            active_workspace_index: None,
             buttons: None,
             encoders: None,
         };
@@ -435,14 +436,14 @@ mod tests {
         let new_buttons = vec![ButtonConfig {
             index: 0,
             label: Some("Custom Label".to_string()),
-            image: None,
-            action: None,
-            long_press_action: None,
+            ..Default::default()
         }];
 
         let update = ProfileUpdate {
             name: None,
             description: None,
+            workspaces: None,
+            active_workspace_index: None,
             buttons: Some(new_buttons),
             encoders: None,
         };
@@ -463,10 +464,7 @@ mod tests {
         let new_encoders = vec![EncoderConfig {
             index: 0,
             label: Some("Volume Knob".to_string()),
-            press_action: None,
-            long_press_action: None,
-            clockwise_action: None,
-            counter_clockwise_action: None,
+            ..Default::default()
         }];
 
         let update = ProfileUpdate {
@@ -711,9 +709,7 @@ mod tests {
         let buttons = vec![ButtonConfig {
             index: 0,
             label: Some("Test Button".to_string()),
-            image: None,
-            action: None,
-            long_press_action: None,
+            ..Default::default()
         }];
 
         let update = ProfileUpdate {
@@ -753,9 +749,7 @@ mod tests {
         let buttons = vec![ButtonConfig {
             index: 0,
             label: Some("Roundtrip Button".to_string()),
-            image: None,
-            action: None,
-            long_press_action: None,
+            ..Default::default()
         }];
 
         let update = ProfileUpdate {
