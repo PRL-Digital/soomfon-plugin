@@ -184,6 +184,7 @@ const DeviceTab: React.FC<{
             onSave={onActionSave}
             onClear={onActionClear}
             isSaving={isSaving}
+            onPreviewImage={handlePreviewImage}
           />
         )}
       </div>
@@ -788,6 +789,17 @@ const App: React.FC = () => {
       }
     }
   }, [toast]);
+
+  // Handle preview image on device - sends image to device without saving the action
+  const handlePreviewImage = useCallback(async (buttonIndex: number, imageUrl: string) => {
+    if (!window.electronAPI?.device?.setButtonImage) {
+      throw new Error('Device image preview not available');
+    }
+    if (!device.isConnected) {
+      throw new Error('Device not connected');
+    }
+    await window.electronAPI.device.setButtonImage(buttonIndex, imageUrl);
+  }, [device.isConnected]);
 
   // Sync all LCD button images to the device for the given workspace
   const syncWorkspaceImages = useCallback(async (workspace: import('@shared/types/config').Workspace) => {

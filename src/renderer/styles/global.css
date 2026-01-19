@@ -2469,6 +2469,16 @@
   .btn-danger:hover:not(:disabled) {
     background-color: #d32f2f;
   }
+
+  /* Success button variant */
+  .btn-success {
+    background-color: var(--color-success);
+    color: white;
+  }
+
+  .btn-success:hover:not(:disabled) {
+    background-color: #388e3c;
+  }
 }
 
 /* Keyframes */

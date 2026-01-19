@@ -126,6 +126,8 @@ export interface ActionEditorProps {
   onCancel?: () => void;
   /** Whether a save operation is in progress (includes image upload) */
   isSaving?: boolean;
+  /** Callback to preview image on device without saving (for LCD buttons) */
+  onPreviewImage?: (buttonIndex: number, imageUrl: string) => Promise<void>;
 }
 
 export const ActionEditor: React.FC<ActionEditorProps> = ({
@@ -136,6 +138,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   onClear,
   onCancel,
   isSaving = false,
+  onPreviewImage,
 }) => {
   // State for the current action being edited
   const [triggerMode, setTriggerMode] = useState<ButtonTriggerMode>('press');
@@ -311,6 +314,8 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
               imageUrl={imageUrl}
               onChange={handleImageChange}
               isUploading={isSaving}
+              buttonIndex={selection.index}
+              onPreview={onPreviewImage}
             />
           </div>
         )}

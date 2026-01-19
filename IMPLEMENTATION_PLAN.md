@@ -321,14 +321,51 @@ Fixed profile import to properly handle workspace structure migration.
 
 All 1124 tests pass.
 
+### Preview on Device Feature (Completed)
+Implemented a "Preview on Device" button that allows users to send an image to the device without saving the action configuration.
+
+**Why this matters:**
+- Users can see exactly how an image will look on the device before committing to save
+- Reduces iteration time when adjusting images for button displays
+- Provides immediate visual feedback for image selection and processing
+
+**Features Implemented:**
+
+1. **ImagePicker Component Enhancement**:
+   - Added `buttonIndex` and `onPreview` props for device preview capability
+   - Preview button only appears when all requirements are met (image URL, button index, preview callback, no errors)
+   - Visual feedback states: idle ("Preview on Device"), sending ("Sending..."), success ("Sent!"), error (shows message)
+   - Success state auto-clears after 2 seconds
+   - Disabled during upload or when image has errors
+
+2. **ActionEditor Integration**:
+   - Added `onPreviewImage` prop to ActionEditorProps
+   - Passes button index and preview callback to ImagePicker for LCD buttons
+
+3. **App.tsx Handler**:
+   - Added `handlePreviewImage` callback that validates device connection
+   - Calls `window.electronAPI.device.setButtonImage` directly for preview
+
+4. **CSS Additions**:
+   - Added `.btn-success` style for success state feedback
+
+**Files Changed:**
+- `src/renderer/components/ActionEditor/ImagePicker.tsx` - Added preview button, state management, error handling
+- `src/renderer/components/ActionEditor/ActionEditor.tsx` - Added onPreviewImage prop and passed to ImagePicker
+- `src/renderer/App.tsx` - Added handlePreviewImage handler
+- `src/renderer/styles/global.css` - Added .btn-success CSS class
+- `src/renderer/components/ActionEditor/ImagePicker.test.tsx` - NEW: 29 tests for ImagePicker including preview functionality
+
+All 1153 tests pass.
+
 ---
 
 ## Remaining Work
 
-### Image Upload Enhancements (Partially Complete)
+### Image Upload Enhancements (Mostly Complete)
 - ~~Validation feedback (file size, format errors)~~ ✓ Completed
 - ~~Progress indicator during image upload~~ ✓ Completed
-- Frontend preview of processed result before upload (would require backend round-trip)
+- ~~Preview on device before saving~~ ✓ Completed
 - Image cropping/editing UI (complex feature, lower priority)
 
 ---
@@ -342,7 +379,7 @@ All 1124 tests pass.
 
 ### Development Environment
 - Rust tests require Tauri platform libraries (GTK, WebKit, etc.) for linking
-- TypeScript tests pass (1124 tests)
+- TypeScript tests pass (1153 tests)
 - Use `cargo check --lib` to verify library compilation without linking
 
 ---

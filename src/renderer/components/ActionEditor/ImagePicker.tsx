@@ -27,6 +27,10 @@ export interface ImagePickerProps {
   isUploading?: boolean;
   /** Upload progress (0-100) */
   uploadProgress?: number;
+  /** Button index for device preview (required for preview functionality) */
+  buttonIndex?: number;
+  /** Callback to preview image on device without saving */
+  onPreview?: (buttonIndex: number, imageUrl: string) => Promise<void>;
 }
 
 export const ImagePicker: React.FC<ImagePickerProps> = ({
@@ -34,10 +38,14 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   onChange,
   isUploading = false,
   uploadProgress,
+  buttonIndex,
+  onPreview,
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewSuccess, setPreviewSuccess] = useState<boolean | null>(null);
   const [imageInfo, setImageInfo] = useState<{ width: number; height: number } | null>(null);
 
   // Validate file extension
@@ -159,6 +167,32 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
     }
   }, []);
 
+  // Handle preview on device - sends image to device without saving action
+  const handlePreview = useCallback(async () => {
+    if (!imageUrl || buttonIndex === undefined || !onPreview) {
+      return;
+    }
+
+    setIsPreviewing(true);
+    setPreviewSuccess(null);
+    setError(null);
+
+    try {
+      await onPreview(buttonIndex, imageUrl);
+      setPreviewSuccess(true);
+      // Clear success indicator after 2 seconds
+      setTimeout(() => setPreviewSuccess(null), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to preview on device');
+      setPreviewSuccess(false);
+    } finally {
+      setIsPreviewing(false);
+    }
+  }, [imageUrl, buttonIndex, onPreview]);
+
+  // Check if preview is available (has image, button index, and preview callback)
+  const canPreview = imageUrl && buttonIndex !== undefined && onPreview && !error;
+
   return (
     <div className="image-picker" data-testid="image-picker">
       {/* Preview area */}
@@ -231,7 +265,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
           type="button"
           className="btn btn-secondary btn-sm"
           onClick={handleBrowse}
-          disabled={isLoading || isUploading}
+          disabled={isLoading || isUploading || isPreviewing}
           data-testid="image-browse-btn"
         >
           {isLoading ? 'Loading...' : 'Browse'}
@@ -240,11 +274,23 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
           type="button"
           className="btn btn-secondary btn-sm"
           onClick={handleClear}
-          disabled={!imageUrl || isUploading}
+          disabled={!imageUrl || isUploading || isPreviewing}
           data-testid="image-clear-btn"
         >
           Clear
         </button>
+        {canPreview && (
+          <button
+            type="button"
+            className={`btn btn-sm ${previewSuccess === true ? 'btn-success' : previewSuccess === false ? 'btn-danger' : 'btn-primary'}`}
+            onClick={handlePreview}
+            disabled={isPreviewing || isUploading}
+            data-testid="image-preview-btn"
+            title="Send image to device to preview how it will look"
+          >
+            {isPreviewing ? 'Sending...' : previewSuccess === true ? 'Sent!' : 'Preview on Device'}
+          </button>
+        )}
       </div>
 
       {/* Hints */}
