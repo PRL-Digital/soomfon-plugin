@@ -5,6 +5,7 @@
 
 import React from 'react';
 import type { Profile } from '@shared/types/config';
+import { getActiveWorkspaceButtons, getActiveWorkspaceEncoders } from '@shared/types/config';
 import { Spinner } from '../common';
 
 export interface ProfileListProps {
@@ -155,11 +156,11 @@ const ProfileList: React.FC<ProfileListProps> = ({
                     )}
                     <div className="profile-list__item-meta">
                       <span>
-                        {profile.buttons.filter((b) => b.action).length} buttons
+                        {getActiveWorkspaceButtons(profile).filter((b) => b.action).length} buttons
                       </span>
                       <span className="profile-list__item-separator" />
                       <span>
-                        {profile.encoders.filter(
+                        {getActiveWorkspaceEncoders(profile).filter(
                           (e) =>
                             e.pressAction ||
                             e.clockwiseAction ||

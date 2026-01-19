@@ -97,12 +97,22 @@ mod tests {
         let button0 = ButtonConfig {
             index: 0,
             action: Some(Action::Keyboard(KeyboardAction {
-                key: "A".to_string(),
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
+                keys: "A".to_string(),
                 modifiers: vec![],
+                hold_duration: None,
             })),
             long_press_action: Some(Action::Keyboard(KeyboardAction {
-                key: "C".to_string(),
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
+                keys: "C".to_string(),
                 modifiers: vec!["ctrl".to_string()],
+                hold_duration: None,
             })),
             ..Default::default()
         };
@@ -111,7 +121,12 @@ mod tests {
         let button2 = ButtonConfig {
             index: 2,
             action: Some(Action::Media(MediaAction {
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
                 action: MediaActionType::PlayPause,
+                volume_amount: None,
             })),
             ..Default::default()
         };
@@ -120,13 +135,28 @@ mod tests {
         let encoder0 = EncoderConfig {
             index: 0,
             press_action: Some(Action::Media(MediaAction {
-                action: MediaActionType::VolumeMute,
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
+                action: MediaActionType::Mute,
+                volume_amount: None,
             })),
             clockwise_action: Some(Action::Media(MediaAction {
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
                 action: MediaActionType::VolumeUp,
+                volume_amount: None,
             })),
             counter_clockwise_action: Some(Action::Media(MediaAction {
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
                 action: MediaActionType::VolumeDown,
+                volume_amount: None,
             })),
             ..Default::default()
         };
@@ -135,7 +165,12 @@ mod tests {
         let encoder1 = EncoderConfig {
             index: 1,
             long_press_action: Some(Action::Media(MediaAction {
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
                 action: MediaActionType::Stop,
+                volume_amount: None,
             })),
             ..Default::default()
         };
@@ -236,7 +271,7 @@ mod tests {
 
         match action.unwrap() {
             Action::Keyboard(ka) => {
-                assert_eq!(ka.key, "A");
+                assert_eq!(ka.keys, "A");
                 assert!(ka.modifiers.is_empty());
             }
             _ => panic!("Expected Keyboard action"),
@@ -274,7 +309,7 @@ mod tests {
 
         match action.unwrap() {
             Action::Keyboard(ka) => {
-                assert_eq!(ka.key, "C");
+                assert_eq!(ka.keys, "C");
                 assert_eq!(ka.modifiers, vec!["ctrl".to_string()]);
             }
             _ => panic!("Expected Keyboard action"),
@@ -407,7 +442,7 @@ mod tests {
 
         match action.unwrap() {
             Action::Media(ma) => {
-                assert_eq!(ma.action, MediaActionType::VolumeMute);
+                assert_eq!(ma.action, MediaActionType::Mute);
             }
             _ => panic!("Expected Media action"),
         }
@@ -519,7 +554,12 @@ mod tests {
         new_profile.buttons = vec![ButtonConfig {
             index: 0,
             action: Some(Action::Media(MediaAction {
-                action: MediaActionType::NextTrack,
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
+                action: MediaActionType::Next,
+                volume_amount: None,
             })),
             ..Default::default()
         }];
@@ -534,7 +574,7 @@ mod tests {
 
         match binder.get_action_for_event(&event).unwrap() {
             Action::Media(ma) => {
-                assert_eq!(ma.action, MediaActionType::NextTrack);
+                assert_eq!(ma.action, MediaActionType::Next);
             }
             _ => panic!("Expected Media action after rebind"),
         }

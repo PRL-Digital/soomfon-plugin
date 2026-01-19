@@ -241,7 +241,8 @@ mod tests {
     use crate::actions::types::{
         Action, KeyboardAction, MediaAction, MediaActionType, LaunchAction, ScriptAction,
         ScriptType, HttpAction, HttpMethod, SystemAction, SystemActionType, TextAction,
-        ProfileAction, HomeAssistantAction, HomeAssistantActionType, NodeRedAction,
+        ProfileAction, HomeAssistantAction, HomeAssistantOperationType, NodeRedAction,
+        NodeRedOperationType,
     };
     use std::collections::HashMap;
 
@@ -249,58 +250,99 @@ mod tests {
 
     fn create_keyboard_action() -> Action {
         Action::Keyboard(KeyboardAction {
-            key: "A".to_string(),
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
+            keys: "A".to_string(),
             modifiers: vec![],
+            hold_duration: None,
         })
     }
 
     fn create_media_action() -> Action {
         Action::Media(MediaAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             action: MediaActionType::PlayPause,
+            volume_amount: None,
         })
     }
 
     fn create_launch_action() -> Action {
         Action::Launch(LaunchAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             path: "/usr/bin/test".to_string(),
             args: vec![],
             working_directory: None,
+            use_shell: None,
         })
     }
 
     fn create_script_action() -> Action {
         Action::Script(ScriptAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             script_type: ScriptType::Bash,
-            content: "echo test".to_string(),
+            script: None,
+            content: Some("echo test".to_string()),
+            script_path: None,
+            timeout: None,
             timeout_ms: None,
         })
     }
 
     fn create_http_action() -> Action {
         Action::Http(HttpAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             method: HttpMethod::Get,
             url: "https://example.com".to_string(),
             headers: HashMap::new(),
             body: None,
+            body_type: None,
+            timeout: None,
             timeout_ms: None,
         })
     }
 
     fn create_system_action() -> Action {
         Action::System(SystemAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             action: SystemActionType::ShowDesktop,
         })
     }
 
     fn create_text_action() -> Action {
         Action::Text(TextAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             text: "Hello".to_string(),
+            type_delay: None,
             delay_ms: None,
         })
     }
 
     fn create_profile_action() -> Action {
         Action::Profile(ProfileAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             profile_id: Some("profile-1".to_string()),
             profile_name: None,
         })
@@ -308,8 +350,14 @@ mod tests {
 
     fn create_home_assistant_action() -> Action {
         Action::HomeAssistant(HomeAssistantAction {
-            action_type: HomeAssistantActionType::Toggle,
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
+            operation: HomeAssistantOperationType::Toggle,
             entity_id: "light.living_room".to_string(),
+            brightness: None,
+            custom_service: None,
             service: None,
             service_data: None,
         })
@@ -317,8 +365,15 @@ mod tests {
 
     fn create_node_red_action() -> Action {
         Action::NodeRed(NodeRedAction {
-            flow_id: "flow-1".to_string(),
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
+            operation: NodeRedOperationType::TriggerFlow,
+            endpoint: "/webhook/test".to_string(),
+            event_name: None,
             payload: None,
+            flow_id: None,
         })
     }
 

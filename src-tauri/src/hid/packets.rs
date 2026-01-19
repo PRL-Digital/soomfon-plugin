@@ -266,6 +266,7 @@ pub fn build_image_data_packet(data: &[u8], _offset: usize) -> [u8; CRT_PACKET_S
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::types::ACK_PACKET_SIZE;
 
     #[test]
     fn test_display_init_packet_format() {

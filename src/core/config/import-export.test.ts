@@ -109,8 +109,13 @@ const createMockProfileManager = (profiles: Profile[] = [createTestProfile()]): 
         name,
         description: options?.description ?? '',
         isDefault: options?.isDefault ?? false,
-        buttons: options?.buttons ?? [],
-        encoders: options?.encoders ?? [],
+        workspaces: [{
+          id: `mock-uuid-${++mockUuidCounter}`,
+          name: 'Workspace 1',
+          buttons: options?.buttons ?? [],
+          encoders: options?.encoders ?? [],
+        }],
+        activeWorkspaceIndex: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

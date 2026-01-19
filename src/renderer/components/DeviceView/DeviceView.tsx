@@ -23,6 +23,15 @@ export interface Selection {
   index: number;
 }
 
+export interface WorkspaceInfo {
+  /** Current workspace name */
+  name: string;
+  /** Current workspace index (0-based) */
+  index: number;
+  /** Total number of workspaces */
+  total: number;
+}
+
 export interface DeviceViewProps {
   /** Current connection state */
   connectionState: ConnectionState;
@@ -44,6 +53,10 @@ export interface DeviceViewProps {
   encoderLabels?: Record<number, string>;
   /** Whether shift button is currently held */
   isShiftActive?: boolean;
+  /** Current workspace information */
+  workspaceInfo?: WorkspaceInfo;
+  /** Callback when workspace navigation is triggered */
+  onWorkspaceChange?: (direction: 'next' | 'previous') => void;
 }
 
 export const DeviceView: React.FC<DeviceViewProps> = ({
@@ -57,6 +70,8 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
   normalLabels = {},
   encoderLabels = {},
   isShiftActive = false,
+  workspaceInfo,
+  onWorkspaceChange,
 }) => {
   // Track pressed states for animation
   const [pressedButtons, setPressedButtons] = useState<Set<string>>(new Set());
@@ -155,6 +170,34 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
         <div className="device-shift-indicator" data-testid="shift-indicator">
           <span className="device-shift-indicator__icon">⇧</span>
           <span className="device-shift-indicator__text">SHIFT</span>
+        </div>
+      )}
+
+      {/* Workspace indicator */}
+      {workspaceInfo && workspaceInfo.total > 1 && (
+        <div className="device-workspace-indicator" data-testid="workspace-indicator">
+          <button
+            className="device-workspace-indicator__nav device-workspace-indicator__nav--prev"
+            onClick={() => onWorkspaceChange?.('previous')}
+            disabled={workspaceInfo.total <= 1}
+            title="Previous workspace"
+          >
+            ‹
+          </button>
+          <div className="device-workspace-indicator__info">
+            <span className="device-workspace-indicator__name">{workspaceInfo.name}</span>
+            <span className="device-workspace-indicator__counter">
+              {workspaceInfo.index + 1} / {workspaceInfo.total}
+            </span>
+          </div>
+          <button
+            className="device-workspace-indicator__nav device-workspace-indicator__nav--next"
+            onClick={() => onWorkspaceChange?.('next')}
+            disabled={workspaceInfo.total <= 1}
+            title="Next workspace"
+          >
+            ›
+          </button>
         </div>
       )}
 

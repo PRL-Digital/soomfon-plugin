@@ -509,19 +509,24 @@ mod tests {
     #[test]
     fn test_keyboard_action_serializes() {
         let action = KeyboardAction {
-            key: "a".to_string(),
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
+            keys: "a".to_string(),
             modifiers: vec!["ctrl".to_string(), "shift".to_string()],
+            hold_duration: None,
         };
         let json = serde_json::to_string(&action).unwrap();
-        assert!(json.contains("\"key\":\"a\""));
+        assert!(json.contains("\"keys\":\"a\""));
         assert!(json.contains("\"modifiers\":[\"ctrl\",\"shift\"]"));
     }
 
     #[test]
     fn test_keyboard_action_empty_modifiers_default() {
-        let json = r#"{"key":"enter"}"#;
+        let json = r#"{"keys":"enter"}"#;
         let action: KeyboardAction = serde_json::from_str(json).unwrap();
-        assert_eq!(action.key, "enter");
+        assert_eq!(action.keys, "enter");
         assert!(action.modifiers.is_empty());
     }
 
@@ -532,12 +537,12 @@ mod tests {
     #[test]
     fn test_media_action_type_all_variants_serialize() {
         let variants = [
-            (MediaActionType::PlayPause, "\"playPause\""),
-            (MediaActionType::NextTrack, "\"nextTrack\""),
-            (MediaActionType::PreviousTrack, "\"previousTrack\""),
-            (MediaActionType::VolumeUp, "\"volumeUp\""),
-            (MediaActionType::VolumeDown, "\"volumeDown\""),
-            (MediaActionType::VolumeMute, "\"volumeMute\""),
+            (MediaActionType::PlayPause, "\"play_pause\""),
+            (MediaActionType::Next, "\"next\""),
+            (MediaActionType::Previous, "\"previous\""),
+            (MediaActionType::VolumeUp, "\"volume_up\""),
+            (MediaActionType::VolumeDown, "\"volume_down\""),
+            (MediaActionType::Mute, "\"mute\""),
             (MediaActionType::Stop, "\"stop\""),
         ];
         for (action_type, expected) in variants {
@@ -549,10 +554,15 @@ mod tests {
     #[test]
     fn test_media_action_serializes() {
         let action = MediaAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             action: MediaActionType::PlayPause,
+            volume_amount: None,
         };
         let json = serde_json::to_string(&action).unwrap();
-        assert!(json.contains("\"action\":\"playPause\""));
+        assert!(json.contains("\"action\":\"play_pause\""));
     }
 
     // ==========================================================================
@@ -562,9 +572,14 @@ mod tests {
     #[test]
     fn test_launch_action_serializes() {
         let action = LaunchAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             path: "/usr/bin/code".to_string(),
             args: vec!["--new-window".to_string()],
             working_directory: Some("/home/user".to_string()),
+            use_shell: None,
         };
         let json = serde_json::to_string(&action).unwrap();
         assert!(json.contains("\"path\":\"/usr/bin/code\""));
@@ -602,8 +617,15 @@ mod tests {
     #[test]
     fn test_script_action_serializes() {
         let action = ScriptAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             script_type: ScriptType::PowerShell,
-            content: "Get-Process".to_string(),
+            script: None,
+            content: Some("Get-Process".to_string()),
+            script_path: None,
+            timeout: None,
             timeout_ms: Some(5000),
         };
         let json = serde_json::to_string(&action).unwrap();
@@ -645,10 +667,16 @@ mod tests {
         let mut headers = HashMap::new();
         headers.insert("Content-Type".to_string(), "application/json".to_string());
         let action = HttpAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             method: HttpMethod::Post,
             url: "https://api.example.com/data".to_string(),
             headers,
-            body: Some(r#"{"key":"value"}"#.to_string()),
+            body_type: None,
+            body: Some(serde_json::json!({"key": "value"})),
+            timeout: None,
             timeout_ms: Some(10000),
         };
         let json = serde_json::to_string(&action).unwrap();
@@ -704,7 +732,12 @@ mod tests {
     #[test]
     fn test_text_action_serializes() {
         let action = TextAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             text: "Hello, World!".to_string(),
+            type_delay: None,
             delay_ms: Some(50),
         };
         let json = serde_json::to_string(&action).unwrap();
@@ -727,6 +760,10 @@ mod tests {
     #[test]
     fn test_profile_action_by_id() {
         let action = ProfileAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             profile_id: Some("uuid-123".to_string()),
             profile_name: None,
         };
@@ -737,6 +774,10 @@ mod tests {
     #[test]
     fn test_profile_action_by_name() {
         let action = ProfileAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             profile_id: None,
             profile_name: Some("Gaming".to_string()),
         };
@@ -751,11 +792,11 @@ mod tests {
     #[test]
     fn test_home_assistant_action_type_all_variants() {
         let variants = [
-            (HomeAssistantActionType::CallService, "\"callService\""),
-            (HomeAssistantActionType::Toggle, "\"toggle\""),
-            (HomeAssistantActionType::TurnOn, "\"turnOn\""),
-            (HomeAssistantActionType::TurnOff, "\"turnOff\""),
-            (HomeAssistantActionType::FireEvent, "\"fireEvent\""),
+            (HomeAssistantOperationType::CallService, "\"call_service\""),
+            (HomeAssistantOperationType::Toggle, "\"toggle\""),
+            (HomeAssistantOperationType::TurnOn, "\"turn_on\""),
+            (HomeAssistantOperationType::TurnOff, "\"turn_off\""),
+            (HomeAssistantOperationType::FireEvent, "\"fire_event\""),
         ];
         for (action_type, expected) in variants {
             let json = serde_json::to_string(&action_type).unwrap();
@@ -766,13 +807,19 @@ mod tests {
     #[test]
     fn test_home_assistant_action_serializes() {
         let action = HomeAssistantAction {
-            action_type: HomeAssistantActionType::Toggle,
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
+            operation: HomeAssistantOperationType::Toggle,
             entity_id: "light.living_room".to_string(),
+            brightness: None,
+            custom_service: None,
             service: None,
             service_data: None,
         };
         let json = serde_json::to_string(&action).unwrap();
-        assert!(json.contains("\"actionType\":\"toggle\""));
+        assert!(json.contains("\"operation\":\"toggle\""));
         assert!(json.contains("\"entityId\":\"light.living_room\""));
     }
 
@@ -783,8 +830,15 @@ mod tests {
     #[test]
     fn test_node_red_action_serializes() {
         let action = NodeRedAction {
-            flow_id: "flow-123".to_string(),
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
+            operation: NodeRedOperationType::TriggerFlow,
+            endpoint: "/webhook/test".to_string(),
+            event_name: None,
             payload: Some(serde_json::json!({"message": "hello"})),
+            flow_id: Some("flow-123".to_string()),
         };
         let json = serde_json::to_string(&action).unwrap();
         assert!(json.contains("\"flowId\":\"flow-123\""));
@@ -793,9 +847,9 @@ mod tests {
 
     #[test]
     fn test_node_red_action_defaults() {
-        let json = r#"{"flowId":"test"}"#;
+        let json = r#"{"operation":"trigger_flow","endpoint":"/webhook/test"}"#;
         let action: NodeRedAction = serde_json::from_str(json).unwrap();
-        assert_eq!(action.flow_id, "test");
+        assert_eq!(action.endpoint, "/webhook/test");
         assert!(action.payload.is_none());
     }
 
@@ -806,18 +860,28 @@ mod tests {
     #[test]
     fn test_action_keyboard_serializes_with_tag() {
         let action = Action::Keyboard(KeyboardAction {
-            key: "space".to_string(),
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
+            keys: "space".to_string(),
             modifiers: vec![],
+            hold_duration: None,
         });
         let json = serde_json::to_string(&action).unwrap();
         assert!(json.contains("\"type\":\"keyboard\""));
-        assert!(json.contains("\"key\":\"space\""));
+        assert!(json.contains("\"keys\":\"space\""));
     }
 
     #[test]
     fn test_action_media_serializes_with_tag() {
         let action = Action::Media(MediaAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             action: MediaActionType::PlayPause,
+            volume_amount: None,
         });
         let json = serde_json::to_string(&action).unwrap();
         assert!(json.contains("\"type\":\"media\""));
@@ -849,9 +913,14 @@ mod tests {
     #[test]
     fn test_action_clone() {
         let action = Action::Launch(LaunchAction {
+            id: None,
+            name: None,
+            icon: None,
+            enabled: None,
             path: "notepad.exe".to_string(),
             args: vec![],
             working_directory: None,
+            use_shell: None,
         });
         let cloned = action.clone();
         if let Action::Launch(la) = cloned {

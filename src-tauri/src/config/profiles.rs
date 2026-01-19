@@ -180,7 +180,12 @@ mod tests {
             index: 0,
             label: Some("Volume".to_string()),
             action: Some(Action::Media(MediaAction {
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
                 action: MediaActionType::VolumeUp,
+                volume_amount: None,
             })),
             ..Default::default()
         }];
@@ -190,8 +195,13 @@ mod tests {
             index: 0,
             label: Some("Brightness".to_string()),
             clockwise_action: Some(Action::Keyboard(KeyboardAction {
-                key: "Up".to_string(),
+                id: None,
+                name: None,
+                icon: None,
+                enabled: None,
+                keys: "Up".to_string(),
                 modifiers: vec![],
+                hold_duration: None,
             })),
             ..Default::default()
         }];
@@ -470,6 +480,8 @@ mod tests {
         let update = ProfileUpdate {
             name: None,
             description: None,
+            workspaces: None,
+            active_workspace_index: None,
             buttons: None,
             encoders: Some(new_encoders),
         };
@@ -494,6 +506,8 @@ mod tests {
         let update = ProfileUpdate {
             name: Some("New Name".to_string()),
             description: None,
+            workspaces: None,
+            active_workspace_index: None,
             buttons: None,
             encoders: None,
         };
@@ -513,6 +527,8 @@ mod tests {
         let update = ProfileUpdate {
             name: Some("Persisted Name".to_string()),
             description: None,
+            workspaces: None,
+            active_workspace_index: None,
             buttons: None,
             encoders: None,
         };
@@ -535,6 +551,8 @@ mod tests {
         let update = ProfileUpdate {
             name: Some("New Name".to_string()),
             description: None,
+            workspaces: None,
+            active_workspace_index: None,
             buttons: None,
             encoders: None,
         };
@@ -715,6 +733,8 @@ mod tests {
         let update = ProfileUpdate {
             name: None,
             description: Some("Test description".to_string()),
+            workspaces: None,
+            active_workspace_index: None,
             buttons: Some(buttons),
             encoders: None,
         };
@@ -755,6 +775,8 @@ mod tests {
         let update = ProfileUpdate {
             name: None,
             description: Some("Roundtrip description".to_string()),
+            workspaces: None,
+            active_workspace_index: None,
             buttons: Some(buttons),
             encoders: None,
         };

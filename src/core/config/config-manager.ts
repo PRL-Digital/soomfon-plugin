@@ -76,13 +76,21 @@ export type ConfigChangeListener = (
  */
 function createDefaultProfile(): Profile {
   const now = new Date().toISOString();
+  const profileId = uuidv4();
   return {
-    id: uuidv4(),
+    id: profileId,
     name: 'Default Profile',
     description: 'Default configuration profile',
     isDefault: true,
-    buttons: [],
-    encoders: [],
+    workspaces: [
+      {
+        id: uuidv4(),
+        name: 'Workspace 1',
+        buttons: [],
+        encoders: [],
+      },
+    ],
+    activeWorkspaceIndex: 0,
     createdAt: now,
     updatedAt: now,
   };

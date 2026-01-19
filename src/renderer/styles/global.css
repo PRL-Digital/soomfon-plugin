@@ -419,6 +419,72 @@
     50% { opacity: 0.8; }
   }
 
+  /* Workspace indicator */
+  .device-workspace-indicator {
+    position: absolute;
+    top: var(--spacing-sm);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    z-index: 10;
+  }
+
+  .device-workspace-indicator__nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    transition: background-color var(--transition-fast) ease,
+                color var(--transition-fast) ease;
+  }
+
+  .device-workspace-indicator__nav:hover:not(:disabled) {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+  }
+
+  .device-workspace-indicator__nav:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .device-workspace-indicator__info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+  }
+
+  .device-workspace-indicator__name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+  }
+
+  .device-workspace-indicator__counter {
+    font-size: 10px;
+    color: var(--color-text-muted);
+  }
+
   .device-view__overlay {
     position: absolute;
     inset: 0;

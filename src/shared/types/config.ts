@@ -229,3 +229,47 @@ export const DEFAULT_INTEGRATION_SETTINGS: IntegrationSettings = {
 
 /** Current configuration schema version */
 export const CONFIG_VERSION = 1;
+
+/**
+ * Helper function to get the active workspace from a profile
+ * Falls back to creating a virtual workspace from deprecated fields if no workspaces exist
+ */
+export function getActiveWorkspace(profile: Profile): Workspace {
+  // If profile has workspaces, use the active one
+  if (profile.workspaces && profile.workspaces.length > 0) {
+    const index = Math.min(
+      Math.max(0, profile.activeWorkspaceIndex || 0),
+      profile.workspaces.length - 1
+    );
+    return profile.workspaces[index];
+  }
+
+  // Fallback: create virtual workspace from deprecated fields
+  return {
+    id: 'default',
+    name: 'Workspace 1',
+    buttons: profile.buttons || [],
+    encoders: profile.encoders || [],
+  };
+}
+
+/**
+ * Helper function to get buttons from the active workspace
+ */
+export function getActiveWorkspaceButtons(profile: Profile): ButtonConfig[] {
+  return getActiveWorkspace(profile).buttons;
+}
+
+/**
+ * Helper function to get encoders from the active workspace
+ */
+export function getActiveWorkspaceEncoders(profile: Profile): EncoderConfig[] {
+  return getActiveWorkspace(profile).encoders;
+}
+
+/**
+ * Helper function to get workspace count
+ */
+export function getWorkspaceCount(profile: Profile): number {
+  return profile.workspaces?.length || 1;
+}

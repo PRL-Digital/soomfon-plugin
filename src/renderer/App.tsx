@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useDevice, useProfiles, useConfig } from './hooks';
 import { Header, TabNav, TabId } from './components/Layout';
-import { DeviceView, Selection } from './components/DeviceView';
+import { DeviceView, Selection, WorkspaceInfo } from './components/DeviceView';
 import { ActionEditor, EncoderEditor, EncoderConfig, ActionTypeOption, ButtonTriggerMode, ButtonActions } from './components/ActionEditor';
 import { ProfileSelector, ProfileList, ProfileEditor, ProfileDialogMode } from './components/ProfileManager';
 import { SettingsPanel } from './components/Settings';
@@ -21,6 +21,7 @@ import type {
   NodeRedAction,
 } from '@shared/types/actions';
 import type { Profile } from '@shared/types/config';
+import { getActiveWorkspace, getActiveWorkspaceButtons, getActiveWorkspaceEncoders, getWorkspaceCount } from '@shared/types/config';
 
 /** Generate a descriptive name for an action based on its type and config */
 const generateActionName = (action: Partial<Action>): string => {
@@ -67,12 +68,13 @@ const DeviceTab: React.FC<{
   onActionClear: (triggerMode: ButtonTriggerMode) => void;
   onEncoderSave: (config: EncoderConfig) => void;
   onEncoderClear: () => void;
+  onWorkspaceChange: (direction: 'next' | 'previous') => void;
   isSaving?: boolean;
-}> = ({ device, profiles, selection, onSelectionChange, onActionSave, onActionClear, onEncoderSave, onEncoderClear, isSaving }) => {
+}> = ({ device, profiles, selection, onSelectionChange, onActionSave, onActionClear, onEncoderSave, onEncoderClear, onWorkspaceChange, isSaving }) => {
   // Determine if we should show the encoder editor
   const isEncoderSelected = selection?.type === 'encoder';
 
-  // Get all actions and image for the selected button from active profile
+  // Get all actions and image for the selected button from active workspace
   const getCurrentButtonConfig = (): { buttonActions: ButtonActions | undefined; image: string | undefined } => {
     if (!selection || !profiles.activeProfile) return { buttonActions: undefined, image: undefined };
 
@@ -86,7 +88,9 @@ const DeviceTab: React.FC<{
 
     if (buttonIndex < 0) return { buttonActions: undefined, image: undefined };
 
-    const buttonConfig = profiles.activeProfile.buttons.find(b => b.index === buttonIndex);
+    // Use helper to get buttons from active workspace
+    const buttons = getActiveWorkspaceButtons(profiles.activeProfile);
+    const buttonConfig = buttons.find(b => b.index === buttonIndex);
     return {
       buttonActions: buttonConfig ? {
         action: buttonConfig.action,
@@ -100,11 +104,13 @@ const DeviceTab: React.FC<{
 
   const { buttonActions, image: currentImage } = getCurrentButtonConfig();
 
-  // Get current encoder config for the selected encoder from active profile
+  // Get current encoder config for the selected encoder from active workspace
   const getCurrentEncoderConfig = (): Partial<EncoderConfig> | undefined => {
     if (!selection || selection.type !== 'encoder' || !profiles.activeProfile) return undefined;
 
-    const encoderConfig = profiles.activeProfile.encoders.find(e => e.index === selection.index);
+    // Use helper to get encoders from active workspace
+    const encoders = getActiveWorkspaceEncoders(profiles.activeProfile);
+    const encoderConfig = encoders.find(e => e.index === selection.index);
     if (!encoderConfig) return undefined;
 
     // Convert Profile's EncoderConfig to EncoderEditor's EncoderConfig format
@@ -127,6 +133,15 @@ const DeviceTab: React.FC<{
 
   const currentEncoderConfig = getCurrentEncoderConfig();
 
+  // Get workspace info for the indicator
+  const workspaceInfo: WorkspaceInfo | undefined = profiles.activeProfile
+    ? {
+        name: getActiveWorkspace(profiles.activeProfile).name,
+        index: profiles.activeProfile.activeWorkspaceIndex || 0,
+        total: getWorkspaceCount(profiles.activeProfile),
+      }
+    : undefined;
+
   return (
     <div className="flex gap-lg h-full">
       {/* Left: Device Visualization */}
@@ -140,6 +155,8 @@ const DeviceTab: React.FC<{
             lastButtonEvent={device.lastButtonEvent}
             lastEncoderEvent={device.lastEncoderEvent}
             isShiftActive={device.isShiftActive}
+            workspaceInfo={workspaceInfo}
+            onWorkspaceChange={onWorkspaceChange}
           />
         </section>
       </div>
@@ -501,8 +518,9 @@ const App: React.FC = () => {
 
     setIsActionSaving(true);
     try {
-      // Clone the buttons array
-      const updatedButtons = [...profiles.activeProfile.buttons];
+      // Get the active workspace and update its buttons
+      const activeWorkspace = getActiveWorkspace(profiles.activeProfile);
+      const updatedButtons = [...activeWorkspace.buttons];
 
       // Find existing button config or create new one
       let buttonConfigIndex = updatedButtons.findIndex(b => b.index === buttonIndex);
@@ -537,8 +555,18 @@ const App: React.FC = () => {
         };
       }
 
+      // Update the workspace with the modified buttons
+      const workspaceIndex = profiles.activeProfile.activeWorkspaceIndex || 0;
+      const updatedWorkspaces = [...(profiles.activeProfile.workspaces || [])];
+      if (updatedWorkspaces[workspaceIndex]) {
+        updatedWorkspaces[workspaceIndex] = {
+          ...updatedWorkspaces[workspaceIndex],
+          buttons: updatedButtons,
+        };
+      }
+
       // Save to profile - this triggers auto-reload of bindings
-      await profiles.update(profiles.activeProfile.id, { buttons: updatedButtons });
+      await profiles.update(profiles.activeProfile.id, { workspaces: updatedWorkspaces });
 
       // For LCD buttons (0-5), upload image to device if provided (only for press trigger)
       if (selection.type === 'lcd' && triggerMode === 'press' && imageUrl && window.electronAPI?.device?.setButtonImage) {
@@ -581,8 +609,9 @@ const App: React.FC = () => {
     const actionField = actionFieldMap[triggerMode];
 
     try {
-      // Clone the buttons array and clear the specific action for this button
-      const updatedButtons = profiles.activeProfile.buttons
+      // Get buttons from active workspace and clear the specific action
+      const activeWorkspace = getActiveWorkspace(profiles.activeProfile);
+      const updatedButtons = activeWorkspace.buttons
         .map(b => {
           if (b.index === buttonIndex) {
             // Clear the specific action field, and image only for press trigger
@@ -597,8 +626,18 @@ const App: React.FC = () => {
         // Filter out buttons that have no meaningful config left
         .filter(b => b.action || b.longPressAction || b.shiftAction || b.shiftLongPressAction || b.image || b.label);
 
+      // Update the workspace with the modified buttons
+      const workspaceIndex = profiles.activeProfile.activeWorkspaceIndex || 0;
+      const updatedWorkspaces = [...(profiles.activeProfile.workspaces || [])];
+      if (updatedWorkspaces[workspaceIndex]) {
+        updatedWorkspaces[workspaceIndex] = {
+          ...updatedWorkspaces[workspaceIndex],
+          buttons: updatedButtons,
+        };
+      }
+
       // Save to profile - this triggers auto-reload of bindings
-      await profiles.update(profiles.activeProfile.id, { buttons: updatedButtons });
+      await profiles.update(profiles.activeProfile.id, { workspaces: updatedWorkspaces });
       toast.success('Action cleared');
     } catch (err) {
       console.error('Failed to clear action:', err);
@@ -654,8 +693,9 @@ const App: React.FC = () => {
           : undefined,
       };
 
-      // Clone the encoders array
-      const updatedEncoders = [...profiles.activeProfile.encoders];
+      // Get encoders from active workspace and update
+      const activeWorkspace = getActiveWorkspace(profiles.activeProfile);
+      const updatedEncoders = [...activeWorkspace.encoders];
 
       // Find existing encoder config or add new one
       const existingIndex = updatedEncoders.findIndex(e => e.index === selection.index);
@@ -666,8 +706,18 @@ const App: React.FC = () => {
         updatedEncoders[existingIndex] = profileEncoderConfig;
       }
 
+      // Update the workspace with the modified encoders
+      const workspaceIndex = profiles.activeProfile.activeWorkspaceIndex || 0;
+      const updatedWorkspaces = [...(profiles.activeProfile.workspaces || [])];
+      if (updatedWorkspaces[workspaceIndex]) {
+        updatedWorkspaces[workspaceIndex] = {
+          ...updatedWorkspaces[workspaceIndex],
+          encoders: updatedEncoders,
+        };
+      }
+
       // Save to profile - this triggers auto-reload of bindings
-      await profiles.update(profiles.activeProfile.id, { encoders: updatedEncoders });
+      await profiles.update(profiles.activeProfile.id, { workspaces: updatedWorkspaces });
       toast.success('Encoder configuration saved');
     } catch (err) {
       console.error('Failed to save encoder config:', err);
@@ -680,12 +730,23 @@ const App: React.FC = () => {
     if (!selection || selection.type !== 'encoder' || !profiles.activeProfile) return;
 
     try {
-      // Filter out the encoder config for this index, or keep only those with at least one action
-      const updatedEncoders = profiles.activeProfile.encoders
+      // Get encoders from active workspace and filter out this encoder
+      const activeWorkspace = getActiveWorkspace(profiles.activeProfile);
+      const updatedEncoders = activeWorkspace.encoders
         .filter(e => e.index !== selection.index);
 
+      // Update the workspace with the modified encoders
+      const workspaceIndex = profiles.activeProfile.activeWorkspaceIndex || 0;
+      const updatedWorkspaces = [...(profiles.activeProfile.workspaces || [])];
+      if (updatedWorkspaces[workspaceIndex]) {
+        updatedWorkspaces[workspaceIndex] = {
+          ...updatedWorkspaces[workspaceIndex],
+          encoders: updatedEncoders,
+        };
+      }
+
       // Save to profile - this triggers auto-reload of bindings
-      await profiles.update(profiles.activeProfile.id, { encoders: updatedEncoders });
+      await profiles.update(profiles.activeProfile.id, { workspaces: updatedWorkspaces });
       toast.success('Encoder configuration cleared');
     } catch (err) {
       console.error('Failed to clear encoder config:', err);
@@ -704,6 +765,33 @@ const App: React.FC = () => {
       }
     }
   }, [toast]);
+
+  // Handle workspace navigation
+  const handleWorkspaceChange = useCallback(async (direction: 'next' | 'previous') => {
+    if (!profiles.activeProfile) return;
+
+    const total = getWorkspaceCount(profiles.activeProfile);
+    if (total <= 1) return; // Nothing to navigate
+
+    const currentIndex = profiles.activeProfile.activeWorkspaceIndex || 0;
+    let newIndex: number;
+
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % total;
+    } else {
+      newIndex = (currentIndex - 1 + total) % total;
+    }
+
+    try {
+      await profiles.update(profiles.activeProfile.id, { activeWorkspaceIndex: newIndex });
+      const workspace = profiles.activeProfile.workspaces?.[newIndex];
+      const workspaceName = workspace?.name || `Workspace ${newIndex + 1}`;
+      toast.success(`Switched to ${workspaceName}`);
+    } catch (err) {
+      console.error('Failed to switch workspace:', err);
+      toast.error('Failed to switch workspace');
+    }
+  }, [profiles, toast]);
 
   // Profile dialog handlers
   const handleProfileDialogClose = useCallback(() => {
@@ -864,6 +952,7 @@ const App: React.FC = () => {
             onActionClear={handleActionClear}
             onEncoderSave={handleEncoderSave}
             onEncoderClear={handleEncoderClear}
+            onWorkspaceChange={handleWorkspaceChange}
             isSaving={isActionSaving}
           />
         )}
