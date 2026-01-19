@@ -65,19 +65,19 @@ async fn execute_script(config: &ScriptAction) -> ActionResult {
                 .output()
         }
         ScriptType::Cmd => {
-            let content = match script_content {
-                Some(c) => c,
-                None => return ActionResult::failure("No script content provided".to_string(), 0),
-            };
-            #[cfg(target_os = "windows")]
-            {
-                Command::new("cmd")
-                    .args(["/C", content])
-                    .output()
-            }
             #[cfg(not(target_os = "windows"))]
             {
                 return ActionResult::failure("CMD is only supported on Windows".to_string(), 0);
+            }
+            #[cfg(target_os = "windows")]
+            {
+                let content = match script_content {
+                    Some(c) => c,
+                    None => return ActionResult::failure("No script content provided".to_string(), 0),
+                };
+                Command::new("cmd")
+                    .args(["/C", content])
+                    .output()
             }
         }
         ScriptType::File => {

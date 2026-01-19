@@ -342,7 +342,7 @@ All 1124 tests pass.
 
 ### Development Environment
 - Rust tests require Tauri platform libraries (GTK, WebKit, etc.) for linking
-- TypeScript tests pass (1041 tests)
+- TypeScript tests pass (1124 tests)
 - Use `cargo check --lib` to verify library compilation without linking
 
 ---
