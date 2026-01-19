@@ -1055,9 +1055,35 @@ const App: React.FC = () => {
         );
 
         if (newProfile) {
+          // Check if imported profile uses new workspace structure or legacy flat arrays
+          let workspacesToImport: Workspace[];
+          let activeWorkspaceIndex = 0;
+
+          if (imported.workspaces && imported.workspaces.length > 0) {
+            // New format: use workspaces directly, generating new IDs
+            workspacesToImport = imported.workspaces.map((w, index) => ({
+              id: `workspace-${Date.now()}-${index}`,
+              name: w.name,
+              buttons: w.buttons || [],
+              encoders: w.encoders || [],
+            }));
+            activeWorkspaceIndex = Math.min(
+              imported.activeWorkspaceIndex || 0,
+              workspacesToImport.length - 1
+            );
+          } else {
+            // Legacy format: create a single workspace from buttons/encoders
+            workspacesToImport = [{
+              id: `workspace-${Date.now()}-0`,
+              name: 'Workspace 1',
+              buttons: imported.buttons || [],
+              encoders: imported.encoders || [],
+            }];
+          }
+
           await profiles.update(newProfile.id, {
-            buttons: imported.buttons,
-            encoders: imported.encoders,
+            workspaces: workspacesToImport,
+            activeWorkspaceIndex,
           });
           toast.success(`Profile "${imported.name}" imported successfully`);
         }

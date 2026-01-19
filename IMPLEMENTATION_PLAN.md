@@ -306,6 +306,21 @@ Added comprehensive test coverage for the new workspace-related React components
 
 All 1124 tests pass.
 
+### Profile Import Workspace Migration Fix (Completed)
+Fixed profile import to properly handle workspace structure migration.
+
+**Problem**: Profile import was setting deprecated `buttons` and `encoders` fields instead of properly creating/migrating to the workspace structure.
+
+**Fix**: Updated `handleProfileImport` in App.tsx to:
+- Check if imported profile has a valid `workspaces` array
+- If yes (new format): use workspaces directly with new generated IDs
+- If no (legacy format): create a single workspace from `buttons` and `encoders` arrays
+
+**Files Changed:**
+- `src/renderer/App.tsx` - lines 1040-1096
+
+All 1124 tests pass.
+
 ---
 
 ## Remaining Work
