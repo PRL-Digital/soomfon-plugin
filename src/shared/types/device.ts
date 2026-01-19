@@ -67,6 +67,12 @@ export interface EncoderEvent {
 /** Index of the shift button (small button 0, left-most) */
 export const SHIFT_BUTTON_INDEX = LCD_BUTTON_COUNT; // Index 6
 
+/** Index of the workspace previous button (small button 1, middle) */
+export const WORKSPACE_PREV_BUTTON_INDEX = LCD_BUTTON_COUNT + 1; // Index 7
+
+/** Index of the workspace next button (small button 2, right-most) */
+export const WORKSPACE_NEXT_BUTTON_INDEX = LCD_BUTTON_COUNT + 2; // Index 8
+
 /** Device connection state */
 export const ConnectionState = {
   DISCONNECTED: 'disconnected',
