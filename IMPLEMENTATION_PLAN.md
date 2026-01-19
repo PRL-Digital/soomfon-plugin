@@ -182,6 +182,14 @@ Updated all test fixtures to use new workspace structure:
 
 All 1030 tests pass.
 
+### Test Fixture Updates (Completed)
+Comprehensive test fixture updates for workspace-based Profile structure:
+
+- **TypeScript test fixtures**: Updated to use workspace-based Profile structure across all test files
+- **Rust test fixtures**: Updated with correct action type fields and struct initializers in `src-tauri/src/actions/` tests
+- All 1041 TypeScript tests pass
+- Rust library compiles successfully (linker errors in test environment due to missing GTK/WebKit libraries, not code issues)
+
 ---
 
 ## Remaining Work
@@ -189,11 +197,13 @@ All 1030 tests pass.
 ### Workspace UI Implementation
 UI components for workspace navigation and management.
 
-**Implementation Tasks:**
-1. Add workspace indicator to DeviceView (shows current workspace name/index)
-2. Wire small buttons 7/8 to workspace prev/next actions
-3. Add workspace management UI (add/remove/rename/duplicate workspaces)
-4. Update LCD images when workspace changes
+**Completed:**
+- Core workspace indicator UI implemented in `DeviceView.tsx` (lines 176-202) with navigation buttons
+
+**Remaining Tasks:**
+1. Wire small buttons 7/8 to workspace navigation actions (auto-binding)
+2. Workspace management UI (add/remove/rename/duplicate workspaces)
+3. Verify LCD images update on workspace change
 
 ### Image Upload Enhancements
 - Frontend preview of processed result before upload
@@ -208,19 +218,13 @@ UI components for workspace navigation and management.
 ## Known Issues
 
 ### Rust Test Compilation
-Pre-existing test compilation errors in `src-tauri/src/actions/` tests. The test code uses old struct initialization patterns that don't match the current types (missing required fields like `id`, `name`, `icon`, `enabled`). The library compiles correctly - only tests fail to compile.
+**FIXED**: Test compilation errors in `src-tauri/src/actions/` tests have been resolved. Test fixtures now use correct struct initialization patterns with all required fields.
 
-**Files with test errors:**
-- `src/actions/types.rs` (tests)
-- `src/actions/engine.rs` (tests)
-- `src/actions/event_binder.rs` (tests)
-- `src/config/profiles.rs` (tests)
-
-**Fix:** Update test code to use `Default::default()` for optional fields or add the required fields.
+**Note**: Linker errors may still occur in environments without GTK/WebKit libraries installed. Use `cargo check --lib` to verify library compilation without linking.
 
 ### Development Environment
 - Rust tests require Tauri platform libraries (GTK, WebKit, etc.) for linking
-- TypeScript tests pass (1030 tests)
+- TypeScript tests pass (1041 tests)
 - Use `cargo check --lib` to verify library compilation without linking
 
 ---
