@@ -291,6 +291,21 @@ Added UI support for configuring workspace navigation actions in the ActionEdito
 
 All 1041 tests pass.
 
+### Workspace Component Tests (Completed)
+Added comprehensive test coverage for the new workspace-related React components.
+
+**Test Files Added:**
+- `src/renderer/components/ActionEditor/WorkspaceAction.test.tsx` - 19 tests covering WorkspaceActionForm
+- `src/renderer/components/WorkspaceManager/WorkspaceEditor.test.tsx` - 34 tests covering modal dialogs
+- `src/renderer/components/WorkspaceManager/WorkspaceList.test.tsx` - 30 tests covering workspace list UI
+
+**Test Coverage:**
+- WorkspaceActionForm: Direction selection, workspace loading, error handling, config changes
+- WorkspaceEditor: Create/rename/duplicate/delete modes, validation, error handling, keyboard navigation
+- WorkspaceList: Rendering, selection, action buttons, loading/empty states, pluralization
+
+All 1124 tests pass.
+
 ---
 
 ## Remaining Work
