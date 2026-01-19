@@ -8,7 +8,7 @@ use crate::hid::packets::parse_ack_packet;
 use crate::hid::protocol::SoomfonProtocol;
 use crate::hid::types::{
     ButtonEventType, ButtonType, ConnectionState, DeviceEvent, DeviceInfo,
-    EncoderEventType, EncoderType, EP_IN,
+    EncoderEventType, EncoderType, EP_IN, SHIFT_BUTTON_PHYSICAL_INDEX,
 };
 use crate::image::processor::{process_image_source, ImageOptions};
 use parking_lot::Mutex;
@@ -38,6 +38,8 @@ pub struct ButtonEventPayload {
     pub button_type: String,
     /// Timestamp in milliseconds
     pub timestamp: u64,
+    /// Whether the shift button was held when this event occurred
+    pub is_shift_active: bool,
 }
 
 /// Encoder event payload for frontend (matches src/shared/types/device.ts EncoderEvent)
@@ -54,6 +56,8 @@ pub struct EncoderEventPayload {
     pub delta: Option<i32>,
     /// Timestamp in milliseconds
     pub timestamp: u64,
+    /// Whether the shift button was held when this event occurred
+    pub is_shift_active: bool,
 }
 
 /// Global flag to control event polling
@@ -140,6 +144,8 @@ pub fn connect_device(
         log::info!("Event polling thread started with dedicated handle");
         // Use 1024 bytes buffer - device may return up to 513 bytes (512 + report ID)
         let mut buf = [0u8; 1024];
+        // Track shift button state for modifier key handling
+        let mut shift_pressed = false;
 
         // Test read to verify handle works
         log::info!("Testing handle with a single read...");
@@ -168,6 +174,23 @@ pub fn connect_device(
                             // Emit appropriately typed event to frontend
                             match &device_event {
                                 DeviceEvent::Button { index, button_type, event_type } => {
+                                    // Track shift button state (physical button index 0)
+                                    let is_shift_button = *button_type == ButtonType::Physical
+                                        && *index == SHIFT_BUTTON_PHYSICAL_INDEX;
+                                    if is_shift_button {
+                                        match event_type {
+                                            ButtonEventType::Press | ButtonEventType::LongPress => {
+                                                shift_pressed = true;
+                                            }
+                                            ButtonEventType::Release => {
+                                                shift_pressed = false;
+                                            }
+                                        }
+                                    }
+
+                                    // Shift is active for non-shift buttons when shift is held
+                                    let is_shift_active = shift_pressed && !is_shift_button;
+
                                     let payload = ButtonEventPayload {
                                         event_type: match event_type {
                                             ButtonEventType::Press => "press".to_string(),
@@ -180,6 +203,7 @@ pub fn connect_device(
                                             ButtonType::Physical => "normal".to_string(),
                                         },
                                         timestamp,
+                                        is_shift_active,
                                     };
 
                                     let event_name = match event_type {
@@ -213,6 +237,7 @@ pub fn connect_device(
                                             _ => None,
                                         },
                                         timestamp,
+                                        is_shift_active: shift_pressed,
                                     };
 
                                     let event_name = match event_type {

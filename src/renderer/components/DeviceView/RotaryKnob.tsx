@@ -11,6 +11,8 @@ export interface RotaryKnobProps {
   rotationAngle?: number;
   /** Label to display */
   label?: string;
+  /** Action type label badge (e.g., 'kbd', 'app', 'http') */
+  actionLabel?: string;
   /** Click handler for selection */
   onClick?: () => void;
   /** Size variant: 'default' for side encoders, 'large' for main encoder */
@@ -23,6 +25,7 @@ export const RotaryKnob: React.FC<RotaryKnobProps> = ({
   isPressed = false,
   rotationAngle = 0,
   label,
+  actionLabel,
   onClick,
   size = 'default',
 }) => {
@@ -46,6 +49,14 @@ export const RotaryKnob: React.FC<RotaryKnobProps> = ({
       <span className="rotary-knob__label">
         {label || `ENC ${index + 1}`}
       </span>
+      {actionLabel !== undefined && (
+        <span
+          className={`rotary-knob__action-label ${actionLabel === '-' ? 'rotary-knob__action-label--empty' : ''}`}
+          data-testid={`encoder-${index}-action-label`}
+        >
+          {actionLabel}
+        </span>
+      )}
     </button>
   );
 };

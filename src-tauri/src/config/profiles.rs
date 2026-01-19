@@ -100,6 +100,12 @@ impl ProfileManager {
         if let Some(description) = update.description {
             profile.description = Some(description);
         }
+        if let Some(workspaces) = update.workspaces {
+            profile.workspaces = workspaces;
+        }
+        if let Some(active_workspace_index) = update.active_workspace_index {
+            profile.active_workspace_index = active_workspace_index;
+        }
         if let Some(buttons) = update.buttons {
             profile.buttons = buttons;
         }

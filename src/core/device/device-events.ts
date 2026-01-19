@@ -251,6 +251,7 @@ export class DeviceEventParser extends EventEmitter {
       const shiftStateAtPress = isShiftActive;
       const timer = setTimeout(() => {
         if (this.buttonStates.get(buttonIndex)) {
+          log.debug(`[PARSER] Long press detected: button=${buttonIndex}, type=${buttonType}`);
           const longPressEvent: ButtonEvent = {
             type: ButtonEventType.LONG_PRESS,
             buttonIndex,

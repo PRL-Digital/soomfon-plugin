@@ -78,7 +78,9 @@
       "Bash(cmd //c \"netstat -ano | findstr :5173\")",
       "Bash(taskkill:*)",
       "Bash(xxd:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npm test:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

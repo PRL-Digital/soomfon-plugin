@@ -128,6 +128,8 @@ export interface ActionEditorProps {
   isSaving?: boolean;
   /** Callback to preview image on device without saving (for LCD buttons) */
   onPreviewImage?: (buttonIndex: number, imageUrl: string) => Promise<void>;
+  /** Preferred trigger mode when selection changes (from layer toggle) */
+  preferredTriggerMode?: ButtonTriggerMode;
 }
 
 export const ActionEditor: React.FC<ActionEditorProps> = ({
@@ -139,6 +141,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   onCancel,
   isSaving = false,
   onPreviewImage,
+  preferredTriggerMode = 'press',
 }) => {
   // State for the current action being edited
   const [triggerMode, setTriggerMode] = useState<ButtonTriggerMode>('press');
@@ -161,9 +164,9 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   // Reset state when selection changes
   useEffect(() => {
     if (selection) {
-      // Reset to press mode when selection changes
-      setTriggerMode('press');
-      const currentAction = getActionForMode('press', buttonActions);
+      // Reset to preferred trigger mode when selection changes
+      setTriggerMode(preferredTriggerMode);
+      const currentAction = getActionForMode(preferredTriggerMode, buttonActions);
       if (currentAction?.type) {
         setActionType(currentAction.type as ActionTypeOption);
         setActionConfig(currentAction);
@@ -174,7 +177,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       setImageUrl(currentImage);
       setHasChanges(false);
     }
-  }, [selection, buttonActions, currentImage, getActionForMode]);
+  }, [selection, buttonActions, currentImage, getActionForMode, preferredTriggerMode]);
 
   // Update action config when trigger mode changes
   const handleTriggerModeChange = useCallback((mode: ButtonTriggerMode) => {

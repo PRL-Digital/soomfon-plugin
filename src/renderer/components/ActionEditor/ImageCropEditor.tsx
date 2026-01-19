@@ -179,6 +179,7 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
                 ref={imgRef}
                 src={imageUrl}
                 alt="Image to crop"
+                crossOrigin="anonymous"
                 onLoad={handleImageLoad}
                 onError={handleImageError}
                 className="image-crop-editor__image"

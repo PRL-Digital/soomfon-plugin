@@ -100,6 +100,9 @@ pub mod small_buttons {
     pub const BUTTON_3: u8 = 0x31; // '1'
 }
 
+/// Physical button index for the shift button (small button 0, which has event ID 0x25)
+pub const SHIFT_BUTTON_PHYSICAL_INDEX: u8 = 0;
+
 /// Event IDs for main encoder (Dial 1 - large center dial)
 pub mod main_encoder {
     pub const ROTATE_CCW: u8 = 0x50; // 'P' - Counter-clockwise

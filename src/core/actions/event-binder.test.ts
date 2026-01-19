@@ -398,3 +398,338 @@ describe('createBinding helper', () => {
     });
   });
 });
+
+describe('Deferred Press Behavior', () => {
+  let actionEngine: ActionEngine;
+  let eventBinder: EventBinder;
+  let executeMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    actionEngine = new ActionEngine();
+    eventBinder = createEventBinder(actionEngine);
+
+    executeMock = vi.fn().mockResolvedValue({
+      status: 'success',
+      actionId: 'test-action',
+      startTime: Date.now(),
+      endTime: Date.now(),
+      duration: 10,
+    });
+
+    actionEngine.registerHandler({
+      actionType: 'keyboard',
+      execute: executeMock,
+    });
+  });
+
+  describe('when both press and longPress bindings exist', () => {
+    beforeEach(() => {
+      const pressBinding = createBinding('press-b', 'lcdButton', 0, 'press', createMockAction('press-action'));
+      const longPressBinding = createBinding('longpress-b', 'lcdButton', 0, 'longPress', createMockAction('longpress-action'));
+      eventBinder.addBinding(pressBinding);
+      eventBinder.addBinding(longPressBinding);
+    });
+
+    it('should defer press execution when longPress binding exists', async () => {
+      const pressEvent = createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD);
+
+      const result = await eventBinder.handleButtonEvent(pressEvent);
+
+      // Press should be deferred, not executed immediately
+      expect(result).toBeNull();
+      expect(executeMock).not.toHaveBeenCalled();
+    });
+
+    it('should execute deferred press on RELEASE (quick tap)', async () => {
+      const pressEvent = createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD);
+      const releaseEvent = createButtonEvent(0, ButtonEventType.RELEASE, ButtonType.LCD);
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      const result = await eventBinder.handleButtonEvent(releaseEvent);
+
+      // Press action should execute on release
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledTimes(1);
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'press-action' })
+      );
+    });
+
+    it('should cancel deferred press and execute longPress on LONG_PRESS', async () => {
+      const pressEvent = createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD);
+      const longPressEvent = createButtonEvent(0, ButtonEventType.LONG_PRESS, ButtonType.LCD);
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      const result = await eventBinder.handleButtonEvent(longPressEvent);
+
+      // LongPress action should execute, not press
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledTimes(1);
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'longpress-action' })
+      );
+    });
+
+    it('should not execute deferred press after LONG_PRESS on subsequent RELEASE', async () => {
+      const pressEvent = createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD);
+      const longPressEvent = createButtonEvent(0, ButtonEventType.LONG_PRESS, ButtonType.LCD);
+      const releaseEvent = createButtonEvent(0, ButtonEventType.RELEASE, ButtonType.LCD);
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      await eventBinder.handleButtonEvent(longPressEvent);
+      executeMock.mockClear();
+
+      const result = await eventBinder.handleButtonEvent(releaseEvent);
+
+      // Release should not trigger press action (it was cancelled by longPress)
+      expect(result).toBeNull(); // No release binding configured
+      expect(executeMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('when only press binding exists (no longPress)', () => {
+    beforeEach(() => {
+      const pressBinding = createBinding('press-b', 'lcdButton', 0, 'press', createMockAction('press-action'));
+      eventBinder.addBinding(pressBinding);
+    });
+
+    it('should execute press immediately (existing behavior)', async () => {
+      const pressEvent = createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD);
+
+      const result = await eventBinder.handleButtonEvent(pressEvent);
+
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledTimes(1);
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'press-action' })
+      );
+    });
+
+    it('should not re-execute press on RELEASE', async () => {
+      const pressEvent = createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD);
+      const releaseEvent = createButtonEvent(0, ButtonEventType.RELEASE, ButtonType.LCD);
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      executeMock.mockClear();
+
+      const result = await eventBinder.handleButtonEvent(releaseEvent);
+
+      expect(result).toBeNull(); // No release binding
+      expect(executeMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('shift variants', () => {
+    beforeEach(() => {
+      const shiftPressBinding = createBinding('shift-press', 'lcdButton', 0, 'shiftPress', createMockAction('shift-press-action'));
+      const shiftLongPressBinding = createBinding('shift-longpress', 'lcdButton', 0, 'shiftLongPress', createMockAction('shift-longpress-action'));
+      eventBinder.addBinding(shiftPressBinding);
+      eventBinder.addBinding(shiftLongPressBinding);
+    });
+
+    it('should defer shiftPress when shiftLongPress exists', async () => {
+      const pressEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD),
+        isShiftActive: true,
+      };
+
+      const result = await eventBinder.handleButtonEvent(pressEvent);
+
+      expect(result).toBeNull();
+      expect(executeMock).not.toHaveBeenCalled();
+    });
+
+    it('should execute shiftPress on RELEASE (quick tap with shift)', async () => {
+      const pressEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD),
+        isShiftActive: true,
+      };
+      const releaseEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.RELEASE, ButtonType.LCD),
+        isShiftActive: true,
+      };
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      const result = await eventBinder.handleButtonEvent(releaseEvent);
+
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'shift-press-action' })
+      );
+    });
+
+    it('should execute shiftLongPress on LONG_PRESS with shift', async () => {
+      const pressEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD),
+        isShiftActive: true,
+      };
+      const longPressEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.LONG_PRESS, ButtonType.LCD),
+        isShiftActive: true,
+      };
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      const result = await eventBinder.handleButtonEvent(longPressEvent);
+
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'shift-longpress-action' })
+      );
+    });
+  });
+
+  describe('shift fallback', () => {
+    beforeEach(() => {
+      // Only non-shift bindings
+      const pressBinding = createBinding('press-b', 'lcdButton', 0, 'press', createMockAction('press-action'));
+      const longPressBinding = createBinding('longpress-b', 'lcdButton', 0, 'longPress', createMockAction('longpress-action'));
+      eventBinder.addBinding(pressBinding);
+      eventBinder.addBinding(longPressBinding);
+    });
+
+    it('should fall back to non-shift press when shift is active but no shiftPress exists', async () => {
+      const pressEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD),
+        isShiftActive: true,
+      };
+      const releaseEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.RELEASE, ButtonType.LCD),
+        isShiftActive: true,
+      };
+
+      // Should defer since longPress exists
+      await eventBinder.handleButtonEvent(pressEvent);
+      const result = await eventBinder.handleButtonEvent(releaseEvent);
+
+      // Should fall back to non-shift press binding
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'press-action' })
+      );
+    });
+
+    it('should fall back to non-shift longPress when shift is active but no shiftLongPress exists', async () => {
+      const pressEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD),
+        isShiftActive: true,
+      };
+      const longPressEvent: ButtonEvent = {
+        ...createButtonEvent(0, ButtonEventType.LONG_PRESS, ButtonType.LCD),
+        isShiftActive: true,
+      };
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      const result = await eventBinder.handleButtonEvent(longPressEvent);
+
+      // Should fall back to non-shift longPress binding
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'longpress-action' })
+      );
+    });
+  });
+
+  describe('multiple buttons tracked independently', () => {
+    beforeEach(() => {
+      // Button 0 has press + longPress
+      eventBinder.addBinding(createBinding('b0-press', 'lcdButton', 0, 'press', createMockAction('b0-press')));
+      eventBinder.addBinding(createBinding('b0-longpress', 'lcdButton', 0, 'longPress', createMockAction('b0-longpress')));
+      // Button 1 has press + longPress
+      eventBinder.addBinding(createBinding('b1-press', 'lcdButton', 1, 'press', createMockAction('b1-press')));
+      eventBinder.addBinding(createBinding('b1-longpress', 'lcdButton', 1, 'longPress', createMockAction('b1-longpress')));
+    });
+
+    it('should track pending presses for different buttons independently', async () => {
+      // Press both buttons
+      const press0 = createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD);
+      const press1 = createButtonEvent(1, ButtonEventType.PRESS, ButtonType.LCD);
+
+      await eventBinder.handleButtonEvent(press0);
+      await eventBinder.handleButtonEvent(press1);
+
+      // Both should be deferred
+      expect(executeMock).not.toHaveBeenCalled();
+
+      // LongPress button 0, release button 1
+      const longPress0 = createButtonEvent(0, ButtonEventType.LONG_PRESS, ButtonType.LCD);
+      const release1 = createButtonEvent(1, ButtonEventType.RELEASE, ButtonType.LCD);
+
+      await eventBinder.handleButtonEvent(longPress0);
+      await eventBinder.handleButtonEvent(release1);
+
+      // Button 0 should have executed longPress
+      // Button 1 should have executed press
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'b0-longpress' })
+      );
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'b1-press' })
+      );
+    });
+  });
+
+  describe('clearBindings clears pending presses', () => {
+    it('should clear pending presses when clearBindings is called', async () => {
+      const pressBinding = createBinding('press-b', 'lcdButton', 0, 'press', createMockAction('press-action'));
+      const longPressBinding = createBinding('longpress-b', 'lcdButton', 0, 'longPress', createMockAction('longpress-action'));
+      eventBinder.addBinding(pressBinding);
+      eventBinder.addBinding(longPressBinding);
+
+      // Create a pending press
+      const pressEvent = createButtonEvent(0, ButtonEventType.PRESS, ButtonType.LCD);
+      await eventBinder.handleButtonEvent(pressEvent);
+
+      // Clear bindings
+      eventBinder.clearBindings();
+
+      // Re-add bindings (otherwise release would have no binding to match)
+      eventBinder.addBinding(pressBinding);
+      eventBinder.addBinding(longPressBinding);
+
+      // Release should NOT execute the old pending press
+      const releaseEvent = createButtonEvent(0, ButtonEventType.RELEASE, ButtonType.LCD);
+      executeMock.mockClear();
+      const result = await eventBinder.handleButtonEvent(releaseEvent);
+
+      expect(result).toBeNull(); // No release binding, and old pending was cleared
+      expect(executeMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('normal buttons', () => {
+    beforeEach(() => {
+      // Normal button (index 0 in bindings = button 6 in events)
+      eventBinder.addBinding(createBinding('nb0-press', 'normalButton', 0, 'press', createMockAction('nb0-press')));
+      eventBinder.addBinding(createBinding('nb0-longpress', 'normalButton', 0, 'longPress', createMockAction('nb0-longpress')));
+    });
+
+    it('should work with normal button index adjustment', async () => {
+      // Normal button events come with buttonIndex = LCD_BUTTON_COUNT + normalIndex
+      const pressEvent = createButtonEvent(LCD_BUTTON_COUNT, ButtonEventType.PRESS, ButtonType.NORMAL);
+      const releaseEvent = createButtonEvent(LCD_BUTTON_COUNT, ButtonEventType.RELEASE, ButtonType.NORMAL);
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      expect(executeMock).not.toHaveBeenCalled(); // Deferred
+
+      const result = await eventBinder.handleButtonEvent(releaseEvent);
+
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'nb0-press' })
+      );
+    });
+
+    it('should execute longPress for normal buttons', async () => {
+      const pressEvent = createButtonEvent(LCD_BUTTON_COUNT, ButtonEventType.PRESS, ButtonType.NORMAL);
+      const longPressEvent = createButtonEvent(LCD_BUTTON_COUNT, ButtonEventType.LONG_PRESS, ButtonType.NORMAL);
+
+      await eventBinder.handleButtonEvent(pressEvent);
+      const result = await eventBinder.handleButtonEvent(longPressEvent);
+
+      expect(result?.status).toBe('success');
+      expect(executeMock).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'nb0-longpress' })
+      );
+    });
+  });
+});

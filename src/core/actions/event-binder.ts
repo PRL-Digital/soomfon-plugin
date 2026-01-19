@@ -32,6 +32,17 @@ export interface EventBinderEvents {
 /** Binding key for lookup */
 type BindingKey = `${ElementType}:${number}:${string}`;
 
+/** Key for pending press tracking */
+type PendingPressKey = `${ElementType}:${number}:${boolean}`;
+
+/** Pending press info for deferred execution */
+interface PendingPress {
+  event: ButtonEvent;
+  trigger: ButtonTrigger;
+  elementType: ElementType;
+  elementIndex: number;
+}
+
 /**
  * Create a binding lookup key from element properties
  */
@@ -97,6 +108,7 @@ function mapButtonTypeToElement(buttonType: ButtonType): ElementType {
 export class EventBinder extends EventEmitter {
   private bindings: Map<string, ActionBinding> = new Map();
   private bindingsById: Map<string, ActionBinding> = new Map();
+  private pendingPresses: Map<PendingPressKey, PendingPress> = new Map();
   private actionEngine: ActionEngine;
 
   constructor(actionEngine: ActionEngine) {
@@ -170,11 +182,12 @@ export class EventBinder extends EventEmitter {
   }
 
   /**
-   * Clear all bindings
+   * Clear all bindings and pending presses
    */
   clearBindings(): void {
     this.bindings.clear();
     this.bindingsById.clear();
+    this.pendingPresses.clear();
   }
 
   /**
@@ -189,9 +202,64 @@ export class EventBinder extends EventEmitter {
   }
 
   /**
+   * Create a key for pending press tracking
+   */
+  private createPendingPressKey(
+    elementType: ElementType,
+    elementIndex: number,
+    isShiftActive: boolean
+  ): PendingPressKey {
+    return `${elementType}:${elementIndex}:${isShiftActive}`;
+  }
+
+  /**
+   * Check if a longPress binding exists for the element
+   * When shift is active, checks for shiftLongPress first, then falls back to longPress
+   */
+  private hasLongPressBinding(
+    elementType: ElementType,
+    elementIndex: number,
+    isShiftActive: boolean
+  ): boolean {
+    if (isShiftActive) {
+      // Check shiftLongPress first, fall back to longPress
+      const hasShiftLongPress = this.getBindingForElement(elementType, elementIndex, 'shiftLongPress') !== undefined;
+      const hasLongPress = this.getBindingForElement(elementType, elementIndex, 'longPress') !== undefined;
+      return hasShiftLongPress || hasLongPress;
+    }
+    return this.getBindingForElement(elementType, elementIndex, 'longPress') !== undefined;
+  }
+
+  /**
+   * Execute a pending press with shift fallback if needed
+   */
+  private async executePendingPress(
+    pendingPress: PendingPress
+  ): Promise<ActionExecutionResult | null> {
+    const { event, trigger, elementType, elementIndex } = pendingPress;
+    const isShiftActive = event.isShiftActive || false;
+
+    // Try the trigger first
+    let result = await this.executeBindingForElement(elementType, elementIndex, trigger, event);
+
+    // If shift is active but no shift binding found, fall back to normal trigger
+    if (result === null && isShiftActive) {
+      const normalTrigger = mapButtonEventToTrigger(ButtonEventType.PRESS, false);
+      result = await this.executeBindingForElement(elementType, elementIndex, normalTrigger, event);
+    }
+
+    return result;
+  }
+
+  /**
    * Handle a button event
    * Finds matching binding and executes the action
    * If shift is active, looks for shift trigger first, then falls back to normal trigger
+   *
+   * Deferred press logic:
+   * - If a longPress binding exists, press is deferred until RELEASE or LONG_PRESS
+   * - On RELEASE: execute the deferred press (quick tap)
+   * - On LONG_PRESS: cancel deferred press, execute longPress
    */
   async handleButtonEvent(event: ButtonEvent): Promise<ActionExecutionResult | null> {
     const elementType = mapButtonTypeToElement(event.buttonType);
@@ -204,16 +272,98 @@ export class EventBinder extends EventEmitter {
       elementIndex = event.buttonIndex - LCD_BUTTON_COUNT;
     }
 
-    // Try shift trigger first if shift is active
+    const pendingKey = this.createPendingPressKey(elementType, elementIndex, isShiftActive);
+
+    switch (event.type) {
+      case ButtonEventType.PRESS:
+        return this.handlePressEvent(elementType, elementIndex, trigger, event, pendingKey, isShiftActive);
+
+      case ButtonEventType.LONG_PRESS:
+        return this.handleLongPressEvent(elementType, elementIndex, trigger, event, pendingKey, isShiftActive);
+
+      case ButtonEventType.RELEASE:
+        return this.handleReleaseEvent(elementType, elementIndex, event, pendingKey);
+    }
+  }
+
+  /**
+   * Handle PRESS event - defer if longPress binding exists, otherwise execute immediately
+   */
+  private async handlePressEvent(
+    elementType: ElementType,
+    elementIndex: number,
+    trigger: ButtonTrigger,
+    event: ButtonEvent,
+    pendingKey: PendingPressKey,
+    isShiftActive: boolean
+  ): Promise<ActionExecutionResult | null> {
+    // If a longPress binding exists, defer the press execution
+    if (this.hasLongPressBinding(elementType, elementIndex, isShiftActive)) {
+      this.pendingPresses.set(pendingKey, {
+        event,
+        trigger,
+        elementType,
+        elementIndex,
+      });
+      return null; // Don't execute yet, wait for RELEASE or LONG_PRESS
+    }
+
+    // No longPress binding, execute press immediately (existing behavior)
     let result = await this.executeBindingForElement(elementType, elementIndex, trigger, event);
 
     // If shift is active but no shift binding found, fall back to normal trigger
-    if (result === null && isShiftActive && event.type !== ButtonEventType.RELEASE) {
-      const normalTrigger = mapButtonEventToTrigger(event.type, false);
+    if (result === null && isShiftActive) {
+      const normalTrigger = mapButtonEventToTrigger(ButtonEventType.PRESS, false);
       result = await this.executeBindingForElement(elementType, elementIndex, normalTrigger, event);
     }
 
     return result;
+  }
+
+  /**
+   * Handle LONG_PRESS event - cancel pending press, execute longPress
+   */
+  private async handleLongPressEvent(
+    elementType: ElementType,
+    elementIndex: number,
+    trigger: ButtonTrigger,
+    event: ButtonEvent,
+    pendingKey: PendingPressKey,
+    isShiftActive: boolean
+  ): Promise<ActionExecutionResult | null> {
+    // Cancel any pending press for this button
+    this.pendingPresses.delete(pendingKey);
+
+    // Execute longPress action
+    let result = await this.executeBindingForElement(elementType, elementIndex, trigger, event);
+
+    // If shift is active but no shift binding found, fall back to normal trigger
+    if (result === null && isShiftActive) {
+      const normalTrigger = mapButtonEventToTrigger(ButtonEventType.LONG_PRESS, false);
+      result = await this.executeBindingForElement(elementType, elementIndex, normalTrigger, event);
+    }
+
+    return result;
+  }
+
+  /**
+   * Handle RELEASE event - execute pending press if exists (quick tap)
+   */
+  private async handleReleaseEvent(
+    elementType: ElementType,
+    elementIndex: number,
+    event: ButtonEvent,
+    pendingKey: PendingPressKey
+  ): Promise<ActionExecutionResult | null> {
+    // Check if there's a pending press to execute (quick tap case)
+    const pendingPress = this.pendingPresses.get(pendingKey);
+    if (pendingPress) {
+      this.pendingPresses.delete(pendingKey);
+      return this.executePendingPress(pendingPress);
+    }
+
+    // No pending press, handle release binding if any
+    return this.executeBindingForElement(elementType, elementIndex, 'release', event);
   }
 
   /**

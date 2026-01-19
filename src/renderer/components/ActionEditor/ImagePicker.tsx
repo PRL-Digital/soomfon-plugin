@@ -1,4 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
+import { convertFileSrc } from '@tauri-apps/api/core';
+import { tauriAPI, fetchImageAsDataUrl } from '../../../lib/tauri-api';
 import { ImageCropEditor } from './ImageCropEditor';
 
 /** Maximum file size in bytes (5MB) */
@@ -50,6 +52,35 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   const [imageInfo, setImageInfo] = useState<{ width: number; height: number } | null>(null);
   const [showCropEditor, setShowCropEditor] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [isFetchingForCrop, setIsFetchingForCrop] = useState(false);
+
+  // Convert imageUrl to a displayable URL for the preview
+  // file:// URLs and absolute paths need to be converted using Tauri's asset protocol
+  const displayUrl = useMemo(() => {
+    if (!imageUrl) return undefined;
+
+    // Data URLs and http(s) URLs can be used directly
+    if (imageUrl.startsWith('data:') || imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+
+    // For file:// URLs, extract the path and convert
+    if (imageUrl.startsWith('file://')) {
+      // Windows: file:///C:/path -> C:/path, Unix: file:///path -> /path
+      const path = imageUrl.startsWith('file:///')
+        ? imageUrl.slice(8)  // Remove file:///
+        : imageUrl.slice(7); // Remove file://
+      return convertFileSrc(path);
+    }
+
+    // For absolute paths, convert directly
+    if (imageUrl.startsWith('/') || /^[A-Za-z]:[\\/]/.test(imageUrl)) {
+      return convertFileSrc(imageUrl);
+    }
+
+    // For other URLs, return as-is
+    return imageUrl;
+  }, [imageUrl]);
 
   // Validate file extension
   const validateFileExtension = useCallback((filePath: string): boolean => {
@@ -64,31 +95,25 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
       setWarning(null);
       setIsLoading(true);
 
-      const api = window.electronAPI as { openFileDialog?: (options: unknown) => Promise<string[]> };
-      if (api?.openFileDialog) {
-        const result = await api.openFileDialog({
-          properties: ['openFile'],
-          filters: [
-            { name: 'Images', extensions: SUPPORTED_EXTENSIONS },
-            { name: 'All Files', extensions: ['*'] },
-          ],
-        });
-        if (result && result.length > 0) {
-          const filePath = result[0];
+      const result = await tauriAPI.openFileDialog({
+        title: 'Select Image',
+        filters: [
+          { name: 'Images', extensions: SUPPORTED_EXTENSIONS },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+      if (result && result.length > 0) {
+        const filePath = result[0];
 
-          // Validate file extension
-          if (!validateFileExtension(filePath)) {
-            const ext = filePath.split('.').pop()?.toLowerCase() || 'unknown';
-            setError(`Unsupported file format: .${ext}`);
-            return;
-          }
-
-          // Convert to file:// URL for display
-          onChange(`file://${filePath}`);
+        // Validate file extension
+        if (!validateFileExtension(filePath)) {
+          const ext = filePath.split('.').pop()?.toLowerCase() || 'unknown';
+          setError(`Unsupported file format: .${ext}`);
+          return;
         }
-      } else {
-        // Fallback for development without Electron
-        setError('File dialog not available');
+
+        // Convert to file:// URL for display
+        onChange(`file://${filePath}`);
       }
     } catch (err) {
       setError('Failed to open file dialog');
@@ -194,12 +219,29 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   }, [imageUrl, buttonIndex, onPreview]);
 
   // Open crop editor with current image
-  const handleOpenCrop = useCallback(() => {
-    if (imageUrl) {
-      setImageToCrop(imageUrl);
+  // For HTTP URLs, pre-fetch through backend to avoid CORS issues
+  const handleOpenCrop = useCallback(async () => {
+    if (!imageUrl) return;
+
+    // For HTTP/HTTPS URLs, fetch through Rust backend to bypass CORS
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      setIsFetchingForCrop(true);
+      setError(null);
+      try {
+        const dataUrl = await fetchImageAsDataUrl(imageUrl);
+        setImageToCrop(dataUrl);
+        setShowCropEditor(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch image for cropping');
+      } finally {
+        setIsFetchingForCrop(false);
+      }
+    } else if (displayUrl) {
+      // For local files and data URLs, use display URL directly
+      setImageToCrop(displayUrl);
       setShowCropEditor(true);
     }
-  }, [imageUrl]);
+  }, [imageUrl, displayUrl]);
 
   // Handle crop completion
   const handleCropComplete = useCallback((croppedDataUrl: string) => {
@@ -219,7 +261,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   const canPreview = imageUrl && buttonIndex !== undefined && onPreview && !error;
 
   // Check if crop is available (has image without errors)
-  const canCrop = imageUrl && !error && !isUploading;
+  const canCrop = imageUrl && !error && !isUploading && !isFetchingForCrop;
 
   return (
     <div className="image-picker" data-testid="image-picker">
@@ -228,7 +270,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
         {imageUrl ? (
           <>
             <img
-              src={imageUrl}
+              src={displayUrl}
               alt="Button image preview"
               className="image-picker__preview-image"
               onError={handleImageError}
@@ -307,16 +349,16 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
         >
           Clear
         </button>
-        {canCrop && (
+        {(canCrop || isFetchingForCrop) && (
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={handleOpenCrop}
-            disabled={isPreviewing || isUploading}
+            disabled={isPreviewing || isUploading || isFetchingForCrop}
             data-testid="image-crop-btn"
             title="Crop image to select a specific area"
           >
-            Crop
+            {isFetchingForCrop ? 'Loading...' : 'Crop'}
           </button>
         )}
         {canPreview && (

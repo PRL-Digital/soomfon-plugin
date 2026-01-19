@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import type { ScriptAction, ScriptType } from '@shared/types/actions';
+import { tauriAPI } from '../../../lib/tauri-api';
 
 /** Available script types */
 const SCRIPT_TYPES: { value: ScriptType; label: string; extension: string }[] = [
@@ -80,27 +81,22 @@ export const ScriptActionForm: React.FC<ScriptActionFormProps> = ({
   const handleBrowse = useCallback(async () => {
     setBrowseError(null);
     try {
-      const api = window.electronAPI as { openFileDialog?: (options: unknown) => Promise<string[]> };
-      if (api?.openFileDialog) {
-        const scriptType = config.scriptType || 'powershell';
-        const extensions: Record<ScriptType, string[]> = {
-          powershell: ['ps1'],
-          cmd: ['bat', 'cmd'],
-          bash: ['sh'],
-        };
+      const scriptType = config.scriptType || 'powershell';
+      const extensions: Record<ScriptType, string[]> = {
+        powershell: ['ps1'],
+        cmd: ['bat', 'cmd'],
+        bash: ['sh'],
+      };
 
-        const result = await api.openFileDialog({
-          properties: ['openFile'],
-          filters: [
-            { name: 'Script Files', extensions: extensions[scriptType] },
-            { name: 'All Files', extensions: ['*'] },
-          ],
-        });
-        if (result && result.length > 0) {
-          onChange({ ...config, scriptPath: result[0], script: undefined });
-        }
-      } else {
-        setBrowseError('File dialog not available');
+      const result = await tauriAPI.openFileDialog({
+        title: 'Select Script File',
+        filters: [
+          { name: 'Script Files', extensions: extensions[scriptType] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+      if (result && result.length > 0) {
+        onChange({ ...config, scriptPath: result[0], script: undefined });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to open file dialog';

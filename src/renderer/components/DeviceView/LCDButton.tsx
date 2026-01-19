@@ -11,6 +11,8 @@ export interface LCDButtonProps {
   imageUrl?: string;
   /** Label to show when no image is set */
   label?: string;
+  /** Action type label badge (e.g., 'kbd', 'app', 'http') */
+  actionLabel?: string;
   /** Click handler for selection */
   onClick?: () => void;
 }
@@ -21,6 +23,7 @@ export const LCDButton: React.FC<LCDButtonProps> = ({
   isPressed = false,
   imageUrl,
   label,
+  actionLabel,
   onClick,
 }) => {
   return (
@@ -46,6 +49,14 @@ export const LCDButton: React.FC<LCDButtonProps> = ({
           </span>
         )}
       </div>
+      {actionLabel !== undefined && (
+        <span
+          className={`lcd-button__action-label ${actionLabel === '-' ? 'lcd-button__action-label--empty' : ''}`}
+          data-testid={`lcd-button-${index}-action-label`}
+        >
+          {actionLabel}
+        </span>
+      )}
     </button>
   );
 };

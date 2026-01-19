@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import type { LaunchAction } from '@shared/types/actions';
+import { tauriAPI } from '../../../lib/tauri-api';
 
 export interface LaunchActionFormProps {
   /** Current configuration */
@@ -58,20 +59,15 @@ export const LaunchActionForm: React.FC<LaunchActionFormProps> = ({
   const handleBrowse = useCallback(async () => {
     setBrowseError(null);
     try {
-      const api = window.electronAPI as { openFileDialog?: (options: unknown) => Promise<string[]> };
-      if (api?.openFileDialog) {
-        const result = await api.openFileDialog({
-          properties: ['openFile'],
-          filters: [
-            { name: 'Executables', extensions: ['exe', 'bat', 'cmd', 'ps1', 'lnk'] },
-            { name: 'All Files', extensions: ['*'] },
-          ],
-        });
-        if (result && result.length > 0) {
-          onChange({ ...config, path: result[0] });
-        }
-      } else {
-        setBrowseError({ message: 'File dialog not available' });
+      const result = await tauriAPI.openFileDialog({
+        title: 'Select Application',
+        filters: [
+          { name: 'Executables', extensions: ['exe', 'bat', 'cmd', 'ps1', 'lnk'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      });
+      if (result && result.length > 0) {
+        onChange({ ...config, path: result[0] });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to open file dialog';

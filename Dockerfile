@@ -6,7 +6,15 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     sudo \
     jq \
-    bc
+    bc \
+    # Tauri/Rust dependencies (per AGENTS.md)
+    libgtk-3-dev \
+    libwebkit2gtk-4.1-dev \
+    libayatana-appindicator3-dev \
+    librsvg2-dev \
+    pkg-config \
+    libudev-dev \
+    libssl-dev
 
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
@@ -26,6 +34,10 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 USER dev
 WORKDIR /workspace
+
+# Install Rust for dev user
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/home/dev/.cargo/bin:${PATH}"
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["bash"]

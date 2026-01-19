@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useDevice, useProfiles, useConfig } from './hooks';
-import { Header, TabNav, TabId } from './components/Layout';
-import { DeviceView, Selection, WorkspaceInfo } from './components/DeviceView';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useDevice, useProfiles, useConfig, useActionBinding } from './hooks';
+import { Header, TabNav, TabId, DeviceStatusDropdown } from './components/Layout';
+import { DeviceView, Selection, WorkspaceInfo, LayerToggle, LayerType } from './components/DeviceView';
 import { ActionEditor, EncoderEditor, EncoderConfig, ActionTypeOption, ButtonTriggerMode, ButtonActions } from './components/ActionEditor';
 import { ProfileSelector, ProfileList, ProfileEditor, ProfileDialogMode } from './components/ProfileManager';
-import { WorkspaceEditor, WorkspaceList, WorkspaceDialogMode } from './components/WorkspaceManager';
+import { WorkspaceEditor, WorkspaceDialogMode, WorkspaceTabs } from './components/WorkspaceManager';
 import { SettingsPanel } from './components/Settings';
-import { useToast, Spinner } from './components/common';
-import { ConnectionState, WORKSPACE_PREV_BUTTON_INDEX, WORKSPACE_NEXT_BUTTON_INDEX, ButtonEventType, LCD_BUTTON_COUNT } from '@shared/types/device';
+import { useToast } from './components/common';
+import { WORKSPACE_PREV_BUTTON_INDEX, WORKSPACE_NEXT_BUTTON_INDEX, ButtonEventType, LCD_BUTTON_COUNT, ENCODER_COUNT } from '@shared/types/device';
+import { getActionLabel } from '@shared/utils/action-labels';
 import type {
   Action,
   KeyboardAction,
@@ -75,10 +76,14 @@ const DeviceTab: React.FC<{
   onWorkspaceRename: (workspace: Workspace) => void;
   onWorkspaceDuplicate: (workspace: Workspace) => void;
   onWorkspaceDelete: (workspace: Workspace) => void;
+  onPreviewImage: (buttonIndex: number, imageUrl: string) => Promise<void>;
   isSaving?: boolean;
-}> = ({ device, profiles, selection, onSelectionChange, onActionSave, onActionClear, onEncoderSave, onEncoderClear, onWorkspaceChange, onWorkspaceSelect, onWorkspaceCreate, onWorkspaceRename, onWorkspaceDuplicate, onWorkspaceDelete, isSaving }) => {
+}> = ({ device, profiles, selection, onSelectionChange, onActionSave, onActionClear, onEncoderSave, onEncoderClear, onWorkspaceChange, onWorkspaceSelect, onWorkspaceCreate, onWorkspaceRename, onWorkspaceDuplicate, onWorkspaceDelete, onPreviewImage, isSaving }) => {
   // Determine if we should show the encoder editor
   const isEncoderSelected = selection?.type === 'encoder';
+
+  // Layer toggle state - controls which actions are shown (primary vs shift)
+  const [selectedLayer, setSelectedLayer] = useState<LayerType>('primary');
 
   // Get all actions and image for the selected button from active workspace
   const getCurrentButtonConfig = (): { buttonActions: ButtonActions | undefined; image: string | undefined } => {
@@ -148,12 +153,76 @@ const DeviceTab: React.FC<{
       }
     : undefined;
 
+  // Compute action labels for LCD buttons based on selected layer
+  const lcdActionLabels = useMemo((): Record<number, string> => {
+    if (!profiles.activeProfile) return {};
+
+    const buttons = getActiveWorkspaceButtons(profiles.activeProfile);
+    const labels: Record<number, string> = {};
+
+    for (let i = 0; i < LCD_BUTTON_COUNT; i++) {
+      const buttonConfig = buttons.find(b => b.index === i);
+      if (selectedLayer === 'primary') {
+        // Show primary action (press action)
+        labels[i] = getActionLabel(buttonConfig?.action);
+      } else {
+        // Show shift action
+        labels[i] = getActionLabel(buttonConfig?.shiftAction);
+      }
+    }
+
+    return labels;
+  }, [profiles.activeProfile, selectedLayer]);
+
+  // Compute action labels for encoders based on selected layer
+  const encoderActionLabels = useMemo((): Record<number, string> => {
+    if (!profiles.activeProfile) return {};
+
+    const encoders = getActiveWorkspaceEncoders(profiles.activeProfile);
+    const labels: Record<number, string> = {};
+
+    for (let i = 0; i < ENCODER_COUNT; i++) {
+      const encoderConfig = encoders.find(e => e.index === i);
+      if (selectedLayer === 'primary') {
+        // Show primary press action
+        labels[i] = getActionLabel(encoderConfig?.pressAction);
+      } else {
+        // Show shift press action
+        labels[i] = getActionLabel(encoderConfig?.shiftPressAction);
+      }
+    }
+
+    return labels;
+  }, [profiles.activeProfile, selectedLayer]);
+
+  // Determine preferred trigger mode based on selected layer
+  const preferredTriggerMode: ButtonTriggerMode = selectedLayer === 'primary' ? 'press' : 'shiftPress';
+
   return (
     <div className="flex gap-lg h-full">
       {/* Left: Device Visualization */}
       <div className="flex-shrink-0">
+        {/* Workspace Tabs - quick navigation */}
+        {profiles.activeProfile && profiles.activeProfile.workspaces && profiles.activeProfile.workspaces.length > 0 && (
+          <div className="mb-sm">
+            <WorkspaceTabs
+              workspaces={profiles.activeProfile.workspaces}
+              activeIndex={profiles.activeProfile.activeWorkspaceIndex || 0}
+              onSelect={onWorkspaceSelect}
+              onCreate={onWorkspaceCreate}
+            />
+          </div>
+        )}
+
         <section className="panel">
-          <h2 className="panel-header">Device</h2>
+          {/* Panel header with Layer Toggle */}
+          <div className="panel-header flex items-center justify-between">
+            <h2 className="m-0">Device</h2>
+            <LayerToggle
+              selected={selectedLayer}
+              onChange={setSelectedLayer}
+            />
+          </div>
           <DeviceView
             connectionState={device.status.connectionState}
             selection={selection}
@@ -163,6 +232,8 @@ const DeviceTab: React.FC<{
             isShiftActive={device.isShiftActive}
             workspaceInfo={workspaceInfo}
             onWorkspaceChange={onWorkspaceChange}
+            lcdActionLabels={lcdActionLabels}
+            encoderActionLabels={encoderActionLabels}
           />
         </section>
       </div>
@@ -184,154 +255,12 @@ const DeviceTab: React.FC<{
             onSave={onActionSave}
             onClear={onActionClear}
             isSaving={isSaving}
-            onPreviewImage={handlePreviewImage}
+            onPreviewImage={onPreviewImage}
+            preferredTriggerMode={preferredTriggerMode}
           />
         )}
       </div>
 
-      {/* Right: Info Panels */}
-      <div className="flex-1 space-y-md min-w-0">
-      {/* Device Status Panel */}
-      <section className="panel">
-        <h2 className="panel-header">Device Status</h2>
-        <div className="panel-content">
-          <div className="flex items-center justify-between py-2 border-b border-bg-tertiary">
-            <span className="text-text-muted text-sm">Connection</span>
-            <div
-              className={`status-badge ${
-                device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
-                  ? 'status-badge--connected'
-                  : device.status.connectionState === ConnectionState.CONNECTING
-                    ? 'status-badge--connecting'
-                    : device.status.connectionState === ConnectionState.ERROR
-                      ? 'status-badge--error'
-                      : 'status-badge--disconnected'
-              }`}
-            >
-              <span
-                className={`status-dot ${
-                  device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
-                    ? 'status-dot--connected'
-                    : device.status.connectionState === ConnectionState.CONNECTING
-                      ? 'status-dot--connecting'
-                      : device.status.connectionState === ConnectionState.ERROR
-                        ? 'status-dot--error'
-                        : 'status-dot--disconnected'
-                }`}
-              />
-              {device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
-                ? 'Connected'
-                : device.status.connectionState === ConnectionState.CONNECTING
-                  ? 'Connecting...'
-                  : device.status.connectionState === ConnectionState.ERROR
-                    ? 'Error'
-                    : 'Disconnected'}
-            </div>
-          </div>
-
-          {device.status.deviceInfo && (
-            <>
-              <div className="flex items-center justify-between py-2 border-b border-bg-tertiary">
-                <span className="text-text-muted text-sm">Product</span>
-                <span className="text-text-primary">
-                  {device.status.deviceInfo.product || 'Unknown'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-bg-tertiary">
-                <span className="text-text-muted text-sm">Serial</span>
-                <span className="text-text-primary">
-                  {device.status.deviceInfo.serialNumber || 'N/A'}
-                </span>
-              </div>
-            </>
-          )}
-
-          <div className="mt-md">
-            {!device.isConnected ? (
-              <button
-                className="btn btn-primary"
-                onClick={device.connect}
-                disabled={device.isConnecting}
-              >
-                {device.isConnecting ? 'Connecting...' : 'Connect Device'}
-              </button>
-            ) : (
-              <button className="btn btn-secondary" onClick={device.disconnect}>
-                Disconnect
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Profile Status Panel */}
-      <section className="panel">
-        <h2 className="panel-header">Active Profile</h2>
-        <div className="panel-content">
-          {profiles.isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Spinner size="sm" text="Loading..." />
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between py-2 border-b border-bg-tertiary">
-                <span className="text-text-muted text-sm">Profile</span>
-                <span className="text-text-primary">
-                  {profiles.activeProfile?.name || 'None'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-text-muted text-sm">Total Profiles</span>
-                <span className="text-text-primary">
-                  {profiles.profiles.length}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* Workspace Management Panel */}
-      {profiles.activeProfile && (
-        <WorkspaceList
-          workspaces={profiles.activeProfile.workspaces || []}
-          activeWorkspaceIndex={profiles.activeProfile.activeWorkspaceIndex || 0}
-          onWorkspaceSelect={onWorkspaceSelect}
-          onWorkspaceCreate={onWorkspaceCreate}
-          onWorkspaceRename={onWorkspaceRename}
-          onWorkspaceDuplicate={onWorkspaceDuplicate}
-          onWorkspaceDelete={onWorkspaceDelete}
-        />
-      )}
-
-      {/* Last Events Panel */}
-      {(device.lastButtonEvent || device.lastEncoderEvent) && (
-        <section className="panel">
-          <h2 className="panel-header">Last Events</h2>
-          <div className="panel-content">
-            {device.lastButtonEvent && (
-              <div className="flex items-center justify-between py-2 border-b border-bg-tertiary">
-                <span className="text-text-muted text-sm">Button</span>
-                <span className="text-text-primary">
-                  {device.lastButtonEvent.buttonType} #
-                  {device.lastButtonEvent.buttonIndex} -{' '}
-                  {device.lastButtonEvent.type}
-                </span>
-              </div>
-            )}
-            {device.lastEncoderEvent && (
-              <div className="flex items-center justify-between py-2">
-                <span className="text-text-muted text-sm">Encoder</span>
-                <span className="text-text-primary">
-                  Encoder #{device.lastEncoderEvent.encoderIndex} -{' '}
-                  {device.lastEncoderEvent.type}
-                </span>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-      </div>
     </div>
   );
 };
@@ -476,6 +405,14 @@ const App: React.FC = () => {
   const device = useDevice();
   const profiles = useProfiles();
   const config = useConfig();
+
+  // Connect device events to action execution
+  useActionBinding({
+    profile: profiles.activeProfile,
+    lastButtonEvent: device.lastButtonEvent,
+    lastEncoderEvent: device.lastEncoderEvent,
+    isShiftActive: device.isShiftActive,
+  });
 
   // Profile dialog state
   const [profileDialogMode, setProfileDialogMode] = useState<ProfileDialogMode>(null);
@@ -1119,28 +1056,14 @@ const App: React.FC = () => {
               <span className="text-sm text-text-muted">v{appInfo.version}</span>
             )}
           </div>
-          <div className="flex items-center gap-2" data-testid="connection-status">
-            <span
-              className={`status-dot ${
-                device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
-                  ? 'status-dot--connected'
-                  : device.status.connectionState === ConnectionState.CONNECTING
-                    ? 'status-dot--connecting'
-                    : device.status.connectionState === ConnectionState.ERROR
-                      ? 'status-dot--error'
-                      : 'status-dot--disconnected'
-              }`}
-            />
-            <span className="text-sm text-text-secondary">
-              {device.status.connectionState === ConnectionState.CONNECTED || device.status.connectionState === ConnectionState.INITIALIZED
-                ? 'Connected'
-                : device.status.connectionState === ConnectionState.CONNECTING
-                  ? 'Connecting...'
-                  : device.status.connectionState === ConnectionState.ERROR
-                    ? 'Error'
-                    : 'Disconnected'}
-            </span>
-          </div>
+          <DeviceStatusDropdown
+            connectionState={device.status.connectionState}
+            deviceInfo={device.status.deviceInfo ?? undefined}
+            isConnected={device.isConnected}
+            isConnecting={device.isConnecting}
+            onConnect={device.connect}
+            onDisconnect={device.disconnect}
+          />
         </div>
 
         <div className="flex items-center gap-md no-drag">
@@ -1179,6 +1102,7 @@ const App: React.FC = () => {
             onWorkspaceRename={handleWorkspaceRenameOpen}
             onWorkspaceDuplicate={handleWorkspaceDuplicateOpen}
             onWorkspaceDelete={handleWorkspaceDeleteOpen}
+            onPreviewImage={handlePreviewImage}
             isSaving={isActionSaving}
           />
         )}

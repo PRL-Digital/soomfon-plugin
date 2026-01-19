@@ -16,3 +16,6 @@ export { useActions } from './useActions';
 export type { UseActionsReturn } from './useActions';
 
 export { useIpc, useIpcSubscription } from './useIpc';
+
+export { useActionBinding } from './useActionBinding';
+export type { UseActionBindingOptions } from './useActionBinding';

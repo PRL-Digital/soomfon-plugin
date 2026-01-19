@@ -135,6 +135,7 @@ pub struct ScriptAction {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum ScriptType {
+    #[serde(alias = "powershell")]
     PowerShell,
     Bash,
     Cmd,
@@ -632,6 +633,18 @@ mod tests {
         assert!(json.contains("\"scriptType\":\"powerShell\""));
         assert!(json.contains("\"content\":\"Get-Process\""));
         assert!(json.contains("\"timeoutMs\":5000"));
+    }
+
+    #[test]
+    fn test_script_type_powershell_alias() {
+        // Frontend sends lowercase "powershell" but Rust expects camelCase "powerShell"
+        // The alias allows both to be accepted
+        let st: ScriptType = serde_json::from_str("\"powershell\"").unwrap();
+        assert_eq!(st, ScriptType::PowerShell);
+
+        // camelCase still works
+        let st2: ScriptType = serde_json::from_str("\"powerShell\"").unwrap();
+        assert_eq!(st2, ScriptType::PowerShell);
     }
 
     // ==========================================================================

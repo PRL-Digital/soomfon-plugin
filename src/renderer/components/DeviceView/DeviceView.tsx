@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { LCDButton } from './LCDButton';
-import { NormalButton } from './NormalButton';
 import { RotaryKnob } from './RotaryKnob';
 import {
   ConnectionState,
@@ -8,7 +7,6 @@ import {
   EncoderEvent,
   ButtonType,
   LCD_BUTTON_COUNT,
-  NORMAL_BUTTON_COUNT,
   ENCODER_COUNT,
 } from '@shared/types/device';
 import { createLogger } from '@shared/utils/logger';
@@ -47,10 +45,12 @@ export interface DeviceViewProps {
   lcdImages?: Record<number, string>;
   /** Labels for LCD buttons (indexed by button index) */
   lcdLabels?: Record<number, string>;
-  /** Labels for normal buttons (indexed by button index) */
-  normalLabels?: Record<number, string>;
+  /** Action type labels for LCD buttons (indexed by button index, e.g., 'kbd', 'app', '-') */
+  lcdActionLabels?: Record<number, string>;
   /** Labels for encoders (indexed by encoder index) */
   encoderLabels?: Record<number, string>;
+  /** Action type labels for encoders (indexed by encoder index, e.g., 'kbd', 'app', '-') */
+  encoderActionLabels?: Record<number, string>;
   /** Whether shift button is currently held */
   isShiftActive?: boolean;
   /** Current workspace information */
@@ -67,8 +67,9 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
   lastEncoderEvent,
   lcdImages = {},
   lcdLabels = {},
-  normalLabels = {},
+  lcdActionLabels = {},
   encoderLabels = {},
+  encoderActionLabels = {},
   isShiftActive = false,
   workspaceInfo,
   onWorkspaceChange,
@@ -217,6 +218,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
                   isPressed={isButtonPressed(ButtonType.LCD, i)}
                   imageUrl={lcdImages[i]}
                   label={lcdLabels[i]}
+                  actionLabel={lcdActionLabels[i]}
                   onClick={() => handleSelect('lcd', i)}
                 />
               ))}
@@ -232,6 +234,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
                   isPressed={isButtonPressed(ButtonType.LCD, i + 3)}
                   imageUrl={lcdImages[i + 3]}
                   label={lcdLabels[i + 3]}
+                  actionLabel={lcdActionLabels[i + 3]}
                   onClick={() => handleSelect('lcd', i + 3)}
                 />
               ))}
@@ -247,6 +250,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
               isPressed={isEncoderPressed(0)}
               rotationAngle={encoderRotations[0]}
               label={encoderLabels[0]}
+              actionLabel={encoderActionLabels[0]}
               onClick={() => handleSelect('encoder', 0)}
             />
           </div>
@@ -255,23 +259,9 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
         {/* Separator */}
         <div className="device-separator" />
 
-        {/* Bottom section: Workspace buttons + side dials */}
+        {/* Bottom section: Side dials only (small buttons removed - they have fixed system functions) */}
         <div className="device-controls-section">
-          {/* Left: Workspace toggle buttons */}
-          <div className="device-workspace-buttons">
-            {Array.from({ length: NORMAL_BUTTON_COUNT }, (_, i) => (
-              <NormalButton
-                key={`normal-${i}`}
-                index={i}
-                isSelected={isSelected('normal', i)}
-                isPressed={isButtonPressed(ButtonType.NORMAL, i)}
-                label={normalLabels[i]}
-                onClick={() => handleSelect('normal', i)}
-              />
-            ))}
-          </div>
-
-          {/* Right: Side dials (encoders 1 and 2) */}
+          {/* Side dials (encoders 1 and 2) */}
           <div className="device-side-dials">
             <RotaryKnob
               index={1}
@@ -279,6 +269,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
               isPressed={isEncoderPressed(1)}
               rotationAngle={encoderRotations[1]}
               label={encoderLabels[1]}
+              actionLabel={encoderActionLabels[1]}
               onClick={() => handleSelect('encoder', 1)}
             />
             <RotaryKnob
@@ -287,6 +278,7 @@ export const DeviceView: React.FC<DeviceViewProps> = ({
               isPressed={isEncoderPressed(2)}
               rotationAngle={encoderRotations[2]}
               label={encoderLabels[2]}
+              actionLabel={encoderActionLabels[2]}
               onClick={() => handleSelect('encoder', 2)}
             />
           </div>

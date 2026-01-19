@@ -19,6 +19,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             // Initialize logging (debug level to see device communication)
             env_logger::Builder::from_env(
@@ -77,6 +78,8 @@ pub fn run() {
             commands::system::get_auto_launch,
             commands::system::set_auto_launch,
             commands::system::open_file_dialog,
+            // Image commands
+            commands::image::fetch_image_as_data_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

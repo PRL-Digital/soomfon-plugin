@@ -580,6 +580,23 @@ const dialogAPI: DialogAPI = {
 };
 
 // ============================================================================
+// Image Utilities
+// ============================================================================
+
+/**
+ * Fetch an image from an HTTP(S) URL and return as a data URL
+ *
+ * This bypasses browser CORS restrictions by fetching through the Rust backend.
+ * Useful for loading images from servers that don't set CORS headers.
+ *
+ * @param url - HTTP or HTTPS URL to fetch
+ * @returns Data URL (data:mime/type;base64,...) that can be used directly in img elements
+ */
+export async function fetchImageAsDataUrl(url: string): Promise<string> {
+  return invoke<string>('fetch_image_as_data_url', { url });
+}
+
+// ============================================================================
 // Full Tauri API (implements ElectronAPI interface)
 // ============================================================================
 

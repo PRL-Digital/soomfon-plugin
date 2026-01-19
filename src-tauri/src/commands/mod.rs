@@ -6,3 +6,4 @@ pub mod device;
 pub mod config;
 pub mod actions;
 pub mod system;
+pub mod image;

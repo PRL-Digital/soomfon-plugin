@@ -139,6 +139,66 @@ fn is_absolute_path(path: &str) -> bool {
     false
 }
 
+/// Fetch an image from an HTTP(S) URL
+///
+/// This bypasses browser CORS restrictions by fetching through the Rust backend.
+pub async fn fetch_http_image(url: &str) -> Result<Vec<u8>, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let response = client.get(url).send().await
+        .map_err(|e| format!("Failed to fetch image: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("HTTP {} fetching image", response.status()));
+    }
+
+    response.bytes().await
+        .map(|b| b.to_vec())
+        .map_err(|e| format!("Failed to read image data: {}", e))
+}
+
+/// Detect MIME type from image bytes based on magic numbers
+fn detect_mime_type(bytes: &[u8]) -> &'static str {
+    if bytes.len() >= 8 {
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+            return "image/png";
+        }
+        // JPEG: FF D8 FF
+        if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+            return "image/jpeg";
+        }
+        // GIF: GIF87a or GIF89a
+        if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
+            return "image/gif";
+        }
+        // WebP: RIFF....WEBP
+        if bytes.len() >= 12 && bytes.starts_with(b"RIFF") && &bytes[8..12] == b"WEBP" {
+            return "image/webp";
+        }
+        // BMP: BM
+        if bytes.starts_with(b"BM") {
+            return "image/bmp";
+        }
+        // ICO: 00 00 01 00
+        if bytes.starts_with(&[0x00, 0x00, 0x01, 0x00]) {
+            return "image/x-icon";
+        }
+    }
+    // Default to octet-stream if unknown
+    "application/octet-stream"
+}
+
+/// Convert image bytes to a data URL
+pub fn image_to_data_url(bytes: &[u8]) -> String {
+    let mime = detect_mime_type(bytes);
+    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes);
+    format!("data:{};base64,{}", mime, b64)
+}
+
 /// Create a solid color image as JPEG
 pub fn create_solid_color(r: u8, g: u8, b: u8) -> Result<Vec<u8>, String> {
     let img: RgbImage = ImageBuffer::from_pixel(LCD_WIDTH, LCD_HEIGHT, Rgb([r, g, b]));
