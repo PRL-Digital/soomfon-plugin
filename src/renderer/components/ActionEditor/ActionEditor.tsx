@@ -10,6 +10,7 @@ import { SystemActionForm } from './SystemAction';
 import { ImagePicker } from './ImagePicker';
 import { HomeAssistantActionForm } from './HomeAssistantAction';
 import { ProfileActionForm } from './ProfileAction';
+import { WorkspaceActionForm } from './WorkspaceAction';
 import { TextActionForm } from './TextAction';
 import { NodeRedActionForm } from './NodeRedAction';
 import { Spinner } from '../common';
@@ -23,6 +24,7 @@ import type {
   MediaAction,
   SystemAction,
   ProfileAction,
+  WorkspaceAction,
   TextAction,
   HomeAssistantAction,
   NodeRedAction,
@@ -88,6 +90,8 @@ const createDefaultAction = (type: ActionType): Partial<Action> => {
       return { ...base, type: 'system', action: 'show_desktop' } as Partial<SystemAction>;
     case 'profile':
       return { ...base, type: 'profile', profileId: '' } as Partial<ProfileAction>;
+    case 'workspace':
+      return { ...base, type: 'workspace', direction: 'next' } as Partial<WorkspaceAction>;
     case 'text':
       return { ...base, type: 'text', text: '', typeDelay: 0 } as Partial<TextAction>;
     case 'home_assistant':
@@ -362,6 +366,12 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
             {actionType === 'profile' && (
               <ProfileActionForm
                 config={actionConfig as Partial<ProfileAction>}
+                onChange={handleConfigChange}
+              />
+            )}
+            {actionType === 'workspace' && (
+              <WorkspaceActionForm
+                config={actionConfig as Partial<WorkspaceAction>}
                 onChange={handleConfigChange}
               />
             )}

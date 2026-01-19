@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /** Available action types for selection */
-export type ActionTypeOption = 'keyboard' | 'launch' | 'script' | 'http' | 'media' | 'system' | 'profile' | 'text' | 'home_assistant' | 'node_red';
+export type ActionTypeOption = 'keyboard' | 'launch' | 'script' | 'http' | 'media' | 'system' | 'profile' | 'workspace' | 'text' | 'home_assistant' | 'node_red';
 
 /** Action type metadata */
 interface ActionTypeInfo {
@@ -54,6 +54,12 @@ const ACTION_TYPES: ActionTypeInfo[] = [
     label: 'Profile',
     icon: '📋',
     description: 'Switch to another profile',
+  },
+  {
+    value: 'workspace',
+    label: 'Workspace',
+    icon: '📁',
+    description: 'Navigate between workspaces',
   },
   {
     value: 'text',

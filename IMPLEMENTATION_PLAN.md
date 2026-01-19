@@ -263,6 +263,34 @@ Implemented comprehensive image validation feedback and upload progress indicato
 
 All 1041 tests pass.
 
+### Workspace Action UI Integration (Completed)
+Added UI support for configuring workspace navigation actions in the ActionEditor.
+
+**Features Implemented:**
+
+1. **WorkspaceActionForm Component**: New form component for configuring workspace actions
+   - Direction selector: Next, Previous, or Specific workspace
+   - Target workspace dropdown (only shown when direction is "specific")
+   - Loads workspaces from current profile via API
+   - Handles API unavailability gracefully
+
+2. **ActionTypeSelect Integration**: Added 'workspace' option to action type dropdown
+   - Icon: 📁
+   - Description: "Navigate between workspaces"
+
+3. **ActionEditor Integration**: Full rendering and state management for workspace actions
+   - Added WorkspaceAction type import
+   - Added default action creation (type: 'workspace', direction: 'next')
+   - Added WorkspaceActionForm rendering case
+
+**Files Changed:**
+- `src/renderer/components/ActionEditor/WorkspaceAction.tsx` - NEW: WorkspaceActionForm component
+- `src/renderer/components/ActionEditor/ActionTypeSelect.tsx` - Added 'workspace' to ActionTypeOption and ACTION_TYPES
+- `src/renderer/components/ActionEditor/ActionEditor.tsx` - Import, default action, and rendering for workspace
+- `src/renderer/components/ActionEditor/index.ts` - Export WorkspaceActionForm
+
+All 1041 tests pass.
+
 ---
 
 ## Remaining Work

@@ -22,6 +22,7 @@ export { SystemActionForm, type SystemActionFormProps } from './SystemAction';
 export { ImagePicker, type ImagePickerProps } from './ImagePicker';
 export { HomeAssistantActionForm, type HomeAssistantActionFormProps } from './HomeAssistantAction';
 export { ProfileActionForm, type ProfileActionFormProps } from './ProfileAction';
+export { WorkspaceActionForm, type WorkspaceActionFormProps } from './WorkspaceAction';
 export { TextActionForm, type TextActionFormProps } from './TextAction';
 export { NodeRedActionForm, type NodeRedActionFormProps } from './NodeRedAction';
 
