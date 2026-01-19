@@ -480,4 +480,96 @@ describe('ImagePicker', () => {
       expect(input).toHaveProperty('disabled', true);
     });
   });
+
+  describe('crop button', () => {
+    it('should not show crop button when no image is selected', () => {
+      render(<ImagePicker onChange={mockOnChange} />);
+      expect(screen.queryByTestId('image-crop-btn')).toBeNull();
+    });
+
+    it('should show crop button when image is selected and no error', () => {
+      render(<ImagePicker imageUrl="test-image.png" onChange={mockOnChange} />);
+
+      // Simulate successful image load first
+      const img = screen.getByAltText('Button image preview');
+      Object.defineProperty(img, 'naturalWidth', { value: 100, writable: true });
+      Object.defineProperty(img, 'naturalHeight', { value: 100, writable: true });
+      fireEvent.load(img);
+
+      expect(screen.getByTestId('image-crop-btn')).toBeTruthy();
+    });
+
+    it('should not show crop button when there is an error', () => {
+      render(<ImagePicker imageUrl="test-image.png" onChange={mockOnChange} />);
+
+      // Simulate image load error
+      const img = screen.getByAltText('Button image preview');
+      fireEvent.error(img);
+
+      expect(screen.queryByTestId('image-crop-btn')).toBeNull();
+    });
+
+    it('should not show crop button while uploading', () => {
+      render(
+        <ImagePicker
+          imageUrl="test-image.png"
+          onChange={mockOnChange}
+          isUploading={true}
+        />
+      );
+      expect(screen.queryByTestId('image-crop-btn')).toBeNull();
+    });
+
+    it('should disable crop button while previewing', async () => {
+      vi.useRealTimers();
+
+      let resolvePreview: () => void;
+      mockOnPreview.mockImplementation(() => new Promise((resolve) => {
+        resolvePreview = resolve;
+      }));
+
+      render(
+        <ImagePicker
+          imageUrl="test-image.png"
+          onChange={mockOnChange}
+          buttonIndex={0}
+          onPreview={mockOnPreview}
+        />
+      );
+
+      // Simulate successful image load
+      const img = screen.getByAltText('Button image preview');
+      Object.defineProperty(img, 'naturalWidth', { value: 100, writable: true });
+      Object.defineProperty(img, 'naturalHeight', { value: 100, writable: true });
+      fireEvent.load(img);
+
+      const previewBtn = screen.getByTestId('image-preview-btn');
+      fireEvent.click(previewBtn);
+
+      await waitFor(() => {
+        const cropBtn = screen.getByTestId('image-crop-btn');
+        expect(cropBtn).toHaveProperty('disabled', true);
+      });
+
+      // Cleanup
+      await act(async () => {
+        resolvePreview!();
+      });
+
+      vi.useFakeTimers();
+    });
+
+    it('should have correct title attribute', () => {
+      render(<ImagePicker imageUrl="test-image.png" onChange={mockOnChange} />);
+
+      // Simulate successful image load
+      const img = screen.getByAltText('Button image preview');
+      Object.defineProperty(img, 'naturalWidth', { value: 100, writable: true });
+      Object.defineProperty(img, 'naturalHeight', { value: 100, writable: true });
+      fireEvent.load(img);
+
+      const cropBtn = screen.getByTestId('image-crop-btn');
+      expect(cropBtn.getAttribute('title')).toBe('Crop image to select a specific area');
+    });
+  });
 });

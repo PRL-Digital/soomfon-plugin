@@ -1,4 +1,5 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
+import { ImageCropEditor } from './ImageCropEditor';
 
 /** Maximum file size in bytes (5MB) */
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -47,6 +48,8 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [previewSuccess, setPreviewSuccess] = useState<boolean | null>(null);
   const [imageInfo, setImageInfo] = useState<{ width: number; height: number } | null>(null);
+  const [showCropEditor, setShowCropEditor] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   // Validate file extension
   const validateFileExtension = useCallback((filePath: string): boolean => {
@@ -190,8 +193,33 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
     }
   }, [imageUrl, buttonIndex, onPreview]);
 
+  // Open crop editor with current image
+  const handleOpenCrop = useCallback(() => {
+    if (imageUrl) {
+      setImageToCrop(imageUrl);
+      setShowCropEditor(true);
+    }
+  }, [imageUrl]);
+
+  // Handle crop completion
+  const handleCropComplete = useCallback((croppedDataUrl: string) => {
+    onChange(croppedDataUrl);
+    setShowCropEditor(false);
+    setImageToCrop(null);
+    setWarning(null); // Clear any size warnings since image is now properly cropped
+  }, [onChange]);
+
+  // Handle crop cancellation
+  const handleCropCancel = useCallback(() => {
+    setShowCropEditor(false);
+    setImageToCrop(null);
+  }, []);
+
   // Check if preview is available (has image, button index, and preview callback)
   const canPreview = imageUrl && buttonIndex !== undefined && onPreview && !error;
+
+  // Check if crop is available (has image without errors)
+  const canCrop = imageUrl && !error && !isUploading;
 
   return (
     <div className="image-picker" data-testid="image-picker">
@@ -279,6 +307,18 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
         >
           Clear
         </button>
+        {canCrop && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleOpenCrop}
+            disabled={isPreviewing || isUploading}
+            data-testid="image-crop-btn"
+            title="Crop image to select a specific area"
+          >
+            Crop
+          </button>
+        )}
         {canPreview && (
           <button
             type="button"
@@ -299,6 +339,15 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
           Images are automatically resized to 60x60px. PNG with transparent background recommended.
         </span>
       </div>
+
+      {/* Crop Editor Modal */}
+      {showCropEditor && imageToCrop && (
+        <ImageCropEditor
+          imageUrl={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 };

@@ -25,6 +25,7 @@ export { ProfileActionForm, type ProfileActionFormProps } from './ProfileAction'
 export { WorkspaceActionForm, type WorkspaceActionFormProps } from './WorkspaceAction';
 export { TextActionForm, type TextActionFormProps } from './TextAction';
 export { NodeRedActionForm, type NodeRedActionFormProps } from './NodeRedAction';
+export { ImageCropEditor, type ImageCropEditorProps } from './ImageCropEditor';
 
 // Default export - re-export ActionEditor as default
 export { ActionEditor as default } from './ActionEditor';

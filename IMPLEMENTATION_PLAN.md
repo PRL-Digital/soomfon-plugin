@@ -356,17 +356,50 @@ Implemented a "Preview on Device" button that allows users to send an image to t
 - `src/renderer/styles/global.css` - Added .btn-success CSS class
 - `src/renderer/components/ActionEditor/ImagePicker.test.tsx` - NEW: 29 tests for ImagePicker including preview functionality
 
-All 1153 tests pass.
+All 1179 tests pass.
+
+### Image Crop/Edit UI (Completed)
+Implemented image cropping functionality that allows users to select specific areas of an image before using them as button icons.
+
+**Features Implemented:**
+
+1. **react-image-crop Library**: Added react-image-crop v11 for image cropping functionality
+
+2. **ImageCropEditor Component**: New component (`src/renderer/components/ActionEditor/ImageCropEditor.tsx`)
+   - Full-featured crop editor with aspect ratio lock (1:1 for square button icons)
+   - Preview of cropped result
+   - Apply/Cancel actions
+   - Complete test coverage
+
+3. **ImagePicker Integration**:
+   - Added "Crop" button to ImagePicker component
+   - Opens modal dialog with ImageCropEditor
+   - Only available when an image is loaded
+
+4. **Output Format**:
+   - Cropped images are output as 60x60px PNG data URLs
+   - Matches the device's expected button icon dimensions
+
+5. **CSS Styles**: Added styles for the crop editor modal in global.css
+
+**Files Changed:**
+- `src/renderer/components/ActionEditor/ImageCropEditor.tsx` - NEW: Crop editor component
+- `src/renderer/components/ActionEditor/ImageCropEditor.test.tsx` - NEW: Test coverage
+- `src/renderer/components/ActionEditor/ImagePicker.tsx` - Added crop button and modal integration
+- `src/renderer/styles/global.css` - Added crop editor modal styles
+- `package.json` - Added react-image-crop v11 dependency
+
+All 1179 tests pass.
 
 ---
 
 ## Remaining Work
 
-### Image Upload Enhancements (Mostly Complete)
+### Image Upload Enhancements (Complete)
 - ~~Validation feedback (file size, format errors)~~ ✓ Completed
 - ~~Progress indicator during image upload~~ ✓ Completed
 - ~~Preview on device before saving~~ ✓ Completed
-- Image cropping/editing UI (complex feature, lower priority)
+- ~~Image cropping/editing UI~~ ✓ Completed
 
 ---
 
@@ -379,7 +412,7 @@ All 1153 tests pass.
 
 ### Development Environment
 - Rust tests require Tauri platform libraries (GTK, WebKit, etc.) for linking
-- TypeScript tests pass (1153 tests)
+- TypeScript tests pass (1179 tests)
 - Use `cargo check --lib` to verify library compilation without linking
 
 ---
