@@ -306,6 +306,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
             <ImagePicker
               imageUrl={imageUrl}
               onChange={handleImageChange}
+              isUploading={isSaving}
             />
           </div>
         )}

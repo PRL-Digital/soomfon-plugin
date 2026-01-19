@@ -229,17 +229,49 @@ Complete UI implementation for workspace navigation and management.
 
 All 1041 tests pass.
 
+### Image Upload Validation & Progress Indicator (Completed)
+Implemented comprehensive image validation feedback and upload progress indicator in ImagePicker component.
+
+**Features Implemented:**
+
+1. **Image Dimension Display**: Shows current image dimensions (e.g., "480x320px") below the preview
+
+2. **Validation Feedback**:
+   - File extension validation for supported formats (PNG, JPG, JPEG, GIF, BMP, ICO, SVG)
+   - Dimension warnings for:
+     - Small images (<60px) that may appear pixelated
+     - Large images (>512px) that will be resized
+     - Non-square images that may be cropped
+   - URL/path format validation with warnings for invalid patterns
+
+3. **Upload Progress Indicator**:
+   - Overlay spinner on preview area during upload
+   - Progress percentage display (when provided)
+   - Disabled state for inputs/buttons during upload
+
+4. **Visual Feedback**:
+   - Error state (red border) for invalid inputs
+   - Warning state (orange border) for potential issues
+   - Info messages with helpful suggestions
+
+5. **Corrected Image Size Hint**: Updated from "72x72px" to "60x60px" to match actual backend processing
+
+**Files Changed:**
+- `src/renderer/components/ActionEditor/ImagePicker.tsx` - Added validation logic, dimension tracking, progress overlay
+- `src/renderer/components/ActionEditor/ActionEditor.tsx` - Pass `isUploading` prop to ImagePicker
+- `src/renderer/styles/global.css` - Added styles for feedback messages, upload overlay, input states
+
+All 1041 tests pass.
+
 ---
 
 ## Remaining Work
 
-### Image Upload Enhancements
-- Frontend preview of processed result before upload
-- Progress indicator during image upload
-- Image cropping/editing UI
-- Validation feedback (file size, format errors)
-
-## Look over the project and work out general clean up tasks
+### Image Upload Enhancements (Partially Complete)
+- ~~Validation feedback (file size, format errors)~~ ✓ Completed
+- ~~Progress indicator during image upload~~ ✓ Completed
+- Frontend preview of processed result before upload (would require backend round-trip)
+- Image cropping/editing UI (complex feature, lower priority)
 
 ---
 
