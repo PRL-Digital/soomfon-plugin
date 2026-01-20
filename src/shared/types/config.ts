@@ -15,6 +15,8 @@ export interface ButtonConfig {
   index: number;
   /** Base64-encoded image data or path to image file */
   image?: string;
+  /** Image displayed when shift mode is active */
+  shiftImage?: string;
   /** Text label displayed on the button */
   label?: string;
   /** Action executed on button press */

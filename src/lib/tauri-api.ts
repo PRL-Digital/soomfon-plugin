@@ -128,9 +128,13 @@ const deviceAPI: DeviceAPI = {
 
   setButtonImage: (buttonIndex: number, imageData: string): Promise<void> => {
     return invoke('set_button_image', {
-      buttonIndex,
-      imageData,
+      index: buttonIndex,
+      imageData: imageData,
     });
+  },
+
+  clearButton: (buttonIndex: number): Promise<void> => {
+    return invoke('clear_button', { index: buttonIndex });
   },
 
   onConnected: (callback: () => void): (() => void) => {

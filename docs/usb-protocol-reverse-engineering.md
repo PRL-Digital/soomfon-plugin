@@ -176,9 +176,39 @@ Offset  Size  Description
 
 | Command | Hex Signature | Description |
 |---------|---------------|-------------|
-| `CRT..CLE.DC` | `43 52 54 00 00 43 4C 45 00 44 43` | Clear LCD displays |
+| `CRT..CLE.DC` | `43 52 54 00 00 43 4C 45 00 00 44 43` | Clear LCD displays to logo |
 | `CRT..CLB.DC` | `43 52 54 00 00 43 4C 42 00 44 43` | Clear button states |
 | `CRT..HAH` | `43 52 54 00 00 48 41 48` | Halt/shutdown device |
+
+### CRT..CLE Command Parameters
+
+The CLE (Clear) command supports different clearing modes via TG0/TG1 parameters at bytes 10-11:
+
+| Mode | TG0 (byte 10) | TG1 (byte 11) | Description |
+|------|---------------|---------------|-------------|
+| Clear single button to black | `0x00` | `1-6` | Clears specific button to black |
+| Clear all buttons to black | `0x00` | `0xFF` | Clears all buttons to black |
+| Clear to logo | `0x44` ('D') | `0x43` ('C') | Clears displays and shows device logo (shutdown) |
+
+**Clear single button to black:**
+```
+43 52 54 00 00 43 4C 45 00 00 00 XX  (XX = button 1-6)
+C  R  T        C  L  E        TG0 TG1
+```
+
+**Clear all buttons to black:**
+```
+43 52 54 00 00 43 4C 45 00 00 00 FF
+C  R  T        C  L  E        TG0 TG1
+```
+
+**Clear to logo (shutdown):**
+```
+43 52 54 00 00 43 4C 45 00 00 44 43
+C  R  T        C  L  E        D   C
+```
+
+> **Note:** The CLE command should be followed by an STP (Stop/Commit) command for protocol v2+ devices to ensure the operation completes successfully.
 
 ### Image Transfer
 
@@ -368,3 +398,4 @@ ASCII: C  R  T        L  I  G        d
 | 2026-01-17 | Added complete button/encoder mapping after successful init_test |
 | 2026-01-17 | Confirmed: Small buttons (0x25, 0x30, 0x31), Side encoders (0x90/0x91, 0x60), Dial 2 push (0x33) |
 | 2026-01-17 | Added shutdown sequence (CLE.DC, CLB.DC, HAH), Main dial push (0x35), Dial 3 push (0x34) |
+| 2026-01-20 | Fixed CLE command byte positions (TG0/TG1 at bytes 10-11), documented clear modes |

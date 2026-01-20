@@ -104,18 +104,53 @@ pub fn build_clear_screens_packet() -> [u8; CRT_PACKET_SIZE] {
     packet
 }
 
-/// Build a CRT..CLE.DC packet (Clear LCD displays)
+/// Build a CRT..CLE.DC packet (Clear LCD displays to logo)
 ///
-/// This command clears the LCD button displays.
+/// This command clears the LCD button displays and shows device logo.
 /// Part of the shutdown sequence.
+///
+/// CLE command parameters (bytes 10-11):
+/// - TG0=0x44('D'), TG1=0x43('C'): Clear to logo
+/// - TG0=0x00, TG1=button(1-6): Clear single button to black
+/// - TG0=0x00, TG1=0xFF: Clear all buttons to black
 pub fn build_clear_lcd_packet() -> [u8; CRT_PACKET_SIZE] {
     let mut packet = [0u8; CRT_PACKET_SIZE];
     // Header: CRT + 2 null bytes
     packet[0..3].copy_from_slice(b"CRT");
-    // Command: CLE + null + DC
+    // Command: CLE
     packet[5..8].copy_from_slice(b"CLE");
-    // packet[8] is 0x00
-    packet[9..11].copy_from_slice(b"DC");
+    // TG0/TG1 at bytes 10-11 (DC = clear to logo)
+    packet[10] = 0x44; // 'D' = TG0
+    packet[11] = 0x43; // 'C' = TG1
+    packet
+}
+
+/// Build a CRT..CLE packet to clear a single button to black
+///
+/// # Arguments
+/// * `button_index` - Button index (0-5, will be converted to 1-indexed for protocol)
+pub fn build_clear_button_to_black_packet(button_index: u8) -> [u8; CRT_PACKET_SIZE] {
+    let mut packet = [0u8; CRT_PACKET_SIZE];
+    // Header: CRT + 2 null bytes
+    packet[0..3].copy_from_slice(b"CRT");
+    // Command: CLE
+    packet[5..8].copy_from_slice(b"CLE");
+    // TG0=0x00 (clear to black mode), TG1=button index (1-indexed in protocol)
+    packet[10] = 0x00;
+    packet[11] = button_index + 1;
+    packet
+}
+
+/// Build a CRT..CLE packet to clear all buttons to black
+pub fn build_clear_all_to_black_packet() -> [u8; CRT_PACKET_SIZE] {
+    let mut packet = [0u8; CRT_PACKET_SIZE];
+    // Header: CRT + 2 null bytes
+    packet[0..3].copy_from_slice(b"CRT");
+    // Command: CLE
+    packet[5..8].copy_from_slice(b"CLE");
+    // TG0=0x00 (clear to black mode), TG1=0xFF (all buttons)
+    packet[10] = 0x00;
+    packet[11] = 0xFF;
     packet
 }
 
@@ -316,8 +351,38 @@ mod tests {
         let packet = build_clear_lcd_packet();
         assert_eq!(&packet[0..3], b"CRT");
         assert_eq!(&packet[5..8], b"CLE");
-        assert_eq!(packet[8], 0x00);
-        assert_eq!(&packet[9..11], b"DC");
+        // TG0/TG1 at bytes 10-11 (DC = 0x44, 0x43)
+        assert_eq!(packet[10], 0x44); // 'D'
+        assert_eq!(packet[11], 0x43); // 'C'
+    }
+
+    #[test]
+    fn test_clear_button_to_black_packet_format() {
+        // Test button 0 (protocol index 1)
+        let packet = build_clear_button_to_black_packet(0);
+        assert_eq!(&packet[0..3], b"CRT");
+        assert_eq!(&packet[5..8], b"CLE");
+        assert_eq!(packet[10], 0x00); // TG0 = 0 (clear to black mode)
+        assert_eq!(packet[11], 0x01); // TG1 = button 1 (1-indexed)
+    }
+
+    #[test]
+    fn test_clear_button_to_black_packet_button_indices() {
+        // Test all valid button indices
+        for i in 0..6 {
+            let packet = build_clear_button_to_black_packet(i);
+            assert_eq!(packet[10], 0x00);
+            assert_eq!(packet[11], i + 1); // Protocol is 1-indexed
+        }
+    }
+
+    #[test]
+    fn test_clear_all_to_black_packet_format() {
+        let packet = build_clear_all_to_black_packet();
+        assert_eq!(&packet[0..3], b"CRT");
+        assert_eq!(&packet[5..8], b"CLE");
+        assert_eq!(packet[10], 0x00); // TG0 = 0 (clear to black mode)
+        assert_eq!(packet[11], 0xFF); // TG1 = 0xFF (all buttons)
     }
 
     #[test]

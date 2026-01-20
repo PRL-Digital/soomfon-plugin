@@ -6,7 +6,7 @@
 //! - Device expects JPEG images at 60x60 pixels
 //! - Protocol v2/v3 devices use 1024-byte packet size
 
-use image::{DynamicImage, GenericImageView, ImageBuffer, Rgb, RgbImage};
+use image::{DynamicImage, GenericImageView, ImageBuffer, Rgb, RgbImage, imageops};
 use std::io::Cursor;
 
 /// LCD button width in pixels (from mirajazz - device expects 60x60)
@@ -207,7 +207,7 @@ pub fn create_solid_color(r: u8, g: u8, b: u8) -> Result<Vec<u8>, String> {
 
 /// Resize image to LCD dimensions
 fn resize_image(img: &DynamicImage, options: &ImageOptions) -> RgbImage {
-    if options.preserve_aspect_ratio {
+    let resized = if options.preserve_aspect_ratio {
         // Calculate scaling to fit within LCD dimensions
         let (orig_width, orig_height) = img.dimensions();
         let scale = (LCD_WIDTH as f32 / orig_width as f32)
@@ -236,7 +236,10 @@ fn resize_image(img: &DynamicImage, options: &ImageOptions) -> RgbImage {
     } else {
         img.resize_exact(LCD_WIDTH, LCD_HEIGHT, image::imageops::FilterType::Lanczos3)
             .to_rgb8()
-    }
+    };
+
+    // Rotate 90 degrees clockwise to compensate for device LCD orientation
+    imageops::rotate90(&resized)
 }
 
 /// Convert RGB image to JPEG byte array

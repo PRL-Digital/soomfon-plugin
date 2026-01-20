@@ -118,6 +118,8 @@ export interface ActionEditorProps {
   buttonActions?: ButtonActions;
   /** Current image URL for the selection (LCD buttons only) */
   currentImage?: string;
+  /** Current shift image URL for the selection (LCD buttons only) */
+  currentShiftImage?: string;
   /** Callback when action is saved */
   onSave?: (action: Partial<Action>, triggerMode: ButtonTriggerMode, imageUrl?: string) => void;
   /** Callback when action is cleared */
@@ -136,6 +138,7 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   selection,
   buttonActions,
   currentImage,
+  currentShiftImage,
   onSave,
   onClear,
   onCancel,
@@ -161,6 +164,11 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
     }
   }, []);
 
+  // Get the correct image for a trigger mode
+  const getImageForMode = useCallback((mode: ButtonTriggerMode): string | undefined => {
+    return mode === 'shiftPress' || mode === 'shiftLongPress' ? currentShiftImage : currentImage;
+  }, [currentImage, currentShiftImage]);
+
   // Reset state when selection changes
   useEffect(() => {
     if (selection) {
@@ -174,10 +182,10 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
         setActionType(null);
         setActionConfig({});
       }
-      setImageUrl(currentImage);
+      setImageUrl(getImageForMode(preferredTriggerMode));
       setHasChanges(false);
     }
-  }, [selection, buttonActions, currentImage, getActionForMode, preferredTriggerMode]);
+  }, [selection, buttonActions, currentImage, currentShiftImage, getActionForMode, getImageForMode, preferredTriggerMode]);
 
   // Update action config when trigger mode changes
   const handleTriggerModeChange = useCallback((mode: ButtonTriggerMode) => {
@@ -191,8 +199,10 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       setActionType(null);
       setActionConfig({});
     }
+    // Switch to the correct image for this mode
+    setImageUrl(getImageForMode(mode));
     setHasChanges(false);
-  }, [buttonActions, getActionForMode]);
+  }, [buttonActions, getActionForMode, getImageForMode]);
 
   // Handle action type change
   const handleTypeChange = useCallback((type: ActionTypeOption | null) => {
@@ -229,8 +239,8 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
   const handleClear = useCallback(() => {
     setActionType(null);
     setActionConfig({});
-    // Only clear image for press mode (primary action)
-    if (triggerMode === 'press') {
+    // Clear image for press and shiftPress modes (they have images)
+    if (triggerMode === 'press' || triggerMode === 'shiftPress') {
       setImageUrl(undefined);
     }
     setHasChanges(true);
@@ -247,10 +257,10 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
       setActionType(null);
       setActionConfig({});
     }
-    setImageUrl(currentImage);
+    setImageUrl(getImageForMode(triggerMode));
     setHasChanges(false);
     onCancel?.();
-  }, [buttonActions, triggerMode, currentImage, onCancel, getActionForMode]);
+  }, [buttonActions, triggerMode, onCancel, getActionForMode, getImageForMode]);
 
   // Don't render if nothing is selected
   if (!selection) {
@@ -309,10 +319,12 @@ export const ActionEditor: React.FC<ActionEditorProps> = ({
           </div>
         </div>
 
-        {/* Image Picker (LCD buttons only, shown only for press mode) */}
-        {showImagePicker && triggerMode === 'press' && (
+        {/* Image Picker (LCD buttons only, shown for press and shiftPress modes) */}
+        {showImagePicker && (triggerMode === 'press' || triggerMode === 'shiftPress') && (
           <div className="action-editor__section">
-            <label className="action-editor__label">Button Image</label>
+            <label className="action-editor__label">
+              {triggerMode === 'shiftPress' ? 'Shift Mode Image' : 'Button Image'}
+            </label>
             <ImagePicker
               imageUrl={imageUrl}
               onChange={handleImageChange}

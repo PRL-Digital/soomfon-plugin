@@ -57,6 +57,9 @@ pub const REPORT_SIZE: usize = 64;
 pub const LCD_WIDTH: u32 = 60;
 pub const LCD_HEIGHT: u32 = 60;
 
+/// Number of LCD buttons (used for unified button indexing)
+pub const LCD_BUTTON_COUNT: u8 = 6;
+
 // =============================================================================
 // Timing Constants
 // =============================================================================

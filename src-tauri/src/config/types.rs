@@ -181,6 +181,9 @@ pub struct ButtonConfig {
     /// Button image (base64 encoded)
     #[serde(default)]
     pub image: Option<String>,
+    /// Image displayed when shift mode is active (base64 encoded)
+    #[serde(default)]
+    pub shift_image: Option<String>,
     /// Action executed on button press
     #[serde(default)]
     pub action: Option<Action>,

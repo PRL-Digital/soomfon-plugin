@@ -80,7 +80,9 @@
       "Bash(xxd:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(npm test:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx vitest:*)",
+      "WebFetch(domain:gist.github.com)"
     ],
     "deny": [],
     "ask": []

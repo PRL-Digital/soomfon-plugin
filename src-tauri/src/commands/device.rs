@@ -8,7 +8,7 @@ use crate::hid::packets::parse_ack_packet;
 use crate::hid::protocol::SoomfonProtocol;
 use crate::hid::types::{
     ButtonEventType, ButtonType, ConnectionState, DeviceEvent, DeviceInfo,
-    EncoderEventType, EncoderType, EP_IN, SHIFT_BUTTON_PHYSICAL_INDEX,
+    EncoderEventType, EncoderType, EP_IN, LCD_BUTTON_COUNT, SHIFT_BUTTON_PHYSICAL_INDEX,
 };
 use crate::image::processor::{process_image_source, ImageOptions};
 use parking_lot::Mutex;
@@ -32,7 +32,7 @@ pub struct ButtonEventPayload {
     /// Event type: "press", "release", "longPress"
     #[serde(rename = "type")]
     pub event_type: String,
-    /// Button index (0-5 for LCD, 0-2 for physical)
+    /// Button index (0-5 for LCD, 6-8 for physical/normal buttons using unified indexing)
     pub button_index: u8,
     /// Button type: "lcd" or "normal"
     pub button_type: String,
@@ -160,10 +160,11 @@ pub fn connect_device(
                 Ok(n) if n > 0 => {
                     log::debug!("Read {} bytes from device: {:02X?}", n, &buf[..n.min(16)]);
                     // Parse ACK packet for events
-                    if let Some(raw_event) = parse_ack_packet(&buf[..n]) {
-                        log::debug!("Parsed raw event: id=0x{:02X}, state=0x{:02X}", raw_event.event_id, raw_event.state);
-                        if let Some(device_event) = raw_event.parse() {
-                            log::info!(">>> Device event: {:?}", device_event);
+                    match parse_ack_packet(&buf[..n]) {
+                        Some(raw_event) => {
+                            log::debug!("Parsed raw event: id=0x{:02X}, state=0x{:02X}", raw_event.event_id, raw_event.state);
+                            if let Some(device_event) = raw_event.parse() {
+                                log::info!(">>> Device event: {:?}", device_event);
 
                             // Get current timestamp
                             let timestamp = std::time::SystemTime::now()
@@ -175,20 +176,23 @@ pub fn connect_device(
                             match &device_event {
                                 DeviceEvent::Button { index, button_type, event_type } => {
                                     // Track shift button state (physical button index 0)
+                                    // Uses TAP-TO-TOGGLE mode since device doesn't support simultaneous buttons
                                     let is_shift_button = *button_type == ButtonType::Physical
                                         && *index == SHIFT_BUTTON_PHYSICAL_INDEX;
                                     if is_shift_button {
                                         match event_type {
-                                            ButtonEventType::Press | ButtonEventType::LongPress => {
-                                                shift_pressed = true;
+                                            ButtonEventType::Press => {
+                                                // Toggle shift mode on press
+                                                shift_pressed = !shift_pressed;
+                                                log::info!("Shift mode toggled: {}", shift_pressed);
                                             }
-                                            ButtonEventType::Release => {
-                                                shift_pressed = false;
+                                            ButtonEventType::LongPress | ButtonEventType::Release => {
+                                                // Ignore long press and release for toggle mode
                                             }
                                         }
                                     }
 
-                                    // Shift is active for non-shift buttons when shift is held
+                                    // Shift is active for non-shift buttons when shift mode is on
                                     let is_shift_active = shift_pressed && !is_shift_button;
 
                                     let payload = ButtonEventPayload {
@@ -197,7 +201,10 @@ pub fn connect_device(
                                             ButtonEventType::Release => "release".to_string(),
                                             ButtonEventType::LongPress => "longPress".to_string(),
                                         },
-                                        button_index: *index,
+                                        button_index: match button_type {
+                                            ButtonType::Lcd => *index,
+                                            ButtonType::Physical => *index + LCD_BUTTON_COUNT,
+                                        },
                                         button_type: match button_type {
                                             ButtonType::Lcd => "lcd".to_string(),
                                             ButtonType::Physical => "normal".to_string(),
@@ -250,6 +257,10 @@ pub fn connect_device(
                                     }
                                 }
                             }
+                            }
+                        }
+                        None => {
+                            // Not a valid ACK packet with event - likely a keepalive or other response
                         }
                     }
                 }
@@ -348,18 +359,33 @@ pub fn set_button_image(
     );
 
     let mut manager = manager.lock();
+
     // Reopen handle if it was transferred to polling thread
-    manager.reopen_for_commands().map_err(|e| e.to_string())?;
+    log::debug!("Reopening device handle for commands...");
+    manager.reopen_for_commands().map_err(|e| {
+        let msg = format!("Failed to reopen device: {}", e);
+        log::error!("{}", msg);
+        msg
+    })?;
+    log::debug!("Device handle ready");
 
     // Process image from any source (file path, URL, or base64)
     let options = ImageOptions::default();
-    let jpeg_data = process_image_source(&image_data, &options)?;
+    let jpeg_data = process_image_source(&image_data, &options).map_err(|e| {
+        let msg = format!("Image processing failed: {}", e);
+        log::error!("{}", msg);
+        msg
+    })?;
 
     log::info!("Processed image: {} bytes JPEG for button {}", jpeg_data.len(), index);
 
     // Send to device
     let protocol = SoomfonProtocol::new(&manager);
-    protocol.set_button_image(index, &jpeg_data).map_err(|e| e.to_string())
+    protocol.set_button_image(index, &jpeg_data).map_err(|e| {
+        let msg = format!("Device upload failed: {}", e);
+        log::error!("{}", msg);
+        msg
+    })
 }
 
 /// Clear a button display

@@ -46,9 +46,19 @@ impl<'a> SoomfonProtocol<'a> {
         self.manager.poll_event_timeout(timeout)
     }
 
-    /// Clear all LCD displays
+    /// Clear all LCD displays to black
+    ///
+    /// Uses native CLE command with TG0=0x00, TG1=0xFF to clear all buttons to black.
+    /// Sends STP to commit the change (required for protocol v2+).
     pub fn clear_displays(&self) -> HidResult<()> {
-        self.manager.send_command(&build_clear_lcd_packet())?;
+        log::info!("Clearing all LCD displays with CLE command");
+
+        // Send CLE command to clear all buttons to black
+        self.manager.send_command(&build_clear_all_to_black_packet())?;
+
+        // Send STP to commit (required for protocol v2+)
+        self.manager.send_command(&build_stp_packet())?;
+
         Ok(())
     }
 
@@ -58,14 +68,14 @@ impl<'a> SoomfonProtocol<'a> {
         Ok(())
     }
 
-    /// Clear screen (clears LCD displays)
-    /// If button_index is Some, only that button is cleared (not implemented yet)
+    /// Clear screen (clears LCD displays to black)
+    /// If button_index is Some, only that button is cleared
     /// If button_index is None, all buttons are cleared
-    pub fn clear_screen(&self, _button_index: Option<u8>) -> HidResult<()> {
-        // Currently we only support clearing all displays
-        // Individual button clearing needs protocol reverse engineering
-        self.manager.send_command(&build_clear_lcd_packet())?;
-        Ok(())
+    pub fn clear_screen(&self, button_index: Option<u8>) -> HidResult<()> {
+        match button_index {
+            Some(index) => self.clear_button_image(index),
+            None => self.clear_displays(),
+        }
     }
 
     /// Send a raw CRT command packet
@@ -150,12 +160,28 @@ impl<'a> SoomfonProtocol<'a> {
         Ok(())
     }
 
-    /// Clear a single button's image
+    /// Clear a single button's image to black
     ///
-    /// Currently clears all displays - individual button clearing not yet implemented.
-    pub fn clear_button_image(&self, _button_index: u8) -> HidResult<()> {
-        // For now, clearing a single button clears all (protocol limitation)
-        self.clear_displays()
+    /// Uses native CLE command with TG0=0x00, TG1=button_index to clear to black.
+    /// Sends STP to commit the change (required for protocol v2+).
+    pub fn clear_button_image(&self, button_index: u8) -> HidResult<()> {
+        // Validate button index
+        if button_index > 5 {
+            return Err(HidError::InvalidData(format!(
+                "Button index {} out of range (0-5)",
+                button_index
+            )));
+        }
+
+        log::info!("Clearing button {} with CLE command", button_index);
+
+        // Send CLE command with button target
+        self.manager.send_command(&build_clear_button_to_black_packet(button_index))?;
+
+        // Send STP to commit (required for protocol v2+)
+        self.manager.send_command(&build_stp_packet())?;
+
+        Ok(())
     }
 }
 

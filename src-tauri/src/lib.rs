@@ -81,6 +81,22 @@ pub fn run() {
             // Image commands
             commands::image::fetch_image_as_data_url,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::ExitRequested { .. } = event {
+                log::info!("Application exit requested, shutting down device...");
+
+                // Get the HID manager and disconnect properly
+                if let Some(manager_state) = app_handle.try_state::<std::sync::Arc<parking_lot::Mutex<hid::manager::HidManager>>>() {
+                    let mut manager = manager_state.lock();
+                    if manager.is_connected() {
+                        log::info!("Disconnecting device with shutdown sequence...");
+                        manager.disconnect();
+                    }
+                }
+
+                log::info!("SOOMFON Controller shutting down");
+            }
+        });
 }

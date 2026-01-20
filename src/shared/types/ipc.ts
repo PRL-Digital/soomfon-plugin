@@ -315,6 +315,7 @@ export interface DeviceAPI {
   disconnect: () => Promise<void>;
   setBrightness: (brightness: number) => Promise<void>;
   setButtonImage: (buttonIndex: number, imageData: string) => Promise<void>;
+  clearButton: (buttonIndex: number) => Promise<void>;
   onConnected: (callback: () => void) => () => void;
   onDisconnected: (callback: () => void) => () => void;
   onButtonPress: (callback: (event: ButtonEvent) => void) => () => void;

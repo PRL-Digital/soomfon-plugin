@@ -184,7 +184,7 @@ describe('tauriAPI', () => {
       await tauriAPI.device.setButtonImage(2, 'base64data...');
 
       expect(mockInvoke).toHaveBeenCalledWith('set_button_image', {
-        buttonIndex: 2,
+        index: 2,
         imageData: 'base64data...',
       });
     });

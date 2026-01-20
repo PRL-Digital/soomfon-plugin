@@ -121,23 +121,21 @@ export function useDevice(): UseDeviceReturn {
       setIsConnecting(false);
     });
 
-    // Button events - track shift state when shift button is pressed/released
+    // Button events - track shift state with TAP-TO-TOGGLE mode
+    // (device doesn't support simultaneous button presses)
     const unsubButtonPress = device.onButtonPress((event) => {
       log.debug('[RENDERER] Button press received:', event);
       setLastButtonEvent(event);
-      // Track shift button state
+      // Toggle shift mode on shift button press
       if (event.buttonIndex === SHIFT_BUTTON_INDEX) {
-        setIsShiftActive(true);
+        setIsShiftActive((prev) => !prev);
       }
     });
 
     const unsubButtonRelease = device.onButtonRelease((event) => {
       log.debug('[RENDERER] Button release received:', event);
       setLastButtonEvent(event);
-      // Track shift button state
-      if (event.buttonIndex === SHIFT_BUTTON_INDEX) {
-        setIsShiftActive(false);
-      }
+      // Don't change shift state on release (toggle mode)
     });
 
     // Encoder events

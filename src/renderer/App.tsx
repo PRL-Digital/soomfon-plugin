@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useDevice, useProfiles, useConfig, useActionBinding } from './hooks';
 import { Header, TabNav, TabId, DeviceStatusDropdown } from './components/Layout';
 import { DeviceView, Selection, WorkspaceInfo, LayerToggle, LayerType } from './components/DeviceView';
@@ -85,9 +85,9 @@ const DeviceTab: React.FC<{
   // Layer toggle state - controls which actions are shown (primary vs shift)
   const [selectedLayer, setSelectedLayer] = useState<LayerType>('primary');
 
-  // Get all actions and image for the selected button from active workspace
-  const getCurrentButtonConfig = (): { buttonActions: ButtonActions | undefined; image: string | undefined } => {
-    if (!selection || !profiles.activeProfile) return { buttonActions: undefined, image: undefined };
+  // Get all actions and images for the selected button from active workspace
+  const getCurrentButtonConfig = (): { buttonActions: ButtonActions | undefined; image: string | undefined; shiftImage: string | undefined } => {
+    if (!selection || !profiles.activeProfile) return { buttonActions: undefined, image: undefined, shiftImage: undefined };
 
     // Map selection to button index in profile
     // LCD buttons: index 0-5, Normal buttons: index 6-8
@@ -97,7 +97,7 @@ const DeviceTab: React.FC<{
         ? 6 + selection.index
         : -1;
 
-    if (buttonIndex < 0) return { buttonActions: undefined, image: undefined };
+    if (buttonIndex < 0) return { buttonActions: undefined, image: undefined, shiftImage: undefined };
 
     // Use helper to get buttons from active workspace
     const buttons = getActiveWorkspaceButtons(profiles.activeProfile);
@@ -110,10 +110,11 @@ const DeviceTab: React.FC<{
         shiftLongPressAction: buttonConfig.shiftLongPressAction,
       } : undefined,
       image: buttonConfig?.image,
+      shiftImage: buttonConfig?.shiftImage,
     };
   };
 
-  const { buttonActions, image: currentImage } = getCurrentButtonConfig();
+  const { buttonActions, image: currentImage, shiftImage: currentShiftImage } = getCurrentButtonConfig();
 
   // Get current encoder config for the selected encoder from active workspace
   const getCurrentEncoderConfig = (): Partial<EncoderConfig> | undefined => {
@@ -252,6 +253,7 @@ const DeviceTab: React.FC<{
             selection={selection}
             buttonActions={buttonActions}
             currentImage={currentImage}
+            currentShiftImage={currentShiftImage}
             onSave={onActionSave}
             onClear={onActionClear}
             isSaving={isSaving}
@@ -501,9 +503,11 @@ const App: React.FC = () => {
           index: buttonIndex,
           [actionField]: completeAction,
         };
-        // Only add image for press trigger mode
+        // Add image for press mode, shiftImage for shiftPress mode
         if (triggerMode === 'press' && imageUrl) {
           newConfig.image = imageUrl;
+        } else if (triggerMode === 'shiftPress' && imageUrl) {
+          newConfig.shiftImage = imageUrl;
         }
         updatedButtons.push(newConfig);
       } else {
@@ -511,8 +515,9 @@ const App: React.FC = () => {
         updatedButtons[buttonConfigIndex] = {
           ...updatedButtons[buttonConfigIndex],
           [actionField]: completeAction,
-          // Only update image for press trigger mode
+          // Update image for press mode, shiftImage for shiftPress mode
           ...(triggerMode === 'press' && imageUrl !== undefined && { image: imageUrl }),
+          ...(triggerMode === 'shiftPress' && imageUrl !== undefined && { shiftImage: imageUrl }),
         };
       }
 
@@ -534,8 +539,9 @@ const App: React.FC = () => {
         try {
           await window.electronAPI.device.setButtonImage(selection.index, imageUrl);
         } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
           console.error('Failed to upload button image:', err);
-          toast.warning('Action saved but image upload failed');
+          toast.warning(`Action saved but image upload failed: ${errorMsg}`);
         }
       }
       toast.success('Action saved successfully');
@@ -738,24 +744,65 @@ const App: React.FC = () => {
     await window.electronAPI.device.setButtonImage(buttonIndex, imageUrl);
   }, [device.isConnected]);
 
+  // Minimal 1x1 black PNG as data URL - used to "blank" button displays
+  // Rust image processor will convert to JPEG and scale to 60x60
+  const BLANK_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
   // Sync all LCD button images to the device for the given workspace
-  const syncWorkspaceImages = useCallback(async (workspace: import('@shared/types/config').Workspace) => {
-    if (!device.isConnected || !window.electronAPI?.device?.setButtonImage) return;
+  // If shiftMode is true, use shiftImage (no fallback - clear if no shiftImage)
+  const syncWorkspaceImages = useCallback(async (workspace: import('@shared/types/config').Workspace, shiftMode: boolean = false) => {
+    if (!device.isConnected || !window.electronAPI?.device?.setButtonImage) {
+      console.log('[SHIFT] Cannot sync - device not connected or API not available');
+      return;
+    }
+
+    console.log('[SHIFT] Starting image sync for', LCD_BUTTON_COUNT, 'buttons, shiftMode:', shiftMode);
 
     // Sync images for all LCD buttons (0-5)
     for (let i = 0; i < LCD_BUTTON_COUNT; i++) {
       const buttonConfig = workspace.buttons.find(b => b.index === i);
-      if (buttonConfig?.image) {
-        try {
-          await window.electronAPI.device.setButtonImage(i, buttonConfig.image);
-        } catch (err) {
-          console.error(`Failed to sync image for button ${i}:`, err);
+      // Use shiftImage if in shift mode, regular image otherwise (no fallback)
+      const imageToUse = shiftMode ? buttonConfig?.shiftImage : buttonConfig?.image;
+
+      const imageType = imageToUse ? (shiftMode ? 'shiftImage' : 'image') : 'CLEAR';
+      console.log(`[SHIFT] Button ${i}: sending ${imageType}`);
+
+      try {
+        if (imageToUse) {
+          // Send the image
+          await window.electronAPI.device.setButtonImage(i, imageToUse);
+        } else {
+          // Clear the button display using proper protocol command
+          await window.electronAPI.device.clearButton(i);
         }
+      } catch (err) {
+        console.error(`Failed to sync image for button ${i}:`, err);
       }
-      // Note: We don't clear images for buttons without config to avoid flicker
-      // The device retains the last image until explicitly changed
     }
+    console.log('[SHIFT] Image sync complete');
   }, [device.isConnected]);
+
+  // Sync button images when shift mode toggles
+  // Track previous shift state to only sync on actual change
+  const prevShiftRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!profiles.activeProfile || !device.isConnected) return;
+
+    // Only sync if shift state actually changed (not on initial render)
+    if (prevShiftRef.current === null) {
+      prevShiftRef.current = device.isShiftActive;
+      console.log('[SHIFT] Initial shift state:', device.isShiftActive);
+      return;
+    }
+    if (prevShiftRef.current === device.isShiftActive) return;
+
+    console.log('[SHIFT] Shift mode changed:', prevShiftRef.current, '->', device.isShiftActive);
+    prevShiftRef.current = device.isShiftActive;
+
+    const workspace = getActiveWorkspace(profiles.activeProfile);
+    console.log('[SHIFT] Syncing images for workspace:', workspace.name, 'shiftMode:', device.isShiftActive);
+    syncWorkspaceImages(workspace, device.isShiftActive);
+  }, [device.isShiftActive, device.isConnected, profiles.activeProfile, syncWorkspaceImages]);
 
   // Handle workspace navigation
   const handleWorkspaceChange = useCallback(async (direction: 'next' | 'previous') => {
@@ -774,8 +821,9 @@ const App: React.FC = () => {
     }
 
     try {
-      await profiles.update(profiles.activeProfile.id, { activeWorkspaceIndex: newIndex });
-      const workspace = profiles.activeProfile.workspaces?.[newIndex];
+      const updatedProfile = await profiles.update(profiles.activeProfile.id, { activeWorkspaceIndex: newIndex });
+      // Use updated profile to get the workspace (avoids stale state)
+      const workspace = updatedProfile?.workspaces?.[newIndex] ?? profiles.activeProfile.workspaces?.[newIndex];
       const workspaceName = workspace?.name || `Workspace ${newIndex + 1}`;
       toast.success(`Switched to ${workspaceName}`);
 
@@ -789,16 +837,25 @@ const App: React.FC = () => {
     }
   }, [profiles, toast, syncWorkspaceImages]);
 
+  // Track last processed workspace navigation event to prevent double-triggering
+  // (handleWorkspaceChange changing causes the effect to re-run with the same event)
+  const lastProcessedWorkspaceEventRef = useRef<number | null>(null);
+
   // Handle workspace navigation button presses (small buttons 1 and 2)
   // Button 7 (middle) = previous workspace, Button 8 (right) = next workspace
   useEffect(() => {
     const lastEvent = device.lastButtonEvent;
     if (!lastEvent || lastEvent.type !== ButtonEventType.PRESS) return;
 
+    // Skip if we've already processed this exact event
+    if (lastEvent.timestamp === lastProcessedWorkspaceEventRef.current) return;
+
     // Only handle workspace navigation buttons
     if (lastEvent.buttonIndex === WORKSPACE_PREV_BUTTON_INDEX) {
+      lastProcessedWorkspaceEventRef.current = lastEvent.timestamp;
       handleWorkspaceChange('previous');
     } else if (lastEvent.buttonIndex === WORKSPACE_NEXT_BUTTON_INDEX) {
+      lastProcessedWorkspaceEventRef.current = lastEvent.timestamp;
       handleWorkspaceChange('next');
     }
   }, [device.lastButtonEvent, handleWorkspaceChange]);
@@ -808,8 +865,9 @@ const App: React.FC = () => {
     if (!profiles.activeProfile) return;
 
     try {
-      await profiles.update(profiles.activeProfile.id, { activeWorkspaceIndex: index });
-      const workspace = profiles.activeProfile.workspaces?.[index];
+      const updatedProfile = await profiles.update(profiles.activeProfile.id, { activeWorkspaceIndex: index });
+      // Use updated profile to get the workspace (avoids stale state)
+      const workspace = updatedProfile?.workspaces?.[index] ?? profiles.activeProfile.workspaces?.[index];
       const workspaceName = workspace?.name || `Workspace ${index + 1}`;
       toast.success(`Switched to ${workspaceName}`);
 
