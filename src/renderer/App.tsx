@@ -782,6 +782,31 @@ const App: React.FC = () => {
     console.log('[SHIFT] Image sync complete');
   }, [device.isConnected]);
 
+  // Sync button images when device connects or active profile changes
+  // This ensures button images are restored from profile when app starts
+  const prevConnectedRef = useRef<boolean>(false);
+  const prevProfileIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!profiles.activeProfile || !device.isConnected) {
+      prevConnectedRef.current = device.isConnected;
+      prevProfileIdRef.current = profiles.activeProfile?.id ?? null;
+      return;
+    }
+
+    const justConnected = !prevConnectedRef.current && device.isConnected;
+    const profileChanged = prevProfileIdRef.current !== profiles.activeProfile.id;
+
+    prevConnectedRef.current = device.isConnected;
+    prevProfileIdRef.current = profiles.activeProfile.id;
+
+    // Sync images when device connects or profile changes
+    if (justConnected || profileChanged) {
+      console.log('[SYNC] Device connected or profile changed, syncing button images...');
+      const workspace = getActiveWorkspace(profiles.activeProfile);
+      syncWorkspaceImages(workspace, device.isShiftActive);
+    }
+  }, [device.isConnected, profiles.activeProfile, device.isShiftActive, syncWorkspaceImages]);
+
   // Sync button images when shift mode toggles
   // Track previous shift state to only sync on actual change
   const prevShiftRef = useRef<boolean | null>(null);
