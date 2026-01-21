@@ -41,7 +41,7 @@ export function useProfiles(): UseProfilesReturn {
 
   // Load profiles
   const loadProfiles = useCallback(async () => {
-    if (!window.electronAPI?.profile) {
+    if (!window.tauriAPI?.profile) {
       setError('Profile API not available');
       setIsLoading(false);
       return;
@@ -51,8 +51,8 @@ export function useProfiles(): UseProfilesReturn {
       setIsLoading(true);
       setError(null);
       const [allProfiles, active] = await Promise.all([
-        window.electronAPI.profile.getAll(),
-        window.electronAPI.profile.getActive(),
+        window.tauriAPI.profile.getAll(),
+        window.tauriAPI.profile.getActive(),
       ]);
       setProfiles(allProfiles);
       setActiveProfile(active);
@@ -70,11 +70,11 @@ export function useProfiles(): UseProfilesReturn {
 
   // Subscribe to profile changes
   useEffect(() => {
-    if (!window.electronAPI?.profile) {
+    if (!window.tauriAPI?.profile) {
       return;
     }
 
-    const unsubscribe = window.electronAPI.profile.onChanged((event: ProfileChangeEvent) => {
+    const unsubscribe = window.tauriAPI.profile.onChanged((event: ProfileChangeEvent) => {
       // Reload profiles on any change
       loadProfiles();
     });
@@ -83,14 +83,14 @@ export function useProfiles(): UseProfilesReturn {
   }, [loadProfiles]);
 
   const setActive = useCallback(async (id: string) => {
-    if (!window.electronAPI?.profile) {
+    if (!window.tauriAPI?.profile) {
       setError('Profile API not available');
       return;
     }
 
     try {
       setError(null);
-      await window.electronAPI.profile.setActive(id);
+      await window.tauriAPI.profile.setActive(id);
       // Profile will be updated by the change event
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to set active profile');
@@ -98,14 +98,14 @@ export function useProfiles(): UseProfilesReturn {
   }, []);
 
   const create = useCallback(async (name: string, description?: string): Promise<Profile | null> => {
-    if (!window.electronAPI?.profile) {
+    if (!window.tauriAPI?.profile) {
       setError('Profile API not available');
       return null;
     }
 
     try {
       setError(null);
-      const newProfile = await window.electronAPI.profile.create(name, description);
+      const newProfile = await window.tauriAPI.profile.create(name, description);
       // Profiles will be updated by the change event
       return newProfile;
     } catch (err) {
@@ -118,14 +118,14 @@ export function useProfiles(): UseProfilesReturn {
     id: string,
     updates: Partial<Omit<Profile, 'id' | 'createdAt' | 'updatedAt'>>
   ): Promise<Profile | null> => {
-    if (!window.electronAPI?.profile) {
+    if (!window.tauriAPI?.profile) {
       setError('Profile API not available');
       return null;
     }
 
     try {
       setError(null);
-      const updatedProfile = await window.electronAPI.profile.update(id, updates);
+      const updatedProfile = await window.tauriAPI.profile.update(id, updates);
       // Profiles will be updated by the change event
       return updatedProfile;
     } catch (err) {
@@ -135,14 +135,14 @@ export function useProfiles(): UseProfilesReturn {
   }, []);
 
   const deleteProfile = useCallback(async (id: string): Promise<boolean> => {
-    if (!window.electronAPI?.profile) {
+    if (!window.tauriAPI?.profile) {
       setError('Profile API not available');
       return false;
     }
 
     try {
       setError(null);
-      await window.electronAPI.profile.delete(id);
+      await window.tauriAPI.profile.delete(id);
       // Profiles will be updated by the change event
       return true;
     } catch (err) {
@@ -152,14 +152,14 @@ export function useProfiles(): UseProfilesReturn {
   }, []);
 
   const duplicate = useCallback(async (id: string, newName: string): Promise<Profile | null> => {
-    if (!window.electronAPI?.profile) {
+    if (!window.tauriAPI?.profile) {
       setError('Profile API not available');
       return null;
     }
 
     try {
       setError(null);
-      const duplicatedProfile = await window.electronAPI.profile.duplicate(id, newName);
+      const duplicatedProfile = await window.tauriAPI.profile.duplicate(id, newName);
       // Profiles will be updated by the change event
       return duplicatedProfile;
     } catch (err) {

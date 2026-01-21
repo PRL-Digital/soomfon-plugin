@@ -31,8 +31,8 @@ export const ProfileActionForm: React.FC<ProfileActionFormProps> = ({
     const loadProfiles = async () => {
       setLoadError(null);
       try {
-        // Access the electronAPI through window
-        const api = (window as unknown as { electronAPI?: { profiles?: { list: () => Promise<ProfileInfo[]> } } }).electronAPI;
+        // Access the Tauri API through window
+        const api = (window as unknown as { tauriAPI?: { profiles?: { list: () => Promise<ProfileInfo[]> } } }).tauriAPI;
         if (api?.profiles?.list) {
           const profileList = await api.profiles.list();
           setProfiles(profileList);

@@ -12,8 +12,8 @@ export interface AppSettingsProps {
   isLoading: boolean;
 }
 
-// Get the electron API from window
-const getAutoLaunchAPI = () => window.electronAPI?.autoLaunch;
+// Get the Tauri API from window
+const getAutoLaunchAPI = () => window.tauriAPI?.autoLaunch;
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
   { value: 'system', label: 'System', icon: '💻' },

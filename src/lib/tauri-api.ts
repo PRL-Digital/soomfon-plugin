@@ -1,15 +1,15 @@
 /**
  * Tauri API Adapter
  *
- * Provides the same interface as window.electronAPI but uses Tauri's invoke() function.
- * This allows the React frontend to work with both Electron and Tauri backends.
+ * Provides the TauriAPI interface using Tauri's invoke() function.
+ * All React hooks and components access the backend through window.tauriAPI.
  */
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { getVersion as getTauriVersion, getName as getTauriName } from '@tauri-apps/api/app';
 import type {
-  ElectronAPI,
+  TauriAPI,
   DeviceAPI,
   ProfileAPI,
   ConfigAPI,
@@ -95,7 +95,7 @@ const deviceAPI: DeviceAPI = {
       } | null;
     }>('get_device_status');
 
-    // Map Tauri response to ElectronAPI format
+    // Map Tauri response to TauriAPI format
     return {
       connectionState: result.state as DeviceStatus['connectionState'],
       deviceInfo: result.device_info
@@ -601,10 +601,10 @@ export async function fetchImageAsDataUrl(url: string): Promise<string> {
 }
 
 // ============================================================================
-// Full Tauri API (implements ElectronAPI interface)
+// Full Tauri API (implements TauriAPI interface)
 // ============================================================================
 
-export const tauriAPI: ElectronAPI = {
+export const tauriAPI: TauriAPI = {
   // App info
   getVersion: getTauriVersion,
   getName: getTauriName,
@@ -624,7 +624,7 @@ export const tauriAPI: ElectronAPI = {
 
   // Generic IPC invoke
   invoke: async <T>(channel: string, ...args: unknown[]): Promise<T> => {
-    // Map Electron channel names to Tauri command names
+    // Map legacy channel names to Tauri command names
     const commandMap: Record<string, string> = {
       'device:getStatus': 'get_device_status',
       'device:connect': 'connect_device',
@@ -688,15 +688,15 @@ export function isTauri(): boolean {
 /**
  * Get the appropriate API based on platform
  */
-export function getAPI(): ElectronAPI {
+export function getAPI(): TauriAPI {
   if (isTauri()) {
     return tauriAPI;
   }
-  // Fall back to Electron API if available
-  if (typeof window !== 'undefined' && 'electronAPI' in window) {
-    return window.electronAPI;
+  // Fall back to tauriAPI on window if available
+  if (typeof window !== 'undefined' && 'tauriAPI' in window) {
+    return window.tauriAPI;
   }
-  throw new Error('No API available. Running outside Electron/Tauri context.');
+  throw new Error('No API available. Running outside Tauri context.');
 }
 
 // Export default for convenience

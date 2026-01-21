@@ -17,7 +17,7 @@ describe('WorkspaceActionForm', () => {
     mockGetActive = vi.fn();
 
     // Setup default mock API
-    (window as unknown as { electronAPI?: unknown }).electronAPI = {
+    (window as unknown as { tauriAPI?: unknown }).tauriAPI = {
       profiles: {
         getActive: mockGetActive,
       },
@@ -26,7 +26,7 @@ describe('WorkspaceActionForm', () => {
 
   afterEach(() => {
     vi.resetAllMocks();
-    delete (window as unknown as { electronAPI?: unknown }).electronAPI;
+    delete (window as unknown as { tauriAPI?: unknown }).tauriAPI;
   });
 
   describe('rendering', () => {
@@ -308,7 +308,7 @@ describe('WorkspaceActionForm', () => {
 
   describe('error handling', () => {
     it('should show error when API is not available', async () => {
-      (window as unknown as { electronAPI?: unknown }).electronAPI = undefined;
+      (window as unknown as { tauriAPI?: unknown }).tauriAPI = undefined;
 
       render(
         <WorkspaceActionForm

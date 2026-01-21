@@ -57,10 +57,10 @@ export function useDevice(): UseDeviceReturn {
   useEffect(() => {
     const initializeDevice = async () => {
       try {
-        if (!window.electronAPI?.device) return;
+        if (!window.tauriAPI?.device) return;
 
         // Get current status
-        const deviceStatus = await window.electronAPI.device.getStatus();
+        const deviceStatus = await window.tauriAPI.device.getStatus();
         setStatus(deviceStatus);
 
         // Auto-connect if not already connected
@@ -72,7 +72,7 @@ export function useDevice(): UseDeviceReturn {
             connectionState: ConnectionState.CONNECTING,
           }));
           try {
-            await window.electronAPI.device.connect();
+            await window.tauriAPI.device.connect();
             // Status will be updated by the connected event
           } catch (connectErr) {
             log.warn('[RENDERER] Auto-connect failed:', connectErr);
@@ -94,11 +94,11 @@ export function useDevice(): UseDeviceReturn {
 
   // Subscribe to device events
   useEffect(() => {
-    if (!window.electronAPI?.device) {
+    if (!window.tauriAPI?.device) {
       return;
     }
 
-    const device = window.electronAPI.device;
+    const device = window.tauriAPI.device;
 
     // Connection events
     const unsubConnected = device.onConnected(() => {
@@ -161,7 +161,7 @@ export function useDevice(): UseDeviceReturn {
   }, []);
 
   const connect = useCallback(async () => {
-    if (!window.electronAPI?.device) {
+    if (!window.tauriAPI?.device) {
       setError('Device API not available');
       return;
     }
@@ -173,7 +173,7 @@ export function useDevice(): UseDeviceReturn {
         ...prev,
         connectionState: ConnectionState.CONNECTING,
       }));
-      await window.electronAPI.device.connect();
+      await window.tauriAPI.device.connect();
       // Status will be updated by the connected event
     } catch (err) {
       setIsConnecting(false);
@@ -186,13 +186,13 @@ export function useDevice(): UseDeviceReturn {
   }, []);
 
   const disconnect = useCallback(async () => {
-    if (!window.electronAPI?.device) {
+    if (!window.tauriAPI?.device) {
       setError('Device API not available');
       return;
     }
 
     try {
-      await window.electronAPI.device.disconnect();
+      await window.tauriAPI.device.disconnect();
       // Status will be updated by the disconnected event
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
@@ -200,26 +200,26 @@ export function useDevice(): UseDeviceReturn {
   }, []);
 
   const setBrightness = useCallback(async (brightness: number) => {
-    if (!window.electronAPI?.device) {
+    if (!window.tauriAPI?.device) {
       setError('Device API not available');
       return;
     }
 
     try {
-      await window.electronAPI.device.setBrightness(brightness);
+      await window.tauriAPI.device.setBrightness(brightness);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to set brightness');
     }
   }, []);
 
   const setButtonImage = useCallback(async (buttonIndex: number, imageData: string) => {
-    if (!window.electronAPI?.device) {
+    if (!window.tauriAPI?.device) {
       setError('Device API not available');
       return;
     }
 
     try {
-      await window.electronAPI.device.setButtonImage(buttonIndex, imageData);
+      await window.tauriAPI.device.setButtonImage(buttonIndex, imageData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to set button image');
     }

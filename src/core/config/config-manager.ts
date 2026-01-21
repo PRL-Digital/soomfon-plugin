@@ -8,7 +8,7 @@
  * - Unit tests that need a ConfigManager instance
  * - Shared business logic that operates on config data
  *
- * The interface matches the original electron-store-based implementation
+ * The interface matches the original storage-based implementation
  * so existing code (ProfileManager, handlers) continues to work.
  */
 

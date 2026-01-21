@@ -22,9 +22,7 @@ export default defineConfig({
         '**/*.d.ts',
         '**/*.test.ts',
         '**/*.spec.ts',
-        'src/main/**', // Main process code (requires Electron)
         'src/renderer/**', // Renderer code (requires React/DOM)
-        'src/preload/**', // Preload scripts (requires Electron)
       ],
     },
 

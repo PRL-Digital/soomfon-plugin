@@ -1,14 +1,14 @@
 /**
  * Global type declarations for the renderer process
- * This file extends the Window interface to include the electronAPI
- * exposed by the preload script via contextBridge.
+ * This file extends the Window interface to include the tauriAPI
+ * provided by the Tauri adapter.
  */
 
-import type { ElectronAPI } from '../shared/types/ipc';
+import type { TauriAPI } from '../shared/types/ipc';
 
 declare global {
   interface Window {
-    electronAPI: ElectronAPI;
+    tauriAPI: TauriAPI;
   }
 }
 

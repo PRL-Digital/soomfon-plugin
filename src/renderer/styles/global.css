@@ -273,7 +273,7 @@
 
 /* Utility classes */
 @layer utilities {
-  /* Electron drag region */
+  /* Tauri window drag region */
   .drag-region {
     -webkit-app-region: drag;
   }

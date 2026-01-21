@@ -1,6 +1,6 @@
 /**
  * IPC Channel Type Definitions
- * Type-safe IPC channel names and payload types for Electron main-to-renderer communication
+ * Type-safe IPC channel names and payload types for Tauri backend-to-frontend communication
  */
 
 import type { Action, ActionExecutionResult, ActionBinding } from './actions';
@@ -301,7 +301,7 @@ export interface ConfigIpcHandlers {
 }
 
 // ============================================================================
-// Electron API Types (for renderer process)
+// Tauri API Types (for renderer process)
 // ============================================================================
 
 /** Type-safe invoke function signature */
@@ -369,8 +369,8 @@ export interface AutoLaunchAPI {
   setEnabled: (enabled: boolean, startMinimized?: boolean) => Promise<void>;
 }
 
-/** Complete Electron API exposed to renderer */
-export interface ElectronAPI {
+/** Complete Tauri API exposed to renderer */
+export interface TauriAPI {
   // App info
   getVersion: () => Promise<string>;
   getName: () => Promise<string>;

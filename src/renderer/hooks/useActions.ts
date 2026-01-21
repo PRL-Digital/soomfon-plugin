@@ -28,7 +28,7 @@ export function useActions(): UseActionsReturn {
   const [error, setError] = useState<string | null>(null);
 
   const execute = useCallback(async (action: Action): Promise<ActionExecutionResult | null> => {
-    if (!window.electronAPI?.action) {
+    if (!window.tauriAPI?.action) {
       setError('Action API not available');
       return null;
     }
@@ -36,7 +36,7 @@ export function useActions(): UseActionsReturn {
     try {
       setIsExecuting(true);
       setError(null);
-      const result = await window.electronAPI.action.execute(action);
+      const result = await window.tauriAPI.action.execute(action);
       setLastResult(result);
 
       if (result.status === 'failure') {

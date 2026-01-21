@@ -58,11 +58,11 @@ function createTauriActionHandler(actionType: ActionType): ActionHandler {
         }
 
         // Execute via Tauri API
-        if (!window.electronAPI?.action?.execute) {
+        if (!window.tauriAPI?.action?.execute) {
           throw new Error('Action API not available');
         }
 
-        const result = await window.electronAPI.action.execute(action);
+        const result = await window.tauriAPI.action.execute(action);
         return result;
       } catch (error) {
         const endTime = Date.now();

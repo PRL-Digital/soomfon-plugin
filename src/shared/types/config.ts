@@ -182,7 +182,7 @@ export interface IntegrationSettings {
 
 /**
  * Root application configuration
- * This is the structure stored in electron-store
+ * This is the structure persisted by the Tauri backend
  */
 export interface AppConfig {
   /** Configuration schema version for migrations */

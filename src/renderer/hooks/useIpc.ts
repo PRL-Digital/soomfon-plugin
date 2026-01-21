@@ -21,10 +21,10 @@ export function useIpc() {
    * Invoke an IPC channel
    */
   const invoke = useCallback(async <T>(channel: InvokeChannel, ...args: unknown[]): Promise<T> => {
-    if (!window.electronAPI) {
-      throw new Error('Electron API not available');
+    if (!window.tauriAPI) {
+      throw new Error('Tauri API not available');
     }
-    return window.electronAPI.invoke<T>(channel, ...args);
+    return window.tauriAPI.invoke<T>(channel, ...args);
   }, []);
 
   /**
@@ -32,14 +32,14 @@ export function useIpc() {
    * Returns unsubscribe function
    */
   const subscribe = useCallback((channel: ListenChannel, callback: (...args: unknown[]) => void): (() => void) => {
-    if (!window.electronAPI) {
+    if (!window.tauriAPI) {
       return () => {};
     }
 
-    window.electronAPI.on(channel, callback);
+    window.tauriAPI.on(channel, callback);
 
     return () => {
-      window.electronAPI.off(channel, callback);
+      window.tauriAPI.off(channel, callback);
     };
   }, []);
 
@@ -59,7 +59,7 @@ export function useIpcSubscription<T>(
   callbackRef.current = callback;
 
   useEffect(() => {
-    if (!window.electronAPI) {
+    if (!window.tauriAPI) {
       return;
     }
 
@@ -67,10 +67,10 @@ export function useIpcSubscription<T>(
       callbackRef.current(args[0] as T);
     };
 
-    window.electronAPI.on(channel, handler);
+    window.tauriAPI.on(channel, handler);
 
     return () => {
-      window.electronAPI.off(channel, handler);
+      window.tauriAPI.off(channel, handler);
     };
   }, [channel]);
 }

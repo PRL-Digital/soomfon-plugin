@@ -428,10 +428,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadAppInfo = async () => {
       try {
-        if (window.electronAPI) {
+        if (window.tauriAPI) {
           const [name, version] = await Promise.all([
-            window.electronAPI.getName(),
-            window.electronAPI.getVersion(),
+            window.tauriAPI.getName(),
+            window.tauriAPI.getVersion(),
           ]);
           setAppInfo({ name, version });
         } else {
@@ -535,9 +535,9 @@ const App: React.FC = () => {
       await profiles.update(profiles.activeProfile.id, { workspaces: updatedWorkspaces });
 
       // For LCD buttons (0-5), upload image to device if provided (only for press trigger)
-      if (selection.type === 'lcd' && triggerMode === 'press' && imageUrl && window.electronAPI?.device?.setButtonImage) {
+      if (selection.type === 'lcd' && triggerMode === 'press' && imageUrl && window.tauriAPI?.device?.setButtonImage) {
         try {
-          await window.electronAPI.device.setButtonImage(selection.index, imageUrl);
+          await window.tauriAPI.device.setButtonImage(selection.index, imageUrl);
         } catch (err) {
           const errorMsg = err instanceof Error ? err.message : String(err);
           console.error('Failed to upload button image:', err);
@@ -723,9 +723,9 @@ const App: React.FC = () => {
 
   // Handle brightness change from Settings panel - live update to device
   const handleBrightnessChange = useCallback(async (brightness: number) => {
-    if (window.electronAPI?.device?.setBrightness) {
+    if (window.tauriAPI?.device?.setBrightness) {
       try {
-        await window.electronAPI.device.setBrightness(brightness);
+        await window.tauriAPI.device.setBrightness(brightness);
       } catch (err) {
         console.error('Failed to set brightness:', err);
         toast.error('Failed to set device brightness');
@@ -735,13 +735,13 @@ const App: React.FC = () => {
 
   // Handle preview image on device - sends image to device without saving the action
   const handlePreviewImage = useCallback(async (buttonIndex: number, imageUrl: string) => {
-    if (!window.electronAPI?.device?.setButtonImage) {
+    if (!window.tauriAPI?.device?.setButtonImage) {
       throw new Error('Device image preview not available');
     }
     if (!device.isConnected) {
       throw new Error('Device not connected');
     }
-    await window.electronAPI.device.setButtonImage(buttonIndex, imageUrl);
+    await window.tauriAPI.device.setButtonImage(buttonIndex, imageUrl);
   }, [device.isConnected]);
 
   // Minimal 1x1 black PNG as data URL - used to "blank" button displays
@@ -751,7 +751,7 @@ const App: React.FC = () => {
   // Sync all LCD button images to the device for the given workspace
   // If shiftMode is true, use shiftImage (no fallback - clear if no shiftImage)
   const syncWorkspaceImages = useCallback(async (workspace: import('@shared/types/config').Workspace, shiftMode: boolean = false) => {
-    if (!device.isConnected || !window.electronAPI?.device?.setButtonImage) {
+    if (!device.isConnected || !window.tauriAPI?.device?.setButtonImage) {
       console.log('[SHIFT] Cannot sync - device not connected or API not available');
       return;
     }
@@ -770,10 +770,10 @@ const App: React.FC = () => {
       try {
         if (imageToUse) {
           // Send the image
-          await window.electronAPI.device.setButtonImage(i, imageToUse);
+          await window.tauriAPI.device.setButtonImage(i, imageToUse);
         } else {
           // Clear the button display using proper protocol command
-          await window.electronAPI.device.clearButton(i);
+          await window.tauriAPI.device.clearButton(i);
         }
       } catch (err) {
         console.error(`Failed to sync image for button ${i}:`, err);

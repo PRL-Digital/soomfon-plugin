@@ -17,7 +17,7 @@
  */
 
 // Check if debug logging is enabled via environment variable
-// In Electron main process, this comes from process.env
+// In Tauri backend, this comes from process.env
 // In renderer process, this is typically bundled at build time
 const DEBUG =
   typeof process !== 'undefined' &&

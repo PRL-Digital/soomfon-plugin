@@ -42,7 +42,7 @@ export function useConfig(): UseConfigReturn {
 
   // Load configuration
   const loadConfig = useCallback(async () => {
-    if (!window.electronAPI?.config) {
+    if (!window.tauriAPI?.config) {
       setError('Config API not available');
       setIsLoading(false);
       return;
@@ -51,7 +51,7 @@ export function useConfig(): UseConfigReturn {
     try {
       setIsLoading(true);
       setError(null);
-      const fullConfig = await window.electronAPI.config.get();
+      const fullConfig = await window.tauriAPI.config.get();
       setConfig(fullConfig);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load configuration');
@@ -67,11 +67,11 @@ export function useConfig(): UseConfigReturn {
 
   // Subscribe to config changes
   useEffect(() => {
-    if (!window.electronAPI?.config) {
+    if (!window.tauriAPI?.config) {
       return;
     }
 
-    const unsubscribe = window.electronAPI.config.onChanged((event: ConfigChangeEvent) => {
+    const unsubscribe = window.tauriAPI.config.onChanged((event: ConfigChangeEvent) => {
       // Reload config on any change
       loadConfig();
     });
@@ -80,14 +80,14 @@ export function useConfig(): UseConfigReturn {
   }, [loadConfig]);
 
   const setDeviceSettings = useCallback(async (settings: DeviceSettings) => {
-    if (!window.electronAPI?.config) {
+    if (!window.tauriAPI?.config) {
       setError('Config API not available');
       return;
     }
 
     try {
       setError(null);
-      await window.electronAPI.config.setDeviceSettings(settings);
+      await window.tauriAPI.config.setDeviceSettings(settings);
       // Config will be updated by the change event
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update device settings');
@@ -95,14 +95,14 @@ export function useConfig(): UseConfigReturn {
   }, []);
 
   const setAppSettings = useCallback(async (settings: AppSettings) => {
-    if (!window.electronAPI?.config) {
+    if (!window.tauriAPI?.config) {
       setError('Config API not available');
       return;
     }
 
     try {
       setError(null);
-      await window.electronAPI.config.setAppSettings(settings);
+      await window.tauriAPI.config.setAppSettings(settings);
       // Config will be updated by the change event
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update app settings');
@@ -110,14 +110,14 @@ export function useConfig(): UseConfigReturn {
   }, []);
 
   const setIntegrations = useCallback(async (settings: IntegrationSettings) => {
-    if (!window.electronAPI?.config) {
+    if (!window.tauriAPI?.config) {
       setError('Config API not available');
       return;
     }
 
     try {
       setError(null);
-      await window.electronAPI.config.setIntegrations(settings);
+      await window.tauriAPI.config.setIntegrations(settings);
       // Config will be updated by the change event
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update integration settings');
@@ -125,14 +125,14 @@ export function useConfig(): UseConfigReturn {
   }, []);
 
   const reset = useCallback(async () => {
-    if (!window.electronAPI?.config) {
+    if (!window.tauriAPI?.config) {
       setError('Config API not available');
       return;
     }
 
     try {
       setError(null);
-      await window.electronAPI.config.reset();
+      await window.tauriAPI.config.reset();
       // Config will be updated by the change event
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset configuration');

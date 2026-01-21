@@ -284,7 +284,7 @@ export const integrationSettingsSchema = z.object({
 
 /**
  * Root application configuration schema
- * This is the complete configuration structure stored in electron-store
+ * This is the complete configuration structure persisted by Tauri
  */
 export const configSchema = z.object({
   /** Configuration schema version for migrations */

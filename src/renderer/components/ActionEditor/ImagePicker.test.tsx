@@ -20,7 +20,7 @@ describe('ImagePicker', () => {
   afterEach(() => {
     vi.resetAllMocks();
     vi.useRealTimers();
-    delete (window as unknown as { electronAPI?: unknown }).electronAPI;
+    delete (window as unknown as { tauriAPI?: unknown }).tauriAPI;
   });
 
   describe('rendering', () => {

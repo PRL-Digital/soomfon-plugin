@@ -45,12 +45,12 @@ export const WorkspaceActionForm: React.FC<WorkspaceActionFormProps> = ({
     const loadWorkspaces = async () => {
       setLoadError(null);
       try {
-        // Access the electronAPI through window for profile/workspace info
-        const api = (window as unknown as { electronAPI?: {
+        // Access the Tauri API through window for profile/workspace info
+        const api = (window as unknown as { tauriAPI?: {
           profiles?: {
             getActive: () => Promise<{ workspaces?: Array<{ id: string; name: string }> } | null>
           }
-        } }).electronAPI;
+        } }).tauriAPI;
 
         if (api?.profiles?.getActive) {
           const activeProfile = await api.profiles.getActive();

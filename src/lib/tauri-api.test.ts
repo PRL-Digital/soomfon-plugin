@@ -1,7 +1,7 @@
 /**
  * Tauri API Adapter Tests
  *
- * Tests for the Tauri-to-Electron API bridge that enables:
+ * Tests for the Tauri API adapter that enables:
  * - Device API (status, connect, brightness, images, events)
  * - Profile API (CRUD operations, active profile)
  * - Config API (settings, integrations)
@@ -627,7 +627,7 @@ describe('tauriAPI', () => {
   });
 
   describe('generic invoke', () => {
-    it('should map Electron channel to Tauri command', async () => {
+    it('should map legacy channel to Tauri command', async () => {
       const { tauriAPI } = await import('./tauri-api');
       mockInvoke.mockResolvedValue({ state: 'connected' });
 

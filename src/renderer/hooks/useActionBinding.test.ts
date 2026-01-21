@@ -16,7 +16,7 @@ import { ButtonEventType, ButtonType, EncoderEventType, SHIFT_BUTTON_INDEX, WORK
 // Mock the Tauri API
 const mockExecute = vi.fn();
 vi.stubGlobal('window', {
-  electronAPI: {
+  tauriAPI: {
     action: {
       execute: mockExecute,
     },
