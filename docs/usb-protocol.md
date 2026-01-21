@@ -79,11 +79,11 @@ Communication flow:
 
 ## Initialization Sequence
 
-The device **requires initialization** before it will send button events. The official software performs this sequence:
+The device **requires initialization** before it will send button events. The following sequence enables button event mode:
 
-### Step 1: HID Get Feature Report (CRITICAL)
+### Step 1: HID Get Feature Report (Optional)
 
-This USB control transfer "wakes up" the device:
+This USB control transfer retrieves the firmware version. It is **NOT required** for enabling button events, but useful for device identification.
 
 ```
 bmRequestType: 0xA1 (Device-to-host, Class, Interface)
@@ -108,25 +108,30 @@ Offset 0x00: 43 52 54 00 00 44 49 53 00 00 ...
 ### Step 3: CRT..LIG (Set Brightness)
 
 ```
-Offset 0x00: 43 52 54 00 00 4C 49 47 00 00 64 00 ...
-             C  R  T        L  I  G        100
+Offset 0x00: 43 52 54 00 00 4C 49 47 00 00 32 00 ...
+             C  R  T        L  I  G        50
 ```
-- Byte 10: Brightness value (0x64 = 100 = 100%)
+- Byte 10: Brightness value (0x32 = 50 = 50%)
 
-### Step 4: CRT..QUCMD (Quick Command Setup)
-
-```
-Offset 0x00: 43 52 54 00 00 51 55 43 4D 44 11 11 00 11 00 11 ...
-             C  R  T        Q  U  C  M  D  [parameters]
-```
-- Bytes 10-15: Parameters `11 11 00 11 00 11`
-
-### Step 5: CRT..CONNECT (Optional)
+### Step 4: CRT..STP (Stop/Commit) - CRITICAL
 
 ```
-Offset 0x00: 43 52 54 00 00 43 4F 4E 4E 45 43 54 00 ...
-             C  R  T        C  O  N  N  E  C  T
+Offset 0x00: 43 52 54 00 00 53 54 50 00 00 ...
+             C  R  T        S  T  P
 ```
+
+This command **commits pending operations**. CRITICAL for enabling button event mode - must be sent after DIS and LIG during initialization.
+
+### Step 5: CRT..CLE (Clear Screens) - CRITICAL
+
+```
+Offset 0x00: 43 52 54 00 00 43 4C 45 00 00 ...
+             C  R  T        C  L  E
+```
+
+This simple CLE command (without DC parameters) **clears the LCD screens**. CRITICAL for enabling button event mode during initialization.
+
+> **Note:** QUCMD and CONNECT commands (documented below) are NOT required for enabling button events. They were observed in official software but are optional.
 
 ---
 
@@ -169,8 +174,10 @@ Offset  Size  Description
 |---------|---------------|-------------|
 | `CRT..DIS` | `43 52 54 00 00 44 49 53` | Display initialization |
 | `CRT..LIG` | `43 52 54 00 00 4C 49 47` | Set brightness (param at offset 0x0A) |
-| `CRT..CONNECT` | `43 52 54 00 00 43 4F 4E 4E 45 43 54` | Connection/keepalive |
-| `CRT..QUCMD` | `43 52 54 00 00 51 55 43 4D 44` | Quick command setup |
+| `CRT..STP` | `43 52 54 00 00 53 54 50` | Stop/Commit - finalizes pending operations (CRITICAL) |
+| `CRT..CLE` | `43 52 54 00 00 43 4C 45` | Clear screens (simple version, no parameters) |
+| `CRT..CONNECT` | `43 52 54 00 00 43 4F 4E 4E 45 43 54` | Connection/keepalive (optional) |
+| `CRT..QUCMD` | `43 52 54 00 00 51 55 43 4D 44` | Quick command setup (optional) |
 
 ### Shutdown Commands
 
@@ -186,9 +193,16 @@ The CLE (Clear) command supports different clearing modes via TG0/TG1 parameters
 
 | Mode | TG0 (byte 10) | TG1 (byte 11) | Description |
 |------|---------------|---------------|-------------|
+| Simple clear (init) | `0x00` | `0x00` | Used during initialization to enable event mode |
 | Clear single button to black | `0x00` | `1-6` | Clears specific button to black |
 | Clear all buttons to black | `0x00` | `0xFF` | Clears all buttons to black |
 | Clear to logo | `0x44` ('D') | `0x43` ('C') | Clears displays and shows device logo (shutdown) |
+
+**Simple clear (initialization):**
+```
+43 52 54 00 00 43 4C 45 00 00 00 00 ...
+C  R  T        C  L  E        (zeros)
+```
 
 **Clear single button to black:**
 ```
@@ -208,13 +222,87 @@ C  R  T        C  L  E        TG0 TG1
 C  R  T        C  L  E        D   C
 ```
 
-> **Note:** The CLE command should be followed by an STP (Stop/Commit) command for protocol v2+ devices to ensure the operation completes successfully.
+> **Important:** Clear operations (except simple init clear) should be followed by an STP (Stop/Commit) command to ensure the operation completes successfully.
 
-### Image Transfer
+### Image Transfer Commands
 
-The device accepts **JPEG images** via bulk transfers. Image data is identified by:
-- JPEG magic bytes: `FF D8 FF E0`
-- JFIF signature at offset 6
+| Command | Hex Signature | Description |
+|---------|---------------|-------------|
+| `CRT..BAT` | `43 52 54 00 00 42 41 54` | Begin image batch transfer |
+
+---
+
+## Image Transfer Protocol (BAT/STP Sequence)
+
+LCD buttons support custom images via a 3-step protocol:
+
+### Step 1: BAT Header Packet
+
+The BAT (batch) command initiates an image transfer:
+
+```
+Offset  Size  Description
+------  ----  -----------
+0x00    3     Header: "CRT" (0x43 0x52 0x54)
+0x03    2     Padding: 0x00 0x00
+0x05    3     Command: "BAT" (0x42 0x41 0x54)
+0x08    2     Padding: 0x00 0x00
+0x0A    2     Image size (big-endian u16)
+0x0C    1     Button index (1-6, protocol is 1-indexed)
+```
+
+**Example for button 0 (protocol index 1) with 1234-byte image:**
+```
+43 52 54 00 00 42 41 54 00 00 04 D2 01
+C  R  T        B  A  T        [size] [btn]
+                              ^^^^^  ^^^
+                              1234   button 1
+```
+
+### Step 2: Image Data Chunks
+
+Send JPEG data in 1024-byte packets (CRT_PACKET_SIZE):
+
+- Each chunk is a full 1024-byte packet
+- Data is padded with zeros if chunk is less than 1024 bytes
+- Multiple packets sent for images larger than 1024 bytes
+- **No header** - raw image data only
+- Chunks are sent sequentially starting at offset 0
+
+**Example for 2500-byte image:**
+1. Chunk 1: bytes 0-1023 (1024 bytes)
+2. Chunk 2: bytes 1024-2047 (1024 bytes)
+3. Chunk 3: bytes 2048-2499 (452 bytes, padded to 1024)
+
+### Step 3: STP Commit
+
+Send CRT..STP packet to finalize the image transfer:
+
+```
+43 52 54 00 00 53 54 50 00 00 ...
+C  R  T        S  T  P
+```
+
+The image will not display until the STP packet is sent.
+
+### Image Requirements
+
+| Property | Value |
+|----------|-------|
+| **Format** | JPEG |
+| **Dimensions** | 60x60 pixels |
+| **Quality** | 90% recommended |
+| **Magic bytes** | `FF D8 FF` (validated by device/protocol) |
+| **Button indexing** | UI uses 0-5, protocol uses 1-6 |
+
+### JPEG Validation
+
+The protocol validates JPEG data by checking magic bytes:
+- Byte 0: `0xFF`
+- Byte 1: `0xD8`
+- Byte 2: `0xFF`
+
+Invalid JPEG data will be rejected.
 
 ---
 
@@ -316,7 +404,12 @@ The official software sends `CRT..CONNECT` packets every ~10 seconds to maintain
 
 2. **Driver selection** - The device works with the default Windows HID driver. Using `rusb` requires claiming the interface, which may conflict with hidapi.
 
-3. **Initialization required** - The device will NOT send button events until the HID Get Feature Report control transfer is performed.
+3. **Initialization required** - The device will NOT send button events until the initialization sequence (DIS, LIG, STP, CLE) is performed. The HID Get Feature Report is optional and only retrieves firmware version.
+
+4. **STP commits required** - Most operations require CRT..STP to finalize:
+   - After initialization (DIS, LIG)
+   - After image transfers (BAT + data chunks)
+   - After clearing buttons (CLE with parameters)
 
 ### Library Recommendations
 
@@ -384,7 +477,7 @@ ASCII: C  R  T        L  I  G        d
 1. ~~**LCD button indices**~~ - ✓ Confirmed: LCD buttons 1-6 map to event IDs 0x01-0x06.
 2. ~~**Dial 3 push event**~~ - ✓ Confirmed: 0x34 (ASCII '4')
 3. ~~**Main dial push event**~~ - ✓ Confirmed: 0x35 (ASCII '5')
-4. **Image format details** - Exact JPEG requirements (size, quality, dimensions).
+4. ~~**Image format details**~~ - ✓ Documented: 60x60 JPEG, BAT/STP protocol, see "Image Transfer Protocol" section.
 5. ~~**Direction verification**~~ - ✓ Main dial directions confirmed working.
 6. ~~**Shutdown sequence**~~ - ✓ Captured: CLE.DC, CLB.DC, HAH
 
@@ -399,3 +492,4 @@ ASCII: C  R  T        L  I  G        d
 | 2026-01-17 | Confirmed: Small buttons (0x25, 0x30, 0x31), Side encoders (0x90/0x91, 0x60), Dial 2 push (0x33) |
 | 2026-01-17 | Added shutdown sequence (CLE.DC, CLB.DC, HAH), Main dial push (0x35), Dial 3 push (0x34) |
 | 2026-01-20 | Fixed CLE command byte positions (TG0/TG1 at bytes 10-11), documented clear modes |
+| 2026-01-21 | Added CRT..STP and CRT..CLE commands, detailed image transfer protocol (BAT/STP), corrected init sequence |
