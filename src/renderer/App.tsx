@@ -175,6 +175,26 @@ const DeviceTab: React.FC<{
     return labels;
   }, [profiles.activeProfile, selectedLayer]);
 
+  // Compute images for LCD buttons based on selected layer
+  const lcdImages = useMemo((): Record<number, string> => {
+    if (!profiles.activeProfile) return {};
+
+    const buttons = getActiveWorkspaceButtons(profiles.activeProfile);
+    const images: Record<number, string> = {};
+
+    for (let i = 0; i < LCD_BUTTON_COUNT; i++) {
+      const buttonConfig = buttons.find(b => b.index === i);
+      const image = selectedLayer === 'primary'
+        ? buttonConfig?.image
+        : buttonConfig?.shiftImage;
+      if (image) {
+        images[i] = image;
+      }
+    }
+
+    return images;
+  }, [profiles.activeProfile, selectedLayer]);
+
   // Compute action labels for encoders based on selected layer
   const encoderActionLabels = useMemo((): Record<number, string> => {
     if (!profiles.activeProfile) return {};
@@ -233,6 +253,7 @@ const DeviceTab: React.FC<{
             isShiftActive={device.isShiftActive}
             workspaceInfo={workspaceInfo}
             onWorkspaceChange={onWorkspaceChange}
+            lcdImages={lcdImages}
             lcdActionLabels={lcdActionLabels}
             encoderActionLabels={encoderActionLabels}
           />

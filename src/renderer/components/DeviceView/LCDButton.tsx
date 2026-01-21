@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 export interface LCDButtonProps {
   /** Button index (0-5) */
@@ -26,6 +27,33 @@ export const LCDButton: React.FC<LCDButtonProps> = ({
   actionLabel,
   onClick,
 }) => {
+  // Convert imageUrl to a displayable URL
+  // File paths and file:// URLs need conversion via Tauri's asset protocol
+  const displayUrl = useMemo(() => {
+    if (!imageUrl) return undefined;
+
+    // Data URLs and http(s) URLs can be used directly
+    if (imageUrl.startsWith('data:') || imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+
+    // Handle file:// URLs
+    if (imageUrl.startsWith('file://')) {
+      const path = imageUrl.startsWith('file:///')
+        ? imageUrl.slice(8)  // Remove file:///
+        : imageUrl.slice(7); // Remove file://
+      return convertFileSrc(path);
+    }
+
+    // For absolute paths (Windows or Unix), convert directly
+    if (imageUrl.startsWith('/') || /^[A-Za-z]:[\\/]/.test(imageUrl)) {
+      return convertFileSrc(imageUrl);
+    }
+
+    // For other URLs, return as-is
+    return imageUrl;
+  }, [imageUrl]);
+
   return (
     <button
       type="button"
@@ -36,9 +64,9 @@ export const LCDButton: React.FC<LCDButtonProps> = ({
       aria-pressed={isPressed}
     >
       <div className="lcd-button__content">
-        {imageUrl ? (
+        {displayUrl ? (
           <img
-            src={imageUrl}
+            src={displayUrl}
             alt={`Button ${index + 1}`}
             className="lcd-button__image"
             draggable={false}
